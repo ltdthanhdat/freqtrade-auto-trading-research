@@ -92,6 +92,6 @@
     "datadir": "user_data/data",
     "dataformat_ohlcv": "feather",
     "dataformat_trades": "feather",
-    "strategy_path": "src/bot_trade/strategies"
+    "strategy_path": "src/strategies"
 }
 

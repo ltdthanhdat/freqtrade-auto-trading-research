@@ -10,9 +10,7 @@ bot-trade/
 │   ├── config.json      # Main config (gitignored)
 │   └── config.json.example
 ├── src/
-│   └── bot_trade/
-│       ├── strategies/  # Trading strategies
-│       └── utils/       # Utilities
+│   └── strategies/      # Trading strategies
 ├── user_data/           # Runtime data only
 │   ├── data/            # Market data (feather format)
 │   ├── backtest_results/
@@ -105,16 +103,16 @@ freqtrade trade --config config/config.json --strategy MA50_200_Strategy
 # Create from template
 uv run freqtrade new-strategy \
     --strategy MyNewStrategy \
-    --strategy-path src/bot_trade/strategies
+    --strategy-path src/strategies
 
-# Strategy will be created at: src/bot_trade/strategies/MyNewStrategy.py
+# Strategy will be created at: src/strategies/MyNewStrategy.py
 ```
 
 ### Other commands
 
 ```bash
 # List strategies
-uv run freqtrade list-strategies --strategy-path src/bot_trade/strategies
+uv run freqtrade list-strategies --strategy-path src/strategies
 
 # List exchanges
 uv run freqtrade list-exchanges
@@ -140,7 +138,7 @@ uv run freqtrade plot-dataframe \
 
 ### Create new strategy
 
-1. Create file in `src/bot_trade/strategies/`:
+1. Create file in `src/strategies/`:
 
 ```python
 from freqtrade.strategy import IStrategy
@@ -181,7 +179,7 @@ uv run freqtrade trade --config config/config.json --strategy MyStrategy
 
 When testing, ensure:
 - Config file exists: `config/config.json`
-- Strategy exists: `src/bot_trade/strategies/MA50_200_Strategy.py`
+- Strategy exists: `src/strategies/MA50_200_Strategy.py`
 - Data downloaded (if backtesting): `user_data/data/<exchange>/`
 
 ## Important Notes
