@@ -10,7 +10,7 @@ TIMERANGE ?=
 
 PAIR     ?= BTC/USDT:USDT
 
-.PHONY: install sync seed-data data list-data backtest backtest-ma backtest-pinbar plot plot-ma plot-pinbar plot-df plot-df-pinbar trade list-strategies clean
+.PHONY: install sync seed-data data list-data backtest backtest-pinbar plot plot-pinbar plot-df plot-df-pinbar trade list-strategies clean
 
 install:
 	uv sync
@@ -32,18 +32,12 @@ list-data:
 backtest: install
 	$(FREQ) backtesting --config $(CONFIG) --strategy $(STRATEGY) --strategy-path $(SPATH) $(if $(TIMERANGE),--timerange $(TIMERANGE),)
 
-backtest-ma:
-	$(MAKE) backtest STRATEGY=MA50_200_Strategy
-
 backtest-pinbar:
 	$(MAKE) backtest STRATEGY=SMC_FVG_PinBar_Freqtrade
 
 # Plot profit from latest backtest result; strategy must match the backtest
 plot: install
 	$(FREQ) plot-profit --config $(CONFIG) --strategy $(STRATEGY) --strategy-path $(SPATH)
-
-plot-ma:
-	$(MAKE) plot STRATEGY=MA50_200_Strategy
 
 plot-pinbar:
 	$(MAKE) plot STRATEGY=SMC_FVG_PinBar_Freqtrade
