@@ -18,9 +18,15 @@ uv sync
 cp config/config.futures.json user_data/config.futures.local.json
 ```
 
-3. Điền API key trong file local nếu muốn chạy thật.
+3. Seed data trước:
 
-4. Dry-run trước:
+```bash
+uv run python scripts/seed_freqtrade_data.py --preset smc-basket --days 90
+```
+
+4. Điền API key trong file local nếu muốn chạy thật.
+
+5. Dry-run trước:
 
 ```bash
 uv run freqtrade trade \
@@ -31,7 +37,6 @@ uv run freqtrade trade \
 
 ## Khuyến nghị hiện tại
 
-- không bật live thật ngay
 - basket mặc định:
   - `BTC/USDT:USDT`
   - `PLAY/USDT:USDT`
@@ -45,15 +50,12 @@ uv run freqtrade trade \
 - timeframe:
   - `1h`
 - risk rollout:
-  - vẫn giữ `max_open_trades = 1` để dry-run portfolio theo kiểu rất bảo thủ
-  - nghĩa là bot quét cả `9` pair nhưng chỉ giữ tối đa `1` vị thế cùng lúc
-
-Sau khi dry-run ổn mới cân nhắc nới `max_open_trades`.
+  - vẫn giữ `max_open_trades = 1` để dry-run portfolio theo kiểu bảo thủ
 
 ## Lưu ý
 
-- Freqtrade không cần license riêng kiểu Jesse live plugin.
-- Nhưng vẫn cần:
-  - exchange API key
+- Data seed dùng trực tiếp `freqtrade download-data`.
+- Vẫn cần:
+  - exchange API key nếu muốn live
   - config futures đúng
   - pair tồn tại và có metadata đầy đủ

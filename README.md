@@ -1,12 +1,12 @@
 # Bot Trade
 
-Crypto Trading Bot using Freqtrade library.
+Crypto trading bot dùng Freqtrade.
 
 ## Current focus
 
-Repo này hiện là nhánh execution/migration cho `SMC_FVG_PinBar` sau khi rời khỏi Jesse live path.
+Repo này chạy độc lập trên Freqtrade.
 
-- strategy port:
+- strategy:
   - `src/strategies/SMC_FVG_PinBar_Freqtrade.py`
 - futures config:
   - `config/config.futures.json`
@@ -16,35 +16,33 @@ Repo này hiện là nhánh execution/migration cho `SMC_FVG_PinBar` sau khi r�
 ## Quick Start
 
 ```bash
-# 1. Setup
 uv sync
-
-# 2. Create futures config
+uv run python scripts/seed_freqtrade_data.py --preset smc-basket --days 90
 cp config/config.futures.json user_data/config.futures.local.json
-
-# 3. Run dry-run bot
 uv run freqtrade trade \
   --config user_data/config.futures.local.json \
   --strategy SMC_FVG_PinBar_Freqtrade \
   --strategy-path src/strategies
 ```
 
-## SMC_FVG_PinBar
+## Seed data
 
-Chuẩn bị data và compare với Jesse:
+Script seed hiện tại gọi trực tiếp `freqtrade download-data`.
+Data được lưu đúng format đã khai báo trong config:
+
+- `datadir = user_data/data`
+- `dataformat_ohlcv = feather`
+- `trading_mode = futures`
+
+Ví dụ:
 
 ```bash
-uv run python scripts/prepare_smc_fvg_pinbar_data.py --scope btc-baseline
-uv run python scripts/prepare_smc_fvg_pinbar_data.py --scope recent-selected
-uv run python scripts/compare_smc_fvg_pinbar_with_jesse.py
+uv run python scripts/seed_freqtrade_data.py --preset smc-basket --days 90
+uv run python scripts/seed_freqtrade_data.py --pairs BTC/USDT:USDT ETH/USDT:USDT --days 30
+uv run python scripts/seed_freqtrade_data.py --preset smc-basket --timerange 20250101-20250301
 ```
 
-Xem kết quả:
-
-- `user_data/compare/smc_fvg_pinbar_freqtrade_vs_jesse.md`
-- `docs/research/smc_fvg_pinbar_freqtrade_migration_validation.md`
-
-Basket futures hiện tại:
+Basket futures mặc định:
 
 - `BTC/USDT:USDT`
 - `PLAY/USDT:USDT`
@@ -55,14 +53,3 @@ Basket futures hiện tại:
 - `D/USDT:USDT`
 - `YGG/USDT:USDT`
 - `STG/USDT:USDT`
-
-## Project Structure
-
-```
-bot-trade/
-├── config/              # Configuration files
-├── src/
-│   └── strategies/      # Trading strategies
-├── user_data/           # Runtime data (logs, results, market data)
-└── tests/               # Tests
-```

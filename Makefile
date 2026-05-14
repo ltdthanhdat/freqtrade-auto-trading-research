@@ -10,7 +10,7 @@ TIMERANGE ?=
 
 PAIR     ?= BTC/USDT
 
-.PHONY: install sync data list-data backtest backtest-ma backtest-pinbar plot plot-ma plot-pinbar plot-df plot-df-pinbar trade list-strategies clean
+.PHONY: install sync seed-data data list-data backtest backtest-ma backtest-pinbar plot plot-ma plot-pinbar plot-df plot-df-pinbar trade list-strategies clean
 
 install:
 	uv sync
@@ -20,6 +20,9 @@ sync: install
 # Download OHLCV from exchange (DAYS=60, override: make data DAYS=90)
 data: install
 	$(FREQ) download-data --exchange binance --config $(CONFIG) --timeframes 5m 1h --days $(DAYS)
+
+seed-data: install
+	$(PYTHON) scripts/seed_freqtrade_data.py --preset smc-basket --days $(DAYS)
 
 # List downloaded data
 list-data:

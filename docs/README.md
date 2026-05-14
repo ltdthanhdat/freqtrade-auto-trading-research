@@ -1,6 +1,6 @@
 # Docs
 
-Nguồn sự thật cho tài liệu của nhánh `Freqtrade`.
+Nguồn sự thật cho tài liệu của repo `Freqtrade` độc lập.
 
 ## Cấu trúc
 
@@ -8,7 +8,6 @@ Nguồn sự thật cho tài liệu của nhánh `Freqtrade`.
   - rule ngắn để cập nhật docs đúng chỗ
 
 - `plans/`
-  - kế hoạch migration
   - kế hoạch tuning
   - kế hoạch validate
 
@@ -18,13 +17,10 @@ Nguồn sự thật cho tài liệu của nhánh `Freqtrade`.
 
 - `notes/`
   - debug note
-  - khác biệt engine giữa Jesse và Freqtrade
   - blocker còn lại
 
 - `research/`
   - kết quả backtest
-  - kết quả compare
-  - migration validation
 
 - `reference/`
   - setup note
@@ -34,7 +30,7 @@ Nguồn sự thật cho tài liệu của nhánh `Freqtrade`.
 ## File hiện có
 
 - `plans/smc_fvg_pinbar_freqtrade_tuning_plan.md`
-  - cách tiếp tục tuning sau khi đã port sang Freqtrade
+  - cách tiếp tục tuning trên Freqtrade
 
 - `state/smc_fvg_pinbar_freqtrade_state.md`
   - current state
@@ -42,13 +38,11 @@ Nguồn sự thật cho tài liệu của nhánh `Freqtrade`.
   - next step
 
 - `notes/smc_fvg_pinbar_freqtrade_notes.md`
-  - migration note
-  - các chỗ chưa khớp engine
-
-- `research/smc_fvg_pinbar_freqtrade_migration_validation.md`
-  - validate Freqtrade so với Jesse
+  - vận hành strategy
+  - các chỗ cần lưu ý khi debug
 
 - `reference/live_trade.md`
+  - cách seed data
   - cách chạy dry-run / live bằng Freqtrade
 
 ## Rule ngắn

@@ -4,21 +4,11 @@ Ngày cập nhật: 2026-05-14
 
 ## Mục tiêu
 
-Lưu debug history và các phát hiện kỹ thuật khi port `SMC_FVG_PinBar` từ Jesse sang Freqtrade.
+Lưu debug history và các phát hiện kỹ thuật khi chạy `SMC_FVG_PinBar` trên Freqtrade.
 
-## Các quyết định migration
+## Các quyết định hiện tại
 
-### 1. Không bê nguyên strategy Jesse
-
-Strategy Jesse cũ phụ thuộc chặt vào:
-
-- `self.candles`
-- `self.buy / self.sell`
-- `self.stop_loss / self.take_profit`
-- `self.balance`
-- `utils.risk_to_qty`
-
-Nên đã port sang callback model của Freqtrade:
+### 1. Strategy dùng callback model của Freqtrade
 
 - `populate_indicators`
 - `populate_entry_trend`
@@ -27,13 +17,17 @@ Nên đã port sang callback model của Freqtrade:
 - `custom_stoploss`
 - `custom_roi`
 
-### 2. Entry signal không còn shift sang candle sau
+### 2. Data seed dùng format gốc của Freqtrade
 
-Sau vòng parity gần nhất:
-
-- bỏ `shift(1)` ở entry signal
-- entry timing khớp Jesse hơn rõ rệt, nhất là `BTC-USDT` recent
-- vẫn truyền `stop` qua `enter_tag`
+- Không còn convert data từ cache ngoài.
+- Script seed chuẩn là:
+  - `scripts/seed_freqtrade_data.py`
+- Script này gọi:
+  - `freqtrade download-data`
+- Output theo config hiện tại:
+  - `user_data/data`
+  - `feather`
+  - `futures`
 
 ### 3. Stop và target không hardcode bằng static config
 
@@ -46,57 +40,40 @@ Vì stop của strategy phụ thuộc từng FVG, nên đã dùng:
 - `custom_stoploss()` để map stop tuyệt đối
 - `custom_roi()` để giữ target `1R`
 
-### 4. Sizing được port theo intent, không bảo đảm identical
-
-Intent giữ lại:
+### 4. Sizing giữ theo intent của strategy
 
 - risk `2%`
 - cap `25% capital`
+- dùng `custom_stake_amount`
 
-Nhưng Freqtrade dùng:
+## Các lưu ý hiện tại
 
-- `custom_stake_amount`
+### 1. Pair futures phải đúng format Freqtrade
 
-nên kết quả rất gần, không hứa identical 100%.
+- ví dụ:
+  - `BTC/USDT:USDT`
+- không dùng:
+  - `BTC-USDT`
 
-## Các khác biệt engine đã thấy
+### 2. Timeframe seed nên luôn có `1m` và `1h`
 
-### 1. Baseline khớp khá sát
+- `1h` cho strategy timeframe
+- `1m` cho `timeframe-detail`
 
-- `BTC-USDT` baseline:
-  - Jesse `4 trades`, `0.7393%`
-  - Freqtrade `4 trades`, `0.7644%`
+### 3. Futures metadata có thể là blocker ở một số pair
 
-### 2. Recent basket lệch hơn
-
-Các cặp lệch mạnh nhất hiện thấy:
-
-- `BTC-USDT` recent
-- `D-USDT`
-- `STG-USDT`
-
-Khả năng cao do:
-
-- fill assumption
-- exit order lifecycle
-- Freqtrade futures metadata
-
-### 3. Futures metadata không đầy đủ cho mọi pair
-
-Case này đã bị loại khỏi basket làm việc hiện tại để tránh blocker metadata.
+- nếu download lỗi metadata:
+  - bỏ pair đó khỏi preset
+  - không workaround bằng nguồn data ngoài
 
 ## Script liên quan
 
-- data prep:
-  - `scripts/prepare_smc_fvg_pinbar_data.py`
-- compare:
-  - `scripts/compare_smc_fvg_pinbar_with_jesse.py`
+- seed data:
+  - `scripts/seed_freqtrade_data.py`
 
 ## Ghi nhớ cho vòng sau
 
-- nếu mục tiêu là parity:
-  - chỉ test `1h`
-  - chỉ test `1 pair` mỗi vòng khi debug
+- nếu mục tiêu là backtest:
+  - seed đủ data cho đúng timerange
 - nếu mục tiêu là execution:
-  - chấp nhận một mức lệch nhỏ
-  - ưu tiên dry-run behavior trước
+  - ưu tiên cùng 1 config giữa backtest và dry-run

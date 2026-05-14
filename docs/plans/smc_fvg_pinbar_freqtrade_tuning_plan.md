@@ -3,41 +3,32 @@
 Trạng thái:
 
 - active
-- migration phase xong bản đầu
-- phase hiện tại: `parity trước, tuning sau`
+- phase hiện tại: `ổn định execution trước, tuning sau`
 
 ## Mục tiêu
 
-- dùng Freqtrade làm execution engine mới
-- giữ strategy gần Jesse đủ để:
-  - compare được
+- dùng Freqtrade làm execution engine
+- giữ strategy ổn định để:
+  - seed data được
+  - backtest được
   - dry-run được
   - live được
-- không tune mù khi engine parity còn chưa rõ
+- không tune mù khi flow data và execution còn chưa rõ
 
 ## Nguyên tắc
 
 1. Mỗi vòng chỉ đổi `1` ý
 
-- không vừa sửa signal
-- vừa sửa stop
-- vừa sửa sizing
-
-2. Ưu tiên parity trước
+2. Ưu tiên flow ổn định trước
 
 Thứ tự:
 
-- baseline `BTC-USDT 1h`
-- recent `BTC-USDT 1h`
-- recent basket các cặp còn lại
+- seed data
+- backtest `BTC/USDT:USDT 1h`
+- backtest basket hiện tại
+- dry-run basket hiện tại
 
-3. Chỉ tune trên Freqtrade sau khi hiểu rõ lệch do engine
-
-Không nhầm giữa:
-
-- bug port
-- assumption khác engine
-- strategy thực sự cần tune
+3. Chỉ tune sau khi data và config đã ổn định
 
 ## Scope được phép sửa
 
@@ -45,35 +36,35 @@ Cho phase hiện tại, chỉ nên đụng:
 
 - `src/strategies/SMC_FVG_PinBar_Freqtrade.py`
 - `config/config.futures.json`
-- `scripts/prepare_smc_fvg_pinbar_data.py`
-- `scripts/compare_smc_fvg_pinbar_with_jesse.py`
+- `scripts/seed_freqtrade_data.py`
 - docs trong `freqtrade-template/docs`
 
 Không nên đụng:
 
-- strategy Jesse cũ
-- docs research lịch sử ở repo root
+- data cache ngoài repo
+- logic không liên quan đến strategy hiện tại
 
 ## Standard loop
 
 1. Chọn đúng 1 case
 
 - ví dụ:
-  - `BTC-USDT` baseline
-  - `BTC-USDT` recent
-  - `D-USDT` recent
+  - `BTC/USDT:USDT` 90 ngày
+  - `BTC/USDT:USDT` timerange cụ thể
+  - 1 pair đang lỗi metadata
 
 2. Ghi rõ hypothesis
 
 Ví dụ:
 
-- lệch do fill timing
+- lỗi do data chưa đủ
+- lỗi do pair metadata
 - lệch do stop callback
 - lệch do custom roi
 
 3. Sửa tối thiểu
 
-4. Chạy compare lại
+4. Chạy lại backtest
 
 5. Ghi:
 
@@ -93,32 +84,30 @@ Ví dụ:
 
 Metric phụ:
 
-- diff so với Jesse
-- error do pair metadata
+- độ ổn định của flow seed
+- lỗi metadata theo pair
 
 ## Keep / discard rule
 
 Giữ thay đổi nếu:
 
-- trade count gần Jesse hơn
-- net profit diff nhỏ hơn
-- không phá baseline đang khớp tốt
+- flow seed đơn giản hơn
+- backtest chạy ổn định hơn
+- không phá config hiện tại
 
 Loại nếu:
 
-- chỉ làm một case đẹp hơn nhưng phá các case còn lại
+- chỉ sửa một case nhưng làm flow chung phức tạp hơn
 
 ## Khi nào mới bật dry-run rộng
 
 Chỉ nên bật dry-run nhiều pair khi:
 
-- baseline ổn
-- recent `BTC-USDT` ổn hơn hiện tại
+- seed data ổn
+- backtest basket ổn
 - basket làm việc không còn pair bị blocker metadata
 
 ## Current reference
 
-- compare output:
-  - `user_data/compare/smc_fvg_pinbar_freqtrade_vs_jesse.md`
 - source of truth state:
   - `docs/state/smc_fvg_pinbar_freqtrade_state.md`

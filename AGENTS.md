@@ -1,81 +1,51 @@
-# AGENTS.md
+# AGENTS
 
-Guidelines riêng cho nhánh `freqtrade-template`.
+Repo này là repo Freqtrade độc lập cho `SMC_FVG_PinBar`.
 
-## Scope
+## Mục tiêu
 
-Repo con này là nhánh execution / migration của `SMC_FVG_PinBar` sang `Freqtrade`.
+1. seed data đúng format Freqtrade
+2. backtest lặp lại được
+3. rồi mới dry-run / live
 
-Mục tiêu ưu tiên:
+## Cách làm
 
-1. giữ strategy gần Jesse đủ để compare
-2. validate parity bằng backtest có thể lặp lại
-3. chỉ sau đó mới dry-run / live
+- Nghĩ trước khi sửa.
+- Nếu có nhiều khả năng, nói rõ assumption.
+- Nếu chưa rõ lỗi nằm ở đâu, ghi hypothesis trước.
+- Mỗi vòng chỉ đổi `1` ý.
 
-## Think before editing
+## Rule sửa code
 
-- Không giả định parity đã đúng chỉ vì baseline khớp.
-- Phải phân biệt:
-  - lệch do bug port
-  - lệch do assumption backtest engine
-  - lệch do futures metadata của Freqtrade
-- Nếu không rõ lệch nằm ở đâu, dừng và ghi hypothesis trước.
-
-## Simplicity first
-
-- Không thêm indicator / filter mới nếu user chưa yêu cầu.
+- Sửa tối thiểu.
+- Không thêm feature ngoài scope.
+- Không refactor lan sang chỗ không liên quan.
 - Không optimize sớm.
-- Không chuyển nhiều biến cùng lúc trong một vòng parity hoặc tuning.
-- Không viết thêm infra live phức tạp khi dry-run còn chưa validate xong.
 
-## Surgical changes
+## Write scope mặc định
 
-- Write scope mặc định:
-  - `src/strategies/SMC_FVG_PinBar_Freqtrade.py`
-  - `config/config.futures.json`
-  - `scripts/prepare_smc_fvg_pinbar_data.py`
-  - `scripts/compare_smc_fvg_pinbar_with_jesse.py`
-  - `docs/`
-- Không sửa strategy Jesse ở repo root trừ khi user yêu cầu.
-- Không sửa docs research Jesse cũ chỉ để đổi wording.
+- `src/strategies/SMC_FVG_PinBar_Freqtrade.py`
+- `config/config.futures.json`
+- `scripts/seed_freqtrade_data.py`
+- `docs/`
 
-## Goal-driven execution
+## Verify
 
-Mỗi task nên map thành goal rõ:
+- `seed data`
+  - data download được
+  - output nằm đúng `user_data/data`
+- `backtest`
+  - strategy load được
+  - backtest chạy được
+- `dry-run`
+  - config futures hợp lệ
+  - pair dùng đúng format Freqtrade
 
-- `port strategy`:
-  - verify:
-    - strategy load được trong Freqtrade
-    - backtest baseline chạy được
-- `improve parity`:
-  - verify:
-    - compare script chạy được
-    - diff giảm trên đúng case mục tiêu
-- `prepare live`:
-  - verify:
-    - config chạy được ở dry-run
-    - pair / futures mode hợp lệ
-
-## Current source of truth
-
-Đọc theo thứ tự:
+## Source of truth
 
 1. `docs/state/smc_fvg_pinbar_freqtrade_state.md`
 2. `docs/notes/smc_fvg_pinbar_freqtrade_notes.md`
-3. `docs/research/smc_fvg_pinbar_freqtrade_migration_validation.md`
-4. `docs/plans/smc_fvg_pinbar_freqtrade_tuning_plan.md`
-
-## Research / tuning discipline
-
-- Mỗi vòng chỉ đổi `1` hypothesis.
-- Luôn so với case gốc trước:
-  - `BTC-USDT` baseline
-  - rồi mới tới recent basket
-- Nếu kết quả làm baseline xấu đi rõ, mặc định discard.
-- Khi kết thúc một loop có ý nghĩa:
-  - update `docs/state/`
-  - update `docs/research/`
-  - nếu cần, update `docs/notes/`
+3. `docs/plans/smc_fvg_pinbar_freqtrade_tuning_plan.md`
 
 ## Response style
 
