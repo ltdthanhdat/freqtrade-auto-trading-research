@@ -37,11 +37,15 @@ ENV/
 user_data/logs/
 user_data/data/
 user_data/backtest_results/
+user_data/compare/
 user_data/plot/
 user_data/hyperopt_results/
 user_data/freqaimodels/
 *.db
 *.db-journal
+
+# Legacy cache
+storage/
 
 # Config files with secrets
 config/config.json
@@ -52,4 +56,3 @@ config/config.*.json
 # OS
 .DS_Store
 Thumbs.db
-

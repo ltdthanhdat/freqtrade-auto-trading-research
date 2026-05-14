@@ -2,13 +2,13 @@
 
 PYTHON   := uv run python
 FREQ     := $(PYTHON) -m freqtrade
-CONFIG   := config/config.json
+CONFIG   := config/config.futures.json
 SPATH    := src/strategies
-STRATEGY ?= MA50_200_Strategy
+STRATEGY ?= SMC_FVG_PinBar_Freqtrade
 DAYS     ?= 60
 TIMERANGE ?=
 
-PAIR     ?= BTC/USDT
+PAIR     ?= BTC/USDT:USDT
 
 .PHONY: install sync seed-data data list-data backtest backtest-ma backtest-pinbar plot plot-ma plot-pinbar plot-df plot-df-pinbar trade list-strategies clean
 
@@ -17,9 +17,9 @@ install:
 
 sync: install
 
-# Download OHLCV from exchange (DAYS=60, override: make data DAYS=90)
+# Download OHLCV via the repo seed script (DAYS=60, override: make data DAYS=90)
 data: install
-	$(FREQ) download-data --exchange binance --config $(CONFIG) --timeframes 5m 1h --days $(DAYS)
+	$(PYTHON) scripts/seed_freqtrade_data.py --preset smc-basket --days $(DAYS)
 
 seed-data: install
 	$(PYTHON) scripts/seed_freqtrade_data.py --preset smc-basket --days $(DAYS)
@@ -28,7 +28,7 @@ seed-data: install
 list-data:
 	$(FREQ) list-data --config $(CONFIG)
 
-# Backtest; override: make backtest STRATEGY=PinBar_Strategy
+# Backtest current strategy
 backtest: install
 	$(FREQ) backtesting --config $(CONFIG) --strategy $(STRATEGY) --strategy-path $(SPATH) $(if $(TIMERANGE),--timerange $(TIMERANGE),)
 
@@ -36,7 +36,7 @@ backtest-ma:
 	$(MAKE) backtest STRATEGY=MA50_200_Strategy
 
 backtest-pinbar:
-	$(MAKE) backtest STRATEGY=PinBar_Strategy
+	$(MAKE) backtest STRATEGY=SMC_FVG_PinBar_Freqtrade
 
 # Plot profit from latest backtest result; strategy must match the backtest
 plot: install
@@ -46,14 +46,14 @@ plot-ma:
 	$(MAKE) plot STRATEGY=MA50_200_Strategy
 
 plot-pinbar:
-	$(MAKE) plot STRATEGY=PinBar_Strategy
+	$(MAKE) plot STRATEGY=SMC_FVG_PinBar_Freqtrade
 
-# Candle chart with entry/exit markers (from latest backtest); PAIR=BTC/USDT
+# Candle chart with entry/exit markers (from latest backtest)
 plot-df: install
 	$(FREQ) plot-dataframe --config $(CONFIG) --strategy $(STRATEGY) --strategy-path $(SPATH) --pairs $(PAIR)
 
 plot-df-pinbar:
-	$(MAKE) plot-df STRATEGY=PinBar_Strategy
+	$(MAKE) plot-df STRATEGY=SMC_FVG_PinBar_Freqtrade
 
 # Run bot (dry-run by default in config)
 trade: install
