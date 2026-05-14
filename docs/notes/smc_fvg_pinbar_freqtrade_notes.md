@@ -46,6 +46,38 @@ Vì stop của strategy phụ thuộc từng FVG, nên đã dùng:
 - cap `25% capital`
 - dùng `custom_stake_amount`
 
+### 5. Kết luận tuning FVG threshold
+
+- Đã test 3 mốc:
+  - baseline `0.35 / 0.65`
+  - chặt hơn `0.25 / 0.75`
+  - lỏng hơn `0.45 / 0.55`
+- Case verify chính:
+  - `BTC/USDT:USDT`
+  - timerange `20260213-20260514`
+- Kết quả:
+  - `0.35 / 0.65`
+    - `trades_count = 15`
+    - `net_profit_pct = 0.96%`
+    - `max_drawdown_pct = 0.70%`
+    - `win_rate = 60.0%`
+  - `0.25 / 0.75`
+    - `trades_count = 11`
+    - `net_profit_pct = 0.86%`
+    - `max_drawdown_pct = 0.80%`
+    - `win_rate = 63.6%`
+  - `0.45 / 0.55`
+    - `trades_count = 18`
+    - `net_profit_pct = 1.20%`
+    - `max_drawdown_pct = 0.67%`
+    - `win_rate = 61.1%`
+- Keep:
+  - `FVG_RETRACE_RATIO = 0.45`
+  - `FVG_CONFIRM_RATIO = 0.55`
+- Discard:
+  - `0.25 / 0.75`
+  - tạm discard baseline `0.35 / 0.65`
+
 ## Các lưu ý hiện tại
 
 ### 1. Pair futures phải đúng format Freqtrade
@@ -77,3 +109,7 @@ Vì stop của strategy phụ thuộc từng FVG, nên đã dùng:
   - seed đủ data cho đúng timerange
 - nếu mục tiêu là execution:
   - ưu tiên cùng 1 config giữa backtest và dry-run
+- nếu mục tiêu là live:
+  - freeze threshold hiện tại trước
+  - không tune thêm nếu chưa có log dry-run
+- basket hiện tại vẫn chủ yếu phát sinh trade từ `BTC`

@@ -3,7 +3,7 @@
 Trạng thái:
 
 - active
-- phase hiện tại: `ổn định execution trước, tuning sau`
+- phase hiện tại: `freeze strategy cho dry-run, tuning sau`
 
 ## Mục tiêu
 
@@ -29,6 +29,24 @@ Thứ tự:
 - dry-run basket hiện tại
 
 3. Chỉ tune sau khi data và config đã ổn định
+
+## Latest decision
+
+- hypothesis:
+  - FVG filter lỏng hơn có thể cho quality tốt hơn baseline
+- verify:
+  - đã test `0.35 / 0.65`, `0.25 / 0.75`, `0.45 / 0.55`
+  - case chính: `BTC/USDT:USDT`, timerange `20260213-20260514`
+  - case phụ: basket hiện tại, cùng timerange
+- keep:
+  - `FVG_RETRACE_RATIO = 0.45`
+  - `FVG_CONFIRM_RATIO = 0.55`
+- discard:
+  - `0.25 / 0.75`
+  - tạm discard baseline `0.35 / 0.65`
+- conclusion:
+  - dừng tuning tại đây
+  - chuyển sang `dry-run`
 
 ## Scope được phép sửa
 
@@ -106,6 +124,13 @@ Chỉ nên bật dry-run nhiều pair khi:
 - seed data ổn
 - backtest basket ổn
 - basket làm việc không còn pair bị blocker metadata
+
+## Next execution step
+
+1. giữ nguyên strategy hiện tại
+2. chạy `dry-run` với config futures
+3. log signal thật theo pair
+4. chỉ mở lại tuning nếu dry-run cho thấy mismatch hoặc alt basket không có signal
 
 ## Current reference
 

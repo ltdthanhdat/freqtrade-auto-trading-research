@@ -37,6 +37,8 @@ class SMC_FVG_PinBar_Freqtrade(IStrategy):
     PIN_BAR_BODY_RATIO = 0.33
     PIN_BAR_WICK_TO_BODY = 2.25
     PIN_BAR_CLOSE_EXTREME_RATIO = 0.30
+    FVG_RETRACE_RATIO = 0.45
+    FVG_CONFIRM_RATIO = 0.55
 
     order_types = {
         "entry": "market",
@@ -198,9 +200,15 @@ class SMC_FVG_PinBar_Freqtrade(IStrategy):
             return False
 
         if is_bullish:
-            return low_price <= fvg.bottom + fvg_height * 0.35 and close_price >= fvg.bottom + fvg_height * 0.65
+            return (
+                low_price <= fvg.bottom + fvg_height * SMC_FVG_PinBar_Freqtrade.FVG_RETRACE_RATIO
+                and close_price >= fvg.bottom + fvg_height * SMC_FVG_PinBar_Freqtrade.FVG_CONFIRM_RATIO
+            )
 
-        return high_price >= fvg.top - fvg_height * 0.35 and close_price <= fvg.bottom + fvg_height * 0.35
+        return (
+            high_price >= fvg.top - fvg_height * SMC_FVG_PinBar_Freqtrade.FVG_RETRACE_RATIO
+            and close_price <= fvg.bottom + fvg_height * SMC_FVG_PinBar_Freqtrade.FVG_RETRACE_RATIO
+        )
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe = dataframe.copy()
