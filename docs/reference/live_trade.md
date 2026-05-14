@@ -32,12 +32,23 @@ uv run freqtrade trade \
 ## Khuyến nghị hiện tại
 
 - không bật live thật ngay
-- ưu tiên:
+- basket mặc định:
   - `BTC/USDT:USDT`
+  - `PLAY/USDT:USDT`
+  - `BIO/USDT:USDT`
+  - `SPACE/USDT:USDT`
+  - `PENDLE/USDT:USDT`
+  - `BR/USDT:USDT`
+  - `D/USDT:USDT`
+  - `YGG/USDT:USDT`
+  - `STG/USDT:USDT`
+- timeframe:
   - `1h`
-  - `max_open_trades = 1`
+- risk rollout:
+  - vẫn giữ `max_open_trades = 1` để dry-run portfolio theo kiểu rất bảo thủ
+  - nghĩa là bot quét cả `9` pair nhưng chỉ giữ tối đa `1` vị thế cùng lúc
 
-Sau khi parity ổn hơn mới mở rộng basket.
+Sau khi dry-run ổn mới cân nhắc nới `max_open_trades`.
 
 ## Lưu ý
 

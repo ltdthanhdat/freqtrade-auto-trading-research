@@ -19,11 +19,14 @@ Repo này hiện là nhánh execution/migration cho `SMC_FVG_PinBar` sau khi r�
 # 1. Setup
 uv sync
 
-# 2. Create config
-cp config/config.json.example config/config.json
+# 2. Create futures config
+cp config/config.futures.json user_data/config.futures.local.json
 
-# 3. Run bot
-uv run freqtrade trade --config config/config.json --strategy MA50_200_Strategy --strategy-path src/strategies
+# 3. Run dry-run bot
+uv run freqtrade trade \
+  --config user_data/config.futures.local.json \
+  --strategy SMC_FVG_PinBar_Freqtrade \
+  --strategy-path src/strategies
 ```
 
 ## SMC_FVG_PinBar
@@ -40,6 +43,18 @@ Xem kết quả:
 
 - `user_data/compare/smc_fvg_pinbar_freqtrade_vs_jesse.md`
 - `docs/research/smc_fvg_pinbar_freqtrade_migration_validation.md`
+
+Basket futures hiện tại:
+
+- `BTC/USDT:USDT`
+- `PLAY/USDT:USDT`
+- `BIO/USDT:USDT`
+- `SPACE/USDT:USDT`
+- `PENDLE/USDT:USDT`
+- `BR/USDT:USDT`
+- `D/USDT:USDT`
+- `YGG/USDT:USDT`
+- `STG/USDT:USDT`
 
 ## Project Structure
 
