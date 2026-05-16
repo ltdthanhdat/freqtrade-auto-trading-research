@@ -43,9 +43,33 @@ Repo này là repo Freqtrade độc lập cho `SMC_FVG_PinBar`.
 
 ## Source of truth
 
-1. `docs/state/smc_fvg_pinbar_freqtrade_state.md`
-2. `docs/notes/smc_fvg_pinbar_freqtrade_notes.md`
-3. `docs/plans/smc_fvg_pinbar_freqtrade_tuning_plan.md`
+1. `docs/smc_fvg_pinbar/state.md`
+2. `docs/smc_fvg_pinbar/decisions.md`
+3. `docs/smc_fvg_pinbar/roadmap.md`
+4. `docs/smc_fvg_pinbar/README.md`
+
+## Docs flow
+
+- Không ghi kết quả chi tiết vào `roadmap.md`.
+- Luồng chuẩn:
+  - `hypothesis` -> `experiment` -> `run` -> `decision` -> `state`
+- Vai trò:
+  - `state.md`
+    - current truth của strategy
+  - `decisions.md`
+    - quyết định keep/discard và nguồn gốc
+  - `roadmap.md`
+    - phase hiện tại, thứ tự việc, open hypotheses
+  - `hypotheses/`
+    - từng giả thuyết riêng
+  - `experiments/`
+    - design của bài test
+  - `runs/`
+    - raw result của từng lần chạy
+  - `notes/`
+    - debug note và blocker vận hành
+  - `reference/`
+    - cách chạy và setup
 
 ## Response style
 

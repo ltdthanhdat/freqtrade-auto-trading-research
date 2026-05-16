@@ -1,54 +1,37 @@
 # Docs
 
-Nguồn sự thật cho tài liệu của repo `Freqtrade` độc lập.
+Tài liệu của repo được tổ chức theo từng project docs thống nhất.
 
-## Cấu trúc
+## Project docs
 
-- `AGENTS.md`
-  - rule ngắn để cập nhật docs đúng chỗ
+- `smc_fvg_pinbar/`
+  - source of truth cho strategy `SMC_FVG_PinBar`
+  - bắt đầu đọc từ:
+    - `smc_fvg_pinbar/README.md`
+    - `smc_fvg_pinbar/state.md`
 
-- `plans/`
-  - kế hoạch tuning
-  - kế hoạch validate
+## Model tài liệu
 
-- `state/`
-  - kết luận working state hiện tại
-  - file đọc nhanh trước khi tiếp tục
-
-- `notes/`
-  - debug note
-  - blocker còn lại
-
-- `research/`
-  - kết quả backtest
-
-- `reference/`
-  - setup note
-  - live / dry-run note
-  - config note
-
-## File hiện có
-
-- `plans/smc_fvg_pinbar_freqtrade_tuning_plan.md`
-  - cách tiếp tục tuning trên Freqtrade
-
-- `state/smc_fvg_pinbar_freqtrade_state.md`
-  - current state
-  - current conclusion
-  - next step
-
-- `notes/smc_fvg_pinbar_freqtrade_notes.md`
-  - vận hành strategy
-  - các chỗ cần lưu ý khi debug
-
-- `reference/live_trade.md`
-  - cách seed data
-  - cách chạy dry-run / live bằng Freqtrade
+- `state`
+  - current truth
+- `decisions`
+  - keep/discard và nguồn gốc
+- `roadmap`
+  - phase hiện tại và thứ tự việc
+- `hypotheses`
+  - từng giả thuyết
+- `experiments`
+  - thiết kế bài test
+- `runs`
+  - raw result của từng lần chạy
+- `notes`
+  - debug note, blocker vận hành
+- `reference`
+  - cách chạy và setup
 
 ## Rule ngắn
 
-- plan mới -> `plans/`
-- state hiện tại -> `state/`
-- debug note -> `notes/`
-- kết quả test dài -> `research/`
-- setup / live note -> `reference/`
+- Không trộn `plan` và `result` trong cùng file.
+- Không ghi raw backtest result vào `state.md`.
+- Mỗi kết luận trong `state.md` nên truy ngược được về `decisions.md`.
+- Mỗi decision nên truy ngược được về `hypothesis`, `experiment`, và `run`.
