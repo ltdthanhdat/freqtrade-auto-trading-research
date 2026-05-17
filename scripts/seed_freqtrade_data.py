@@ -84,6 +84,8 @@ def build_command(args: argparse.Namespace, pairs: list[str]) -> list[str]:
     command = [
         "uv",
         "run",
+        "python",
+        "-m",
         "freqtrade",
         "download-data",
         "--config",
