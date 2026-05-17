@@ -48,11 +48,11 @@ Cần thêm 2 ý:
 config/config.futures.demo.local.json
 ```
 
-2. truyền key qua env:
+2. điền key vào `.env`:
 
 ```bash
-export FREQTRADE__EXCHANGE__KEY='...'
-export FREQTRADE__EXCHANGE__SECRET='...'
+FREQTRADE__EXCHANGE__KEY=...
+FREQTRADE__EXCHANGE__SECRET=...
 ```
 
 Config demo này đang override `exchange.ccxt_config.urls.api.fapi*` và
@@ -65,6 +65,10 @@ Config demo này đang override `exchange.ccxt_config.urls.api.fapi*` và
 Chạy bot:
 
 ```bash
+set -a
+source .env
+set +a
+
 uv run python -m freqtrade trade \
   --config config/config.futures.demo.local.json \
   --strategy SMC_FVG_PinBar_Freqtrade \
