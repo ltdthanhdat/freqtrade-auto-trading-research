@@ -16,7 +16,7 @@
 ## Fixed controls
 
 - strategy:
-  - `SMC_FVG_PinBar_Freqtrade`
+  - `SMC_FVG_Confirmation_Freqtrade`
 - timeframe:
   - `1h`
 - execution engine:

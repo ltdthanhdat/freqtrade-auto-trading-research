@@ -5,7 +5,7 @@ Ngày cập nhật: 2026-05-17
 ## Current truth
 
 - strategy:
-  - `src/strategies/SMC_FVG_PinBar_Freqtrade.py`
+  - `src/strategies/SMC_FVG_Confirmation_Freqtrade.py`
 - execution engine:
   - `Freqtrade`
 - timeframe mặc định:

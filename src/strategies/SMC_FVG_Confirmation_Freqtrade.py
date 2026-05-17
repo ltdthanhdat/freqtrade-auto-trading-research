@@ -18,7 +18,7 @@ class FVG:
         self.bar_index = bar_index
 
 
-class SMC_FVG_PinBar_Freqtrade(IStrategy):
+class SMC_FVG_Confirmation_Freqtrade(IStrategy):
     INTERFACE_VERSION = 3
 
     can_short = True
@@ -201,13 +201,13 @@ class SMC_FVG_PinBar_Freqtrade(IStrategy):
 
         if is_bullish:
             return (
-                low_price <= fvg.bottom + fvg_height * SMC_FVG_PinBar_Freqtrade.FVG_RETRACE_RATIO
-                and close_price >= fvg.bottom + fvg_height * SMC_FVG_PinBar_Freqtrade.FVG_CONFIRM_RATIO
+                low_price <= fvg.bottom + fvg_height * SMC_FVG_Confirmation_Freqtrade.FVG_RETRACE_RATIO
+                and close_price >= fvg.bottom + fvg_height * SMC_FVG_Confirmation_Freqtrade.FVG_CONFIRM_RATIO
             )
 
         return (
-            high_price >= fvg.top - fvg_height * SMC_FVG_PinBar_Freqtrade.FVG_RETRACE_RATIO
-            and close_price <= fvg.bottom + fvg_height * SMC_FVG_PinBar_Freqtrade.FVG_RETRACE_RATIO
+            high_price >= fvg.top - fvg_height * SMC_FVG_Confirmation_Freqtrade.FVG_RETRACE_RATIO
+            and close_price <= fvg.bottom + fvg_height * SMC_FVG_Confirmation_Freqtrade.FVG_RETRACE_RATIO
         )
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

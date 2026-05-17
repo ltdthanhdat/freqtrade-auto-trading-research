@@ -1,0 +1,42 @@
+{
+    "dry_run": false,
+    "stake_amount": 60,
+    "exchange": {
+        "pair_whitelist": [
+            "BTC/USDT:USDT"
+        ],
+        "ccxt_config": {
+            "urls": {
+                "api": {
+                    "fapiPublic": "https://demo-fapi.binance.com/fapi/v1",
+                    "fapiPublicV2": "https://demo-fapi.binance.com/fapi/v2",
+                    "fapiPublicV3": "https://demo-fapi.binance.com/fapi/v3",
+                    "fapiPrivate": "https://demo-fapi.binance.com/fapi/v1",
+                    "fapiPrivateV2": "https://demo-fapi.binance.com/fapi/v2",
+                    "fapiPrivateV3": "https://demo-fapi.binance.com/fapi/v3"
+                }
+            },
+            "options": {
+                "enableDemoTrading": true,
+                "adjustForTimeDifference": true
+            }
+        },
+        "ccxt_async_config": {
+            "urls": {
+                "api": {
+                    "fapiPublic": "https://demo-fapi.binance.com/fapi/v1",
+                    "fapiPublicV2": "https://demo-fapi.binance.com/fapi/v2",
+                    "fapiPublicV3": "https://demo-fapi.binance.com/fapi/v3",
+                    "fapiPrivate": "https://demo-fapi.binance.com/fapi/v1",
+                    "fapiPrivateV2": "https://demo-fapi.binance.com/fapi/v2",
+                    "fapiPrivateV3": "https://demo-fapi.binance.com/fapi/v3"
+                }
+            },
+            "options": {
+                "enableDemoTrading": true,
+                "adjustForTimeDifference": true
+            }
+        }
+    },
+    "bot_name": "bot-trade-demo"
+}

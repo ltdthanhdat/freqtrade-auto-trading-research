@@ -31,7 +31,7 @@ uv run python scripts/seed_freqtrade_data.py --preset smc-basket --days 90
 ```bash
 uv run freqtrade trade \
   --config user_data/config.futures.local.json \
-  --strategy SMC_FVG_PinBar_Freqtrade \
+  --strategy SMC_FVG_Confirmation_Freqtrade \
   --strategy-path src/strategies
 ```
 
@@ -42,10 +42,11 @@ Với `Binance` futures trong stack `Freqtrade + CCXT 4.5.38`, chỉ bật
 
 Cần thêm 2 ý:
 
-1. dùng config demo riêng:
+1. dùng config override theo môi trường:
 
 ```bash
-config/config.futures.demo.local.json
+config/config.binance.demo.json
+config/config.binance.live.json
 ```
 
 2. điền key vào `.env`:
@@ -55,7 +56,7 @@ FREQTRADE__EXCHANGE__KEY=...
 FREQTRADE__EXCHANGE__SECRET=...
 ```
 
-Config demo này đang override `exchange.ccxt_config.urls.api.fapi*` và
+Config `demo` đang override `exchange.ccxt_config.urls.api.fapi*` và
 `exchange.ccxt_async_config.urls.api.fapi*` sang:
 
 - `https://demo-fapi.binance.com/fapi/v1`
@@ -70,10 +71,34 @@ source .env
 set +a
 
 uv run python -m freqtrade trade \
-  --config config/config.futures.demo.local.json \
-  --strategy SMC_FVG_PinBar_Freqtrade \
+  --config config/config.futures.json \
+  --config config/config.binance.demo.json \
+  --strategy SMC_FVG_Confirmation_Freqtrade \
   --strategy-path src/strategies
 ```
+
+Chuyển sang `Binance` thật:
+
+```bash
+set -a
+source .env
+set +a
+
+uv run python -m freqtrade trade \
+  --config config/config.futures.json \
+  --config config/config.binance.live.json \
+  --strategy SMC_FVG_Confirmation_Freqtrade \
+  --strategy-path src/strategies
+```
+
+Nghĩa là khi switch môi trường:
+
+- đổi `.env` sang key/secret đúng môi trường
+- đổi file override cuối cùng:
+  - `config/config.binance.demo.json`
+  - hoặc `config/config.binance.live.json`
+
+Không cần sửa tay file base.
 
 ## Khuyến nghị hiện tại
 

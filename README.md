@@ -7,7 +7,7 @@ Crypto trading bot dùng Freqtrade.
 Repo này chạy độc lập trên Freqtrade.
 
 - strategy:
-  - `src/strategies/SMC_FVG_PinBar_Freqtrade.py`
+  - `src/strategies/SMC_FVG_Confirmation_Freqtrade.py`
 - futures config:
   - `config/config.futures.json`
 - docs:
@@ -21,7 +21,7 @@ uv run python scripts/seed_freqtrade_data.py --preset smc-basket --days 90
 cp config/config.futures.json user_data/config.futures.local.json
 uv run freqtrade trade \
   --config user_data/config.futures.local.json \
-  --strategy SMC_FVG_PinBar_Freqtrade \
+  --strategy SMC_FVG_Confirmation_Freqtrade \
   --strategy-path src/strategies
 ```
 

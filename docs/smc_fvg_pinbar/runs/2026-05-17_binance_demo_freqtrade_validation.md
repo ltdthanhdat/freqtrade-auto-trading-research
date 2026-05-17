@@ -13,7 +13,8 @@
 ## Setup
 
 - config:
-  - `config/config.futures.demo.local.json`
+  - `config/config.futures.json`
+  - `config/config.binance.demo.json`
 - pair:
   - `BTC/USDT:USDT`
 - timeframe:

@@ -59,6 +59,7 @@
   - giữ config demo riêng cho `Binance` futures
   - giữ override explicit `exchange.ccxt_config.urls.api.fapi*`
   - giữ override tương tự cho `exchange.ccxt_async_config.urls.api.fapi*`
+  - giữ mô hình `base + env override` để switch `demo/live`
 - reason:
   - `enableDemoTrading = true` một mình chưa làm path futures của Freqtrade đi sang `demo-fapi.binance.com`
   - khi override explicit URL, auth + create/cancel order + bot startup đều pass
