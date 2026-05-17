@@ -3,7 +3,15 @@
     "stake_amount": 60,
     "exchange": {
         "pair_whitelist": [
-            "BTC/USDT:USDT"
+            "BTC/USDT:USDT",
+            "PLAY/USDT:USDT",
+            "BIO/USDT:USDT",
+            "SPACE/USDT:USDT",
+            "PENDLE/USDT:USDT",
+            "BR/USDT:USDT",
+            "D/USDT:USDT",
+            "YGG/USDT:USDT",
+            "STG/USDT:USDT"
         ],
         "ccxt_config": {
             "options": {

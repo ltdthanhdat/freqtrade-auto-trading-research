@@ -12,6 +12,9 @@
 
     "stake_amount_unlimited": false,
     "timeframe": "1h",
+    "smc_risk_per_trade": 0.05,
+    "smc_capital_cap": 0.25,
+    "smc_leverage": 5,
 
     "entry_pricing": {
         "price_side": "other",

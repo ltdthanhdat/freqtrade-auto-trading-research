@@ -314,7 +314,12 @@ class SMC_FVG_Confirmation_Freqtrade(IStrategy):
         side: str,
         **kwargs,
     ) -> float:
-        return 1.0
+        configured_leverage = self.config.get("smc_leverage")
+        if configured_leverage == "max":
+            return max_leverage
+        if configured_leverage is None:
+            return min(proposed_leverage, max_leverage)
+        return min(float(configured_leverage), max_leverage)
 
     def custom_stake_amount(
         self,
@@ -341,9 +346,14 @@ class SMC_FVG_Confirmation_Freqtrade(IStrategy):
         if distance_ratio <= 0:
             return 0
 
+        risk_per_trade = self.config.get("smc_risk_per_trade")
+        capital_cap_ratio = self.config.get("smc_capital_cap")
+        if risk_per_trade is None or capital_cap_ratio is None:
+            return min(proposed_stake, max_stake)
+
         total_stake = self.wallets.get_total_stake_amount()
-        risk_stake = (total_stake * 0.02) / distance_ratio
-        capital_cap = total_stake * 0.25
+        risk_stake = (total_stake * float(risk_per_trade)) / distance_ratio
+        capital_cap = total_stake * float(capital_cap_ratio)
         return min(risk_stake, capital_cap, max_stake)
 
     def order_filled(self, pair: str, trade: Trade, order: Order, current_time: datetime, **kwargs) -> None:
