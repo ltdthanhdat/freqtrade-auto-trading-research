@@ -42,3 +42,25 @@
   - flow data và execution phải ổn định trước khi tối ưu thêm
 - state impact:
   - roadmap hiện tại chuyển sang `freeze strategy cho dry-run`
+
+## D003 - Keep explicit Binance demo futures URL override
+
+- ngày:
+  - `2026-05-17`
+- status:
+  - `keep`
+- hypothesis:
+  - `Binance demo futures key trade được qua Freqtrade nếu config exchange đi đúng demo endpoint`
+- supporting experiments:
+  - none
+- supporting runs:
+  - `2026-05-17_binance_demo_freqtrade_validation.md`
+- decision:
+  - giữ config demo riêng cho `Binance` futures
+  - giữ override explicit `exchange.ccxt_config.urls.api.fapi*`
+  - giữ override tương tự cho `exchange.ccxt_async_config.urls.api.fapi*`
+- reason:
+  - `enableDemoTrading = true` một mình chưa làm path futures của Freqtrade đi sang `demo-fapi.binance.com`
+  - khi override explicit URL, auth + create/cancel order + bot startup đều pass
+- state impact:
+  - có đường verify execution thật trên demo trước khi dry-run/live rollout tiếp

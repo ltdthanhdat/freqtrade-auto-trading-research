@@ -16,6 +16,9 @@ Ngày cập nhật: 2026-05-17
   - `can_short = True`
 - data source:
   - dùng data do `freqtrade download-data` seed vào `user_data/data`
+- demo execution validation:
+  - `Binance` demo futures key đã verify được qua `CCXT` và `Freqtrade`
+  - config demo cần override explicit `fapi` demo URLs
 
 ## Active settings
 
@@ -39,6 +42,7 @@ Ngày cập nhật: 2026-05-17
 
 - source decision:
   - `D001`
+  - `D003`
 - source experiments:
   - `E001`
   - `E002`
@@ -49,5 +53,5 @@ Ngày cập nhật: 2026-05-17
 ## Next step
 
 1. chạy `dry-run` với config futures hiện tại
-2. log signal thật theo pair
-3. chỉ mở lại tuning nếu dry-run cho thấy mismatch hoặc basket có vấn đề
+2. nếu cần execution thật, dùng config demo futures đã verify
+3. log signal thật theo pair

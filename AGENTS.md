@@ -74,7 +74,16 @@ Repo này là repo Freqtrade độc lập cho `SMC_FVG_PinBar`.
 ## Response style
 
 - Trả lời ngắn.
-- Nêu rõ:
-  - hypothesis
-  - verify
-  - keep hoặc discard
+- Với tuning strategy, experiment, backtest conclusion, hoặc update docs flow:
+  - nêu rõ `hypothesis`
+  - `verify`
+  - `keep` hoặc `discard`
+- Với việc vận hành:
+  - config
+  - API key
+  - seed data
+  - dry-run / live / demo
+  - lỗi runtime
+  - hướng dẫn chạy
+  - trả lời bình thường, ngắn, trực tiếp
+  - không cần ép format `hypothesis / keep-discard`

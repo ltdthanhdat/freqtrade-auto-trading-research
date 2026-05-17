@@ -35,6 +35,42 @@ uv run freqtrade trade \
   --strategy-path src/strategies
 ```
 
+## Binance Demo Futures
+
+Với `Binance` futures trong stack `Freqtrade + CCXT 4.5.38`, chỉ bật
+`enableDemoTrading` là chưa đủ.
+
+Cần thêm 2 ý:
+
+1. dùng config demo riêng:
+
+```bash
+config/config.futures.demo.local.json
+```
+
+2. truyền key qua env:
+
+```bash
+export FREQTRADE__EXCHANGE__KEY='...'
+export FREQTRADE__EXCHANGE__SECRET='...'
+```
+
+Config demo này đang override `exchange.ccxt_config.urls.api.fapi*` và
+`exchange.ccxt_async_config.urls.api.fapi*` sang:
+
+- `https://demo-fapi.binance.com/fapi/v1`
+- `https://demo-fapi.binance.com/fapi/v2`
+- `https://demo-fapi.binance.com/fapi/v3`
+
+Chạy bot:
+
+```bash
+uv run python -m freqtrade trade \
+  --config config/config.futures.demo.local.json \
+  --strategy SMC_FVG_PinBar_Freqtrade \
+  --strategy-path src/strategies
+```
+
 ## Khuyến nghị hiện tại
 
 - basket mặc định:
