@@ -18,9 +18,13 @@ Repo này chạy độc lập trên Freqtrade.
 ```bash
 uv sync
 uv run python scripts/seed_freqtrade_data.py --preset smc-basket --days 90
-cp config/config.futures.json user_data/config.futures.local.json
-uv run freqtrade trade \
-  --config user_data/config.futures.local.json \
+set -a
+source .env
+set +a
+
+uv run python -m freqtrade trade \
+  --config config/config.futures.json \
+  --config config/config.binance.demo.json \
   --strategy SMC_FVG_Confirmation_Freqtrade \
   --strategy-path src/strategies
 ```

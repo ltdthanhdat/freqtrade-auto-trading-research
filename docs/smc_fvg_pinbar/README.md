@@ -1,6 +1,6 @@
 # SMC_FVG_PinBar Docs
 
-Source of truth cho strategy `SMC_FVG_PinBar` trên Freqtrade.
+Source of truth cho strategy `SMC_FVG_Confirmation` trên Freqtrade.
 
 ## Đọc theo thứ tự
 

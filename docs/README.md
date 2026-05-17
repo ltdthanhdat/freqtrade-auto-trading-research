@@ -5,7 +5,7 @@ Tài liệu của repo được tổ chức theo từng project docs thống nh�
 ## Project docs
 
 - `smc_fvg_pinbar/`
-  - source of truth cho strategy `SMC_FVG_PinBar`
+  - source of truth cho strategy `SMC_FVG_Confirmation`
   - bắt đầu đọc từ:
     - `smc_fvg_pinbar/README.md`
     - `smc_fvg_pinbar/state.md`

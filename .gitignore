@@ -1,39 +1,28 @@
-# Python
+# Python cache and build artifacts
 __pycache__/
 *.py[cod]
-*$py.class
 *.so
-.Python
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Virtual Environment
+# Virtual environments
+.venv/
 venv/
 env/
 ENV/
-.venv/
 
-# IDE
+# Editor files
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# Freqtrade - User data
+# Freqtrade runtime artifacts
 user_data/logs/
 user_data/data/
 user_data/backtest_results/
@@ -46,13 +35,11 @@ user_data/freqaimodels/
 tradesv3.sqlite
 tradesv3.sqlite-shm
 tradesv3.sqlite-wal
-
-# Legacy cache
 storage/
 
-# Config secrets
+# Secrets
 .env
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db

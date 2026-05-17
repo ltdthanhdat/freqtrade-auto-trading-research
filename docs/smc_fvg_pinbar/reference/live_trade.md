@@ -12,10 +12,12 @@ Chạy `dry-run` trước, rồi mới `live`.
 uv sync
 ```
 
-2. Tạo config local:
+2. Chuẩn bị config base + env override:
 
 ```bash
-cp config/config.futures.json user_data/config.futures.local.json
+config/config.futures.json
+config/config.binance.demo.json
+config/config.binance.live.json
 ```
 
 3. Seed data trước:
@@ -24,13 +26,18 @@ cp config/config.futures.json user_data/config.futures.local.json
 uv run python scripts/seed_freqtrade_data.py --preset smc-basket --days 90
 ```
 
-4. Điền API key trong file local nếu muốn chạy thật.
+4. Điền API key vào `.env`.
 
 5. Dry-run trước:
 
 ```bash
-uv run freqtrade trade \
-  --config user_data/config.futures.local.json \
+set -a
+source .env
+set +a
+
+uv run python -m freqtrade trade \
+  --config config/config.futures.json \
+  --config config/config.binance.demo.json \
   --strategy SMC_FVG_Confirmation_Freqtrade \
   --strategy-path src/strategies
 ```
