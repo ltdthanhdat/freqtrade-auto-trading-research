@@ -43,6 +43,9 @@ user_data/hyperopt_results/
 user_data/freqaimodels/
 *.db
 *.db-journal
+tradesv3.sqlite
+tradesv3.sqlite-shm
+tradesv3.sqlite-wal
 
 # Legacy cache
 storage/
