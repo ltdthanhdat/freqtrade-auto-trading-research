@@ -5,7 +5,7 @@
 - target window:
   - `2026-02-18` -> `2026-05-18`
 - target market:
-  - current basket `9` pairs
+  - current basket `6` pairs
 - target trade model:
   - `RR = 1:1`
   - stop theo biên `FVG` hiện tại
@@ -18,8 +18,8 @@
   - `max_drawdown_pct <= 12%`
   - `trades_count >= 45`
   - target cadence:
-    - khoảng `1` lệnh mỗi `1-2` ngày
-    - tương đương khoảng `45-90` lệnh / `90` ngày với `max_open_trades = 1`
+    - khoảng `1 -> 1.5` lệnh mỗi ngày
+    - tương đương khoảng `88 -> 132` lệnh / window hiện tại
 
 ## Scope
 
@@ -37,18 +37,17 @@
   - leverage `5x`
   - risk per trade `5%`
   - capital cap `25%`
-  - `max_open_trades = 1`
+  - `max_open_trades = 2`
 - latest observed issue:
-  - clean baseline full window ngày `2026-05-18`:
-    - `trades_count = 89`
-    - `win_rate = 62.9%`
-    - `net_profit_pct = 164.41%`
-    - `profit_factor = 1.97`
-    - `max_drawdown_pct = 10.74%`
+  - clean accepted snapshot full window ngày `2026-05-18`:
+    - `trades_count = 95`
+    - `win_rate = 70.5%`
+    - `net_profit_pct = 287.21%`
+    - `profit_factor = 2.56`
+    - `max_drawdown_pct = 9.78%`
   - trạng thái:
-    - profit, cadence, profit factor đã vượt target
-    - drawdown đã vào target
-    - win rate còn thiếu khoảng `2.1` điểm
+    - đã vượt target chính thức
+    - priority nên chuyển sang execution validation
 
 ## Tuning loop
 
@@ -231,13 +230,12 @@
 
 ## Current assessment
 
-- chưa đạt target chính thức
-- nhưng snapshot hiện tại đã `near target`
-- thesis tiếp theo có ưu tiên cao nhất:
-  - `basket pruning`
-  - lý do:
-    - pair âm hiện tại tập trung ở `BTC`, `D`
-    - không cần thêm logic entry mới
+- đã đạt target chính thức trên full window
+- snapshot accepted hiện tại:
+  - dùng `max_open_trades = 2`
+  - bỏ `STG`, `BTC`, `D`
+  - ưu tiên `displacement`
+- bước tiếp theo nên là `dry-run`, không phải tune tiếp theo quán tính
 
 ## Deliverables per round
 
@@ -247,10 +245,13 @@
 - update `decisions.md`
 - update `state.md` nếu current truth đổi
 
-## First 5 rounds
+## Result
 
-1. rebuild baseline full range `2026-02-18` -> `2026-05-18`
-2. backtest `pin_bar only`
-3. backtest `trend_body only`
-4. backtest `displacement only`
-5. backtest `short only` vs `long only`
+1. accepted snapshot đã đạt:
+   - `95` trades
+   - `70.5%` win rate
+   - `287.21%` profit
+   - `2.56` profit factor
+   - `9.78%` drawdown
+2. verify artifact:
+   - `user_data/backtest_results/backtest-result-2026-05-18_02-29-56.zip`

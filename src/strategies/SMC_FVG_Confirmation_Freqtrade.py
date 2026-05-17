@@ -35,7 +35,7 @@ class SMC_FVG_Confirmation_Freqtrade(IStrategy):
     ignore_roi_if_entry_signal = False
 
     PIN_BAR_BODY_RATIO = 0.33
-    PIN_BAR_WICK_TO_BODY = 2.25
+    PIN_BAR_WICK_TO_BODY = 2.5
     PIN_BAR_CLOSE_EXTREME_RATIO = 0.30
     FVG_RETRACE_RATIO = 0.45
     FVG_CONFIRM_RATIO = 0.55
@@ -158,25 +158,25 @@ class SMC_FVG_Confirmation_Freqtrade(IStrategy):
         if is_bullish:
             return (
                 close_price > open_price
-                and body_ratio >= 0.6
+                and body_ratio >= 0.55
                 and close_price > prev_high
-                and close_price >= high_price - total_range * 0.2
+                and close_price >= high_price - total_range * 0.25
             )
 
         return (
             close_price < open_price
-            and body_ratio >= 0.6
+            and body_ratio >= 0.55
             and close_price < prev_low
-            and close_price <= low_price + total_range * 0.2
+            and close_price <= low_price + total_range * 0.25
         )
 
     def _entry_signal_kind(self, row: pd.Series, prev_row: pd.Series, is_bullish: bool) -> Optional[str]:
-        if self._is_pin_bar(row, is_bullish):
-            return "pin_bar"
-        if self._is_trend_body(row, is_bullish):
-            return "trend_body"
         if self._is_displacement_break(row, prev_row, is_bullish):
             return "displacement"
+        if self._is_trend_body(row, is_bullish):
+            return "trend_body"
+        if self._is_pin_bar(row, is_bullish):
+            return "pin_bar"
         return None
 
     @staticmethod

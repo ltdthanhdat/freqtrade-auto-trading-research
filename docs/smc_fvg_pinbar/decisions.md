@@ -113,3 +113,60 @@
 - state impact:
   - snapshot hiện tại đã `near target`
   - pair âm còn lại tập trung ở `BTC` và `D`
+
+## D006 - Discard prune / filter-only path cho target `>70%`
+
+- ngày:
+  - `2026-05-18`
+- status:
+  - `discard`
+- hypothesis:
+  - `H007`
+- supporting experiments:
+  - `E006`
+- supporting runs:
+  - `2026-05-18_basket_20260218_20260517_filtering_vs_70pct_target.md`
+- decision:
+  - không theo hướng prune / filter nhẹ nữa cho objective `>70% win_rate`
+- reason:
+  - trên window `2026-02-18 04:00:00 -> 2026-05-17 17:00:00`, cadence target `1 -> 1.5/day` tương đương `88 -> 132` trades
+  - baseline hiện tại chỉ có `89` trades và `56` wins
+  - mọi cách chỉ lọc bớt trade hiện có đều không thể nâng lên `62/63` wins cần thiết để vượt `70%`
+  - các test prune / threshold / bias thực tế cũng không cho variant nào đạt target
+- state impact:
+  - nếu tiếp tục tune cho objective mới thì phải đổi thesis
+  - hướng tiếp theo nên là tạo / thay thế entry logic thay vì chỉ filter basket hiện tại
+
+## D007 - Keep `max_open_trades = 2` + prune `BTC/D` + displacement-first entry mix
+
+- ngày:
+  - `2026-05-18`
+- status:
+  - `keep`
+- hypothesis:
+  - `H008`
+- supporting experiments:
+  - `E007`
+- supporting runs:
+  - `2026-05-18_basket_20260218_20260518_70pct_breakthrough.md`
+- decision:
+  - giữ `max_open_trades = 2`
+  - bỏ `BTC/USDT:USDT`
+  - bỏ `D/USDT:USDT`
+  - giữ signal priority `displacement -> trend_body -> pin_bar`
+  - giữ `displacement body_ratio >= 0.55`
+  - giữ `displacement close_extreme_ratio = 0.25`
+  - giữ `PIN_BAR_WICK_TO_BODY = 2.5`
+- reason:
+  - trên full window đạt đồng thời:
+    - `95` trades
+    - `70.5%` win rate
+    - `1.08/day`
+    - `287.21%` net profit
+    - `2.56` profit factor
+    - `9.78%` max drawdown
+  - đây là biến thể đầu tiên vượt hẳn objective mới mà không cần thêm family signal mới
+- state impact:
+  - snapshot accepted hiện tại đã vượt target `>70%`
+  - basket mặc định giảm còn `6` pairs
+  - phase tiếp theo nên chuyển về validation vận hành thay vì tune tiếp

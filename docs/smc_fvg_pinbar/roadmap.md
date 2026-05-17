@@ -4,7 +4,7 @@ Trạng thái:
 
 - active
 - phase hiện tại:
-  - `near target snapshot sau basket pruning`
+  - `accepted >70% snapshot, ưu tiên execution validation`
 
 ## Goal
 
@@ -20,13 +20,11 @@ Trạng thái:
 1. seed data
 2. backtest `BTC/USDT:USDT 1h`
 3. backtest basket hiện tại
-4. prune `1` pair xấu nhất rồi re-backtest full basket
-5. dry-run chỉ sau khi basket snapshot đủ gần target
+4. dry-run với snapshot accepted hiện tại
+5. chỉ tune thêm khi có objective mới
 
 ## Open hypotheses
 
-- `H003`
-  - cần xác nhận basket mặc định có nên giữ rộng hay thu hẹp về `BTC`-led basket
 - `H004`
   - cần xác nhận có cần preset risk riêng cho `live`
 
@@ -40,6 +38,10 @@ Trạng thái:
   - keep leverage-aware risk handling
 - `H006`
   - keep prune `STG/USDT:USDT`
+- `H007`
+  - discard prune / filter-only path cho objective `>70%`
+- `H008`
+  - keep nhánh `entry mix + basket prune + concurrency`
 
 ## Current rule
 
@@ -50,7 +52,7 @@ Trạng thái:
 
 ## Next execution step
 
-1. giữ nguyên strategy hiện tại
+1. giữ nguyên strategy hiện tại làm baseline accepted
 2. giữ dataset full range `20260218-20260518`
-3. nếu cần thêm `1` vòng, thử bỏ `BTC/USDT:USDT` và re-backtest full basket
-4. nếu không cần ép chạm `65%`, giữ snapshot hiện tại cho phase dry-run
+3. dùng snapshot accepted hiện tại cho dry-run
+4. nếu tiếp tục tune, mở objective mới trước khi mở hypothesis

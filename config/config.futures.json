@@ -1,5 +1,5 @@
 {
-    "max_open_trades": 1,
+    "max_open_trades": 2,
     "stake_currency": "USDT",
     "stake_amount": "unlimited",
     "tradable_balance_ratio": 0.99,
@@ -39,13 +39,11 @@
         "ccxt_config": {},
         "ccxt_async_config": {},
         "pair_whitelist": [
-            "BTC/USDT:USDT",
             "PLAY/USDT:USDT",
             "BIO/USDT:USDT",
             "SPACE/USDT:USDT",
             "PENDLE/USDT:USDT",
             "BR/USDT:USDT",
-            "D/USDT:USDT",
             "YGG/USDT:USDT"
         ],
         "pair_blacklist": []

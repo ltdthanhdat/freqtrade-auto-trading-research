@@ -7,7 +7,7 @@ Ngày cập nhật: 2026-05-18
 - strategy:
   - `src/strategies/SMC_FVG_Confirmation_Freqtrade.py`
 - default basket:
-  - `8` pairs
+  - `6` pairs
 - execution engine:
   - `Freqtrade`
 - timeframe mặc định:
@@ -27,6 +27,11 @@ Ngày cập nhật: 2026-05-18
 - FVG threshold đang giữ:
   - `FVG_RETRACE_RATIO = 0.45`
   - `FVG_CONFIRM_RATIO = 0.55`
+- signal mix đang giữ:
+  - priority `displacement -> trend_body -> pin_bar`
+  - `displacement body_ratio >= 0.55`
+  - `displacement close_extreme_ratio = 0.25`
+  - `PIN_BAR_WICK_TO_BODY = 2.5`
 - leverage-aware risk handling đang giữ:
   - `custom_stake_amount` scale theo `distance_ratio * leverage`
   - `smc_target_roi` scale theo `trade.leverage`
@@ -35,13 +40,16 @@ Ngày cập nhật: 2026-05-18
   - cap `25% capital`
 - target / stop handling:
   - dùng callback của strategy
+- concurrency:
+  - `max_open_trades = 2`
 
 ## Current phase
 
 - phase:
-  - `near target snapshot sau basket pruning`
+  - `accepted >70% snapshot`
 - objective gần nhất:
-  - giữ snapshot hiện tại làm baseline vận hành cho `dry-run`, chỉ tune tiếp nếu cần ép chạm `65%`
+  - giữ snapshot mới này làm baseline vận hành
+  - ưu tiên execution validation thay vì tune thêm
 
 ## Latest accepted snapshot
 
@@ -50,25 +58,29 @@ Ngày cập nhật: 2026-05-18
   - `D003`
   - `D004`
   - `D005`
+  - `D006`
+  - `D007`
 - source experiments:
   - `E001`
   - `E002`
   - `E004`
   - `E005`
+  - `E007`
 - summary:
-  - baseline sạch full window `2026-02-18 -> 2026-05-17` hiện tại đạt:
-    - `89` trades
-    - `62.9%` win rate
-    - `164.41%` net profit
-    - `1.97` profit factor
-    - `10.74%` max drawdown
-  - snapshot hiện tại đã `near target`
-  - còn thiếu khoảng `2.1` điểm để chạm `win_rate >= 65%`
-  - pair âm rõ nhất hiện tại là `BTC` và `D`
+  - snapshot sạch full window `2026-02-18 -> 2026-05-17` hiện tại đạt:
+    - `95` trades
+    - `70.5%` win rate
+    - `287.21%` net profit
+    - `2.56` profit factor
+    - `9.78%` max drawdown
+    - `1.08 trade/day`
+  - objective `>70%` đã pass trên cùng dataset
+  - basket mặc định hiện tại đã bỏ `STG`, `BTC`, `D`
+  - pair yếu nhất còn lại là `BR`, nhưng chưa có lý do cần prune thêm
 
 ## Next step
 
-1. nếu cần thêm `1` vòng tuning, test prune `1` pair âm còn lại ở basket level
-2. ưu tiên:
-   - `BTC/USDT:USDT`
-3. nếu không cần ép chạm `65%`, snapshot hiện tại đã đủ điều kiện `near target`
+1. nếu giữ mục tiêu vận hành:
+   - dùng snapshot hiện tại cho `dry-run`
+2. nếu cần tune thêm:
+   - chỉ mở hypothesis mới khi có objective khác `>70%`
