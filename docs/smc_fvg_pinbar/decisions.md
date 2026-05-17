@@ -65,3 +65,51 @@
   - khi override explicit URL, auth + create/cancel order + bot startup đều pass
 - state impact:
   - có đường verify execution thật trên demo trước khi dry-run/live rollout tiếp
+
+## D004 - Keep leverage-aware risk handling
+
+- ngày:
+  - `2026-05-18`
+- status:
+  - `keep`
+- hypothesis:
+  - `H005`
+- supporting experiments:
+  - `E004`
+- supporting runs:
+  - `2026-05-18_basket_20260218_20260518_leverage_aware_comparison.md`
+- decision:
+  - giữ logic `custom_stake_amount` chia thêm cho `leverage`
+  - giữ `smc_target_roi = risk_ratio * trade.leverage`
+  - giữ `custom_roi` trả leverage-aware target
+- reason:
+  - baseline cũ có `win_rate` cao hơn nhưng `drawdown` quá xa target
+  - baseline mới giảm `drawdown` từ `23.18%` xuống `12.92%`
+  - `profit_factor` tăng từ `1.22` lên `1.75`
+  - `net_profit_pct` tăng từ `23.84%` lên `140.19%`
+- state impact:
+  - baseline full-window hiện tại đủ sạch để chuyển sang phase `basket pruning`
+
+## D005 - Keep prune `STG/USDT:USDT` khỏi default basket
+
+- ngày:
+  - `2026-05-18`
+- status:
+  - `keep`
+- hypothesis:
+  - `H006`
+- supporting experiments:
+  - `E005`
+- supporting runs:
+  - `2026-05-18_basket_20260218_20260518_prune_stg.md`
+- decision:
+  - bỏ `STG/USDT:USDT` khỏi `config/config.futures.json`
+- reason:
+  - `win_rate` tăng từ `61.1%` lên `62.9%`
+  - `profit_factor` tăng từ `1.75` lên `1.97`
+  - `net_profit_pct` tăng từ `140.19%` lên `164.41%`
+  - `max_drawdown_pct` giảm từ `12.92%` xuống `10.74%`
+  - trades vẫn còn `89`, cao hơn target cadence
+- state impact:
+  - snapshot hiện tại đã `near target`
+  - pair âm còn lại tập trung ở `BTC` và `D`

@@ -46,8 +46,7 @@
             "PENDLE/USDT:USDT",
             "BR/USDT:USDT",
             "D/USDT:USDT",
-            "YGG/USDT:USDT",
-            "STG/USDT:USDT"
+            "YGG/USDT:USDT"
         ],
         "pair_blacklist": []
     },

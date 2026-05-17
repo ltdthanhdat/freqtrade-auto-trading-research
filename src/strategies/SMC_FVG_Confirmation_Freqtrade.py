@@ -350,9 +350,11 @@ class SMC_FVG_Confirmation_Freqtrade(IStrategy):
         capital_cap_ratio = self.config.get("smc_capital_cap")
         if risk_per_trade is None or capital_cap_ratio is None:
             return min(proposed_stake, max_stake)
+        if leverage <= 0:
+            return 0
 
         total_stake = self.wallets.get_total_stake_amount()
-        risk_stake = (total_stake * float(risk_per_trade)) / distance_ratio
+        risk_stake = (total_stake * float(risk_per_trade)) / (distance_ratio * leverage)
         capital_cap = total_stake * float(capital_cap_ratio)
         return min(risk_stake, capital_cap, max_stake)
 
@@ -376,9 +378,10 @@ class SMC_FVG_Confirmation_Freqtrade(IStrategy):
 
         stop_rate = float(stop_rate)
         risk_ratio = abs(trade.open_rate - stop_rate) / trade.open_rate
+        target_roi = risk_ratio * trade.leverage
         trade.set_custom_data("smc_signal_kind", signal_kind or "unknown")
         trade.set_custom_data("smc_stop_rate", stop_rate)
-        trade.set_custom_data("smc_target_roi", risk_ratio)
+        trade.set_custom_data("smc_target_roi", target_roi)
 
     def custom_stoploss(
         self,
@@ -419,4 +422,4 @@ class SMC_FVG_Confirmation_Freqtrade(IStrategy):
         _, stop_rate = self._parse_enter_tag(entry_tag)
         if stop_rate is None:
             return None
-        return abs(trade.open_rate - float(stop_rate)) / trade.open_rate
+        return (abs(trade.open_rate - float(stop_rate)) / trade.open_rate) * trade.leverage

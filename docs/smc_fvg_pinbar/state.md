@@ -1,11 +1,13 @@
 # SMC_FVG_PinBar Current State
 
-Ngày cập nhật: 2026-05-17
+Ngày cập nhật: 2026-05-18
 
 ## Current truth
 
 - strategy:
   - `src/strategies/SMC_FVG_Confirmation_Freqtrade.py`
+- default basket:
+  - `8` pairs
 - execution engine:
   - `Freqtrade`
 - timeframe mặc định:
@@ -25,8 +27,11 @@ Ngày cập nhật: 2026-05-17
 - FVG threshold đang giữ:
   - `FVG_RETRACE_RATIO = 0.45`
   - `FVG_CONFIRM_RATIO = 0.55`
+- leverage-aware risk handling đang giữ:
+  - `custom_stake_amount` scale theo `distance_ratio * leverage`
+  - `smc_target_roi` scale theo `trade.leverage`
 - sizing intent:
-  - risk `2%`
+  - risk `5%`
   - cap `25% capital`
 - target / stop handling:
   - dùng callback của strategy
@@ -34,24 +39,36 @@ Ngày cập nhật: 2026-05-17
 ## Current phase
 
 - phase:
-  - `freeze strategy cho dry-run`
+  - `near target snapshot sau basket pruning`
 - objective gần nhất:
-  - giữ flow seed + backtest + config ổn định trước khi tune tiếp
+  - giữ snapshot hiện tại làm baseline vận hành cho `dry-run`, chỉ tune tiếp nếu cần ép chạm `65%`
 
 ## Latest accepted snapshot
 
 - source decision:
   - `D001`
   - `D003`
+  - `D004`
+  - `D005`
 - source experiments:
   - `E001`
   - `E002`
+  - `E004`
+  - `E005`
 - summary:
-  - `BTC/USDT:USDT` là nguồn edge chính trong snapshot hiện tại
-  - basket hiện tại chạy được nhưng chưa chứng minh edge rộng hơn `BTC`
+  - baseline sạch full window `2026-02-18 -> 2026-05-17` hiện tại đạt:
+    - `89` trades
+    - `62.9%` win rate
+    - `164.41%` net profit
+    - `1.97` profit factor
+    - `10.74%` max drawdown
+  - snapshot hiện tại đã `near target`
+  - còn thiếu khoảng `2.1` điểm để chạm `win_rate >= 65%`
+  - pair âm rõ nhất hiện tại là `BTC` và `D`
 
 ## Next step
 
-1. chạy `dry-run` với config futures hiện tại
-2. nếu cần execution thật, dùng config demo futures đã verify
-3. log signal thật theo pair
+1. nếu cần thêm `1` vòng tuning, test prune `1` pair âm còn lại ở basket level
+2. ưu tiên:
+   - `BTC/USDT:USDT`
+3. nếu không cần ép chạm `65%`, snapshot hiện tại đã đủ điều kiện `near target`

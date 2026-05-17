@@ -4,7 +4,7 @@ Trạng thái:
 
 - active
 - phase hiện tại:
-  - `freeze strategy cho dry-run`
+  - `near target snapshot sau basket pruning`
 
 ## Goal
 
@@ -20,7 +20,8 @@ Trạng thái:
 1. seed data
 2. backtest `BTC/USDT:USDT 1h`
 3. backtest basket hiện tại
-4. dry-run basket hiện tại
+4. prune `1` pair xấu nhất rồi re-backtest full basket
+5. dry-run chỉ sau khi basket snapshot đủ gần target
 
 ## Open hypotheses
 
@@ -35,6 +36,10 @@ Trạng thái:
   - keep threshold `0.45 / 0.55`
 - `H002`
   - freeze tuning, chuyển sang `dry-run`
+- `H005`
+  - keep leverage-aware risk handling
+- `H006`
+  - keep prune `STG/USDT:USDT`
 
 ## Current rule
 
@@ -46,6 +51,6 @@ Trạng thái:
 ## Next execution step
 
 1. giữ nguyên strategy hiện tại
-2. seed data bằng flow chuẩn
-3. chạy `dry-run` với config futures
-4. ghi run log nếu xuất hiện mismatch theo pair hoặc callback
+2. giữ dataset full range `20260218-20260518`
+3. nếu cần thêm `1` vòng, thử bỏ `BTC/USDT:USDT` và re-backtest full basket
+4. nếu không cần ép chạm `65%`, giữ snapshot hiện tại cho phase dry-run
