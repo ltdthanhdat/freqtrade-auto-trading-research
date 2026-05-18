@@ -16,7 +16,10 @@
   - command path:
     - `freqtrade download-data`
   - output:
-    - `user_data/data`
+    - dataset active:
+      - `user_data/data/binance/futures`
+    - dataset snapshot:
+      - `user_data/data/snapshots/<name>/futures`
     - `feather`
     - `futures`
 

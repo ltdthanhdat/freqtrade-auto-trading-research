@@ -124,6 +124,7 @@ Không cần sửa tay file base.
 ## Lưu ý
 
 - Data seed dùng trực tiếp `freqtrade download-data`.
+- Data active mặc định nằm ở `user_data/data/binance/futures`.
 - Vẫn cần:
   - exchange API key nếu muốn live
   - config futures đúng

@@ -8,6 +8,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 DEFAULT_CONFIG = ROOT / "config" / "config.futures.json"
+DEFAULT_DATA_ROOT = ROOT / "user_data" / "data"
+DEFAULT_DATASET = "active"
 DEFAULT_TIMEFRAMES = ["30m", "1h"]
 SMC_BASKET = [
     "BTC/USDT:USDT",
@@ -30,6 +32,11 @@ def parse_args() -> argparse.Namespace:
         "--config",
         default=str(DEFAULT_CONFIG),
         help="Config Freqtrade dùng để download data.",
+    )
+    parser.add_argument(
+        "--dataset",
+        default=DEFAULT_DATASET,
+        help="`active` để seed dataset chính, hoặc path tương đối dưới user_data/data. Ví dụ: snapshots/recent_selected.",
     )
     parser.add_argument(
         "--preset",
@@ -80,7 +87,17 @@ def resolve_pairs(args: argparse.Namespace) -> list[str]:
     raise ValueError("Không resolve được pair list.")
 
 
+def resolve_datadir(args: argparse.Namespace) -> Path:
+    if args.dataset == DEFAULT_DATASET:
+        return DEFAULT_DATA_ROOT / "binance"
+    dataset = Path(args.dataset)
+    if dataset.is_absolute() or ".." in dataset.parts:
+        raise ValueError("`--dataset` phải là path tương đối dưới user_data/data.")
+    return DEFAULT_DATA_ROOT / dataset
+
+
 def build_command(args: argparse.Namespace, pairs: list[str]) -> list[str]:
+    datadir = resolve_datadir(args)
     command = [
         "uv",
         "run",
@@ -90,6 +107,8 @@ def build_command(args: argparse.Namespace, pairs: list[str]) -> list[str]:
         "download-data",
         "--config",
         args.config,
+        "--datadir",
+        str(datadir),
         "--timeframes",
         *args.timeframes,
         "--pairs",
