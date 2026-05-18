@@ -1,0 +1,48 @@
+services:
+  freqtrade-demo:
+    image: freqtradeorg/freqtrade:develop
+    working_dir: /freqtrade
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      FREQTRADE__EXCHANGE__KEY: ${FREQTRADE_DEMO_KEY:-}
+      FREQTRADE__EXCHANGE__SECRET: ${FREQTRADE_DEMO_SECRET:-}
+      FREQTRADE__DB_URL: sqlite:////freqtrade/user_data/tradesv3.demo.sqlite
+    volumes:
+      - ./:/freqtrade
+    command:
+      - trade
+      - --config
+      - /freqtrade/config/config.futures.json
+      - --config
+      - /freqtrade/config/config.binance.demo.json
+      - --strategy
+      - SMC_FVG_Context30m_Freqtrade
+      - --strategy-path
+      - /freqtrade/src/strategies
+      - --logfile
+      - /freqtrade/user_data/logs/freqtrade-demo.log
+
+  freqtrade-live:
+    image: freqtradeorg/freqtrade:develop
+    working_dir: /freqtrade
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      FREQTRADE__EXCHANGE__KEY: ${FREQTRADE_LIVE_KEY:-}
+      FREQTRADE__EXCHANGE__SECRET: ${FREQTRADE_LIVE_SECRET:-}
+      FREQTRADE__DB_URL: sqlite:////freqtrade/user_data/tradesv3.live.sqlite
+    volumes:
+      - ./:/freqtrade
+    command:
+      - trade
+      - --config
+      - /freqtrade/config/config.futures.json
+      - --config
+      - /freqtrade/config/config.binance.live.json
+      - --strategy
+      - SMC_FVG_Context30m_Freqtrade
+      - --strategy-path
+      - /freqtrade/src/strategies
+      - --logfile
+      - /freqtrade/user_data/logs/freqtrade-live.log

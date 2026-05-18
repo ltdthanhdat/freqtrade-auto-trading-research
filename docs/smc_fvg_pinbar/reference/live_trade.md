@@ -42,6 +42,59 @@ uv run python -m freqtrade trade \
   --strategy-path src/strategies
 ```
 
+## Docker Compose
+
+Nếu muốn giữ `demo` và `live` thành 2 service riêng, dùng `compose.yaml`.
+
+Điền thêm vào `.env`:
+
+```bash
+FREQTRADE_DEMO_KEY=...
+FREQTRADE_DEMO_SECRET=...
+FREQTRADE_LIVE_KEY=...
+FREQTRADE_LIVE_SECRET=...
+```
+
+Seed data trước:
+
+```bash
+uv run python scripts/seed_freqtrade_data.py --preset smc-basket --days 90
+```
+
+Chạy `demo`:
+
+```bash
+docker compose up -d freqtrade-demo
+docker compose logs -f freqtrade-demo
+```
+
+Chạy `live`:
+
+```bash
+docker compose up -d freqtrade-live
+docker compose logs -f freqtrade-live
+```
+
+Chạy cả hai cùng lúc:
+
+```bash
+docker compose up -d freqtrade-demo freqtrade-live
+```
+
+Dừng:
+
+```bash
+docker compose stop freqtrade-demo
+docker compose stop freqtrade-live
+```
+
+Compose đang tách riêng:
+
+- DB demo: `user_data/tradesv3.demo.sqlite`
+- DB live: `user_data/tradesv3.live.sqlite`
+- log demo: `user_data/logs/freqtrade-demo.log`
+- log live: `user_data/logs/freqtrade-live.log`
+
 ## Binance Demo Futures
 
 Với `Binance` futures trong stack `Freqtrade + CCXT 4.5.38`, chỉ bật

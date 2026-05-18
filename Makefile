@@ -13,7 +13,7 @@ DATASET  ?= recent_selected
 PAIR     ?= BTC/USDT:USDT
 SNAPSHOT_DATADIR := user_data/data/snapshots/$(DATASET)
 
-.PHONY: help install config-local seed seed-range seed-snapshot list-data list-snapshot backtest backtest-snapshot plot plot-df dry-run live list-strategies clean clean-backtest-results
+.PHONY: help install config-local seed seed-range seed-snapshot list-data list-snapshot backtest backtest-snapshot plot plot-df dry-run live compose-demo compose-live list-strategies clean clean-backtest-results
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -61,6 +61,12 @@ dry-run: install config-local ## Run dry-run with LOCAL_CONFIG
 
 live: install config-local ## Run live or dry-run depending on LOCAL_CONFIG
 	$(FREQ) trade --config $(LOCAL_CONFIG) --strategy $(STRATEGY) --strategy-path $(SPATH)
+
+compose-demo: ## Run Binance demo service via Docker Compose
+	docker compose up -d freqtrade-demo
+
+compose-live: ## Run Binance live service via Docker Compose
+	docker compose up -d freqtrade-live
 
 list-strategies: ## List available strategies
 	$(FREQ) list-strategies --strategy-path $(SPATH)

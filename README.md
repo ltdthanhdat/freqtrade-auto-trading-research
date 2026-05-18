@@ -47,6 +47,13 @@ set +a
 make dry-run
 ```
 
+Compose option:
+
+```bash
+docker compose up -d freqtrade-demo
+docker compose up -d freqtrade-live
+```
+
 ## Seed data
 
 Script seed hiện tại gọi trực tiếp `freqtrade download-data`.
