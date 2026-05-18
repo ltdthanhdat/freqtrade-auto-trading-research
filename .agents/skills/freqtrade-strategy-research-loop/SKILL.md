@@ -1,6 +1,6 @@
 ---
 name: freqtrade-strategy-research-loop
-description: Use when iterating on a Freqtrade strategy in this repo: forming one hypothesis at a time, running a bounded backtest or dry-run validation, and updating the linked docs chain from hypothesis to experiment to run to decision to state.
+description: "Use when iterating on a Freqtrade strategy in this repo: forming one hypothesis at a time, running a bounded backtest or dry-run validation, and updating the linked docs chain from hypothesis to experiment to run to decision to state."
 ---
 
 # Freqtrade Strategy Research Loop
