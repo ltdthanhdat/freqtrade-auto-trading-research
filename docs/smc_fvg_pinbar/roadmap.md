@@ -4,7 +4,7 @@ Trạng thái:
 
 - active
 - phase hiện tại:
-  - `accepted >70% snapshot, ưu tiên execution validation`
+  - `accepted cadence-pass snapshot, ưu tiên execution validation`
 
 ## Goal
 
@@ -42,6 +42,14 @@ Trạng thái:
   - discard prune / filter-only path cho objective `>70%`
 - `H008`
   - keep nhánh `entry mix + basket prune + concurrency`
+- `H009`
+  - discard minimal cadence-only tuning cho objective `1.2 -> 1.5/day`
+- `H010`
+  - discard simple add-on branches cho objective cadence mới
+- `H011`
+  - discard `30m execution + 1h context` cho current constraints
+- `H012`
+  - keep hybrid `30m` với active `1h` base
 
 ## Current rule
 
@@ -52,7 +60,7 @@ Trạng thái:
 
 ## Next execution step
 
-1. giữ nguyên strategy hiện tại làm baseline accepted
-2. giữ dataset full range `20260218-20260518`
+1. giữ `SMC_FVG_Context30m_Freqtrade` làm baseline accepted
+2. seed đủ `30m + 1h` data cho basket hiện tại
 3. dùng snapshot accepted hiện tại cho dry-run
-4. nếu tiếp tục tune, mở objective mới trước khi mở hypothesis
+4. chỉ tune thêm khi có objective mới ngoài cadence hiện tại

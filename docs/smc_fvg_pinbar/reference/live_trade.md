@@ -38,7 +38,7 @@ set +a
 uv run python -m freqtrade trade \
   --config config/config.futures.json \
   --config config/config.binance.demo.json \
-  --strategy SMC_FVG_Confirmation_Freqtrade \
+  --strategy SMC_FVG_Context30m_Freqtrade \
   --strategy-path src/strategies
 ```
 
@@ -80,7 +80,7 @@ set +a
 uv run python -m freqtrade trade \
   --config config/config.futures.json \
   --config config/config.binance.demo.json \
-  --strategy SMC_FVG_Confirmation_Freqtrade \
+  --strategy SMC_FVG_Context30m_Freqtrade \
   --strategy-path src/strategies
 ```
 
@@ -94,7 +94,7 @@ set +a
 uv run python -m freqtrade trade \
   --config config/config.futures.json \
   --config config/config.binance.live.json \
-  --strategy SMC_FVG_Confirmation_Freqtrade \
+  --strategy SMC_FVG_Context30m_Freqtrade \
   --strategy-path src/strategies
 ```
 
@@ -110,19 +110,16 @@ Không cần sửa tay file base.
 ## Khuyến nghị hiện tại
 
 - basket mặc định:
-  - `BTC/USDT:USDT`
   - `PLAY/USDT:USDT`
   - `BIO/USDT:USDT`
   - `SPACE/USDT:USDT`
   - `PENDLE/USDT:USDT`
   - `BR/USDT:USDT`
-  - `D/USDT:USDT`
   - `YGG/USDT:USDT`
-  - `STG/USDT:USDT`
 - timeframe:
-  - `1h`
+  - `30m`
 - risk rollout:
-  - vẫn giữ `max_open_trades = 1` để dry-run portfolio theo kiểu bảo thủ
+  - giữ `max_open_trades = 3`
 
 ## Lưu ý
 

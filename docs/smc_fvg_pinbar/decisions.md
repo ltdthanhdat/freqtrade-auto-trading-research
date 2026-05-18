@@ -170,3 +170,137 @@
   - snapshot accepted hiện tại đã vượt target `>70%`
   - basket mặc định giảm còn `6` pairs
   - phase tiếp theo nên chuyển về validation vận hành thay vì tune tiếp
+
+## D008 - Discard minimal cadence-only tuning cho objective `1.2 -> 1.5/day`
+
+- ngày:
+  - `2026-05-18`
+- status:
+  - `discard`
+- hypothesis:
+  - `H009`
+- supporting experiments:
+  - `E008`
+- supporting runs:
+  - `2026-05-18_basket_multiwindow_cadence_without_winrate_loss.md`
+- decision:
+  - không keep các lever tối thiểu:
+    - `max_open_trades = 3/4`
+    - nới `displacement`
+    - nới riêng `pin_bar short`
+- reason:
+  - `max_open_trades = 3/4` chỉ nâng full-window từ `1.08/day` lên `1.09/day`
+  - nới `displacement` lên `102` trades và `1.16/day` nhưng `win_rate` giảm còn `67.7%`
+  - nới riêng `pin_bar short` mạnh nhất lên `105` trades và `1.19/day` nhưng `win_rate` giảm còn `68.6%`
+  - các window sớm hơn vẫn chỉ ở vùng `1.05 -> 1.17/day`, nên không có bằng chứng edge bền vững
+- state impact:
+  - current accepted snapshot vẫn là `D007`
+  - nếu tiếp tục objective cadence mới thì phải đổi thesis
+  - không nên tiếp tục vặn threshold hiện tại
+
+## D009 - Discard simple add-on branches cho objective cadence mới
+
+- ngày:
+  - `2026-05-18`
+- status:
+  - `discard`
+- hypothesis:
+  - `H010`
+- supporting experiments:
+  - `E009`
+- supporting runs:
+  - `2026-05-18_basket_multiwindow_simple_addon_branches.md`
+- decision:
+  - không keep các branch add-on:
+    - `reclaim`
+    - `reclaim + EMA20`
+    - `engulfing + EMA20`
+- reason:
+  - `reclaim` đạt `1.31/day` nhưng `win_rate` chỉ còn `67.8%`
+  - `reclaim + EMA20` còn `67.9%`
+  - `engulfing + EMA20` còn `67.6%`
+  - các window sớm nhất đều kém hơn baseline rõ rệt
+- state impact:
+  - current accepted snapshot vẫn là `D007`
+  - objective cadence mới chưa có path sạch trong phạm vi:
+    - concurrency
+    - threshold loosening
+    - simple add-on branches
+  - nếu tiếp tục, thesis tiếp theo nên là execution timeframe nhỏ hơn nhưng giữ context `1h`
+
+## D010 - Discard `30m execution + 1h context` cho current constraints
+
+- ngày:
+  - `2026-05-18`
+- status:
+  - `discard`
+- hypothesis:
+  - `H011`
+- supporting experiments:
+  - `E010`
+- supporting runs:
+  - `2026-05-18_basket_30m_execution_with_1h_context.md`
+- decision:
+  - không keep hướng:
+    - raw `30m`
+    - exact `1h signal` gate
+    - `30m displacement short` dưới `1h EMA20` bearish context
+    - `30m displacement short` dưới `1h active bearish FVG + bear candle`
+- reason:
+  - raw `30m` chỉ cho khoảng `49%` win rate
+  - hybrid tốt nhất chỉ đạt near-miss:
+    - `104` trades
+    - `1.18/day`
+    - `70.19%`
+  - biến thể chạm cadence rõ hơn:
+    - `112` trades
+    - `1.27/day`
+    - nhưng `69.64%`
+  - vì vậy vẫn chưa thỏa đồng thời:
+    - cadence `1.2 -> 1.5/day`
+    - `win_rate >= 70.5%`
+- state impact:
+  - current accepted snapshot vẫn là `D007`
+  - objective cadence mới chưa có path sạch trong phạm vi:
+    - threshold loosening
+    - simple add-on branches
+    - `30m execution + 1h context`
+  - nếu tiếp tục, phải chấp nhận một thesis lớn hơn hoặc nới requirement
+
+## D011 - Keep hybrid `30m` strategy với active `1h` base
+
+- ngày:
+  - `2026-05-18`
+- status:
+  - `keep`
+- hypothesis:
+  - `H012`
+- supporting experiments:
+  - `E011`
+- supporting runs:
+  - `2026-05-18_basket_30m_hybrid_active_base.md`
+- decision:
+  - dùng `src/strategies/SMC_FVG_Context30m_Freqtrade.py`
+  - giữ timeframe `30m`
+  - giữ informative context `1h`
+  - giữ `max_open_trades = 3`
+  - giữ baseline `1h` signal active trên cả hai nến `30m` tương ứng
+  - giữ extra:
+    - `30m displacement short`
+    - khi `1h close < EMA20`
+    - và `1h EMA20 slope < 0`
+- reason:
+  - full window đạt đồng thời:
+    - `117` trades
+    - `70.94%`
+    - `1.33/day`
+    - `424.35%` net profit
+    - `2.593` profit factor
+    - `8.17%` max drawdown
+  - các sub-window cũng đều giữ:
+    - cadence `1.22 -> 1.48/day`
+    - `win_rate 71.83% -> 79.01%`
+- state impact:
+  - current accepted snapshot đổi từ `D007` sang hybrid `30m`
+  - objective cadence mới đã pass mà không cần pair-specific rule
+  - phase tiếp theo quay lại execution validation với strategy mới

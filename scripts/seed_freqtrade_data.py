@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 DEFAULT_CONFIG = ROOT / "config" / "config.futures.json"
-DEFAULT_TIMEFRAMES = ["1m", "1h"]
+DEFAULT_TIMEFRAMES = ["30m", "1h"]
 SMC_BASKET = [
     "BTC/USDT:USDT",
     "PLAY/USDT:USDT",

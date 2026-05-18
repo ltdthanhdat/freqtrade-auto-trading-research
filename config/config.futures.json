@@ -1,5 +1,5 @@
 {
-    "max_open_trades": 2,
+    "max_open_trades": 3,
     "stake_currency": "USDT",
     "stake_amount": "unlimited",
     "tradable_balance_ratio": 0.99,
@@ -11,7 +11,7 @@
     "margin_mode": "cross",
 
     "stake_amount_unlimited": false,
-    "timeframe": "1h",
+    "timeframe": "30m",
     "smc_risk_per_trade": 0.05,
     "smc_capital_cap": 0.25,
     "smc_leverage": 5,

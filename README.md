@@ -7,7 +7,7 @@ Crypto trading bot dùng Freqtrade.
 Repo này chạy độc lập trên Freqtrade.
 
 - strategy:
-  - `src/strategies/SMC_FVG_Confirmation_Freqtrade.py`
+  - `src/strategies/SMC_FVG_Context30m_Freqtrade.py`
 - futures config:
   - `config/config.futures.json`
 - docs:
@@ -25,7 +25,7 @@ set +a
 uv run python -m freqtrade trade \
   --config config/config.futures.json \
   --config config/config.binance.demo.json \
-  --strategy SMC_FVG_Confirmation_Freqtrade \
+  --strategy SMC_FVG_Context30m_Freqtrade \
   --strategy-path src/strategies
 ```
 
@@ -48,12 +48,9 @@ uv run python scripts/seed_freqtrade_data.py --preset smc-basket --timerange 202
 
 Basket futures mặc định:
 
-- `BTC/USDT:USDT`
 - `PLAY/USDT:USDT`
 - `BIO/USDT:USDT`
 - `SPACE/USDT:USDT`
 - `PENDLE/USDT:USDT`
 - `BR/USDT:USDT`
-- `D/USDT:USDT`
 - `YGG/USDT:USDT`
-- `STG/USDT:USDT`
