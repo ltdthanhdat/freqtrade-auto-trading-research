@@ -1,48 +1,50 @@
 services:
   freqtrade-demo:
     image: freqtradeorg/freqtrade:develop
-    working_dir: /freqtrade
+    working_dir: /workspace
     restart: unless-stopped
     environment:
       TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      PYTHONPATH: /workspace
       FREQTRADE__EXCHANGE__KEY: ${FREQTRADE_DEMO_KEY:-}
       FREQTRADE__EXCHANGE__SECRET: ${FREQTRADE_DEMO_SECRET:-}
-      FREQTRADE__DB_URL: sqlite:////freqtrade/user_data/tradesv3.demo.sqlite
+      FREQTRADE__DB_URL: sqlite:////workspace/user_data/tradesv3.demo.sqlite
     volumes:
-      - ./:/freqtrade
+      - ./:/workspace
     command:
       - trade
       - --config
-      - /freqtrade/config/config.futures.json
+      - /workspace/config/config.futures.json
       - --config
-      - /freqtrade/config/config.binance.demo.json
+      - /workspace/config/config.binance.demo.json
       - --strategy
       - SMC_FVG_Context30m_Freqtrade
       - --strategy-path
-      - /freqtrade/src/strategies
+      - /workspace/src/strategies
       - --logfile
-      - /freqtrade/user_data/logs/freqtrade-demo.log
+      - /workspace/user_data/logs/freqtrade-demo.log
 
   freqtrade-live:
     image: freqtradeorg/freqtrade:develop
-    working_dir: /freqtrade
+    working_dir: /workspace
     restart: unless-stopped
     environment:
       TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      PYTHONPATH: /workspace
       FREQTRADE__EXCHANGE__KEY: ${FREQTRADE_LIVE_KEY:-}
       FREQTRADE__EXCHANGE__SECRET: ${FREQTRADE_LIVE_SECRET:-}
-      FREQTRADE__DB_URL: sqlite:////freqtrade/user_data/tradesv3.live.sqlite
+      FREQTRADE__DB_URL: sqlite:////workspace/user_data/tradesv3.live.sqlite
     volumes:
-      - ./:/freqtrade
+      - ./:/workspace
     command:
       - trade
       - --config
-      - /freqtrade/config/config.futures.json
+      - /workspace/config/config.futures.json
       - --config
-      - /freqtrade/config/config.binance.live.json
+      - /workspace/config/config.binance.live.json
       - --strategy
       - SMC_FVG_Context30m_Freqtrade
       - --strategy-path
-      - /freqtrade/src/strategies
+      - /workspace/src/strategies
       - --logfile
-      - /freqtrade/user_data/logs/freqtrade-live.log
+      - /workspace/user_data/logs/freqtrade-live.log

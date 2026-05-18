@@ -3,7 +3,6 @@
 PYTHON   := uv run python
 FREQ     := $(PYTHON) -m freqtrade
 CONFIG   ?= config/config.futures.json
-LOCAL_CONFIG ?= user_data/config.futures.local.json
 SPATH    := src/strategies
 STRATEGY ?= SMC_FVG_Context30m_Freqtrade
 DAYS     ?= 60
@@ -13,17 +12,13 @@ DATASET  ?= recent_selected
 PAIR     ?= BTC/USDT:USDT
 SNAPSHOT_DATADIR := user_data/data/snapshots/$(DATASET)
 
-.PHONY: help install config-local seed seed-range seed-snapshot list-data list-snapshot backtest backtest-snapshot plot plot-df dry-run live compose-demo compose-live list-strategies clean clean-backtest-results
+.PHONY: help install seed seed-range seed-snapshot list-data list-snapshot backtest backtest-snapshot plot plot-df dry-run demo live compose-demo compose-live list-strategies clean clean-backtest-results
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 install: ## Install dependencies with uv
 	uv sync
-
-config-local: ## Create local config if missing
-	mkdir -p user_data
-	test -f $(LOCAL_CONFIG) || cp $(CONFIG) $(LOCAL_CONFIG)
 
 seed: install ## Seed active data with DAYS=<n>
 	$(PYTHON) scripts/seed_freqtrade_data.py --config $(CONFIG) --preset smc-basket --days $(DAYS)
@@ -56,11 +51,14 @@ plot: install ## Plot profit for the latest backtest
 plot-df: install ## Plot candles and entries for PAIR=<pair>
 	$(FREQ) plot-dataframe --config $(CONFIG) --strategy $(STRATEGY) --strategy-path $(SPATH) --pairs $(PAIR)
 
-dry-run: install config-local ## Run dry-run with LOCAL_CONFIG
-	$(FREQ) trade --config $(LOCAL_CONFIG) --strategy $(STRATEGY) --strategy-path $(SPATH)
+dry-run: install ## Run dry-run with base futures config
+	$(FREQ) trade --config $(CONFIG) --strategy $(STRATEGY) --strategy-path $(SPATH)
 
-live: install config-local ## Run live or dry-run depending on LOCAL_CONFIG
-	$(FREQ) trade --config $(LOCAL_CONFIG) --strategy $(STRATEGY) --strategy-path $(SPATH)
+demo: install ## Run Binance demo trading with env override config
+	$(FREQ) trade --config $(CONFIG) --config config/config.binance.demo.json --strategy $(STRATEGY) --strategy-path $(SPATH)
+
+live: install ## Run Binance live trading with env override config
+	$(FREQ) trade --config $(CONFIG) --config config/config.binance.live.json --strategy $(STRATEGY) --strategy-path $(SPATH)
 
 compose-demo: ## Run Binance demo service via Docker Compose
 	docker compose up -d freqtrade-demo

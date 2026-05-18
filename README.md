@@ -82,6 +82,7 @@ Make targets:
 - `make plot`
 - `make plot-df PAIR=BTC/USDT:USDT`
 - `make dry-run`
+- `make demo`
 - `make live`
 
 Ví dụ:
