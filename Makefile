@@ -7,6 +7,7 @@ SPATH    := src/strategies
 STRATEGY ?= SMC_FVG_Context30m_Freqtrade
 DAYS     ?= 60
 TIMERANGE ?=
+TIMEFRAMES ?= 30m,1h,1m
 DATASET  ?= recent_selected
 
 PAIR     ?= BTC/USDT:USDT
@@ -38,10 +39,10 @@ list-snapshot: ## List snapshot data with DATASET=<name>
 
 # Backtest current strategy
 backtest: install ## Run backtest with optional TIMERANGE=<start-end>
-	$(FREQ) backtesting --config $(CONFIG) --strategy $(STRATEGY) --strategy-path $(SPATH) $(if $(TIMERANGE),--timerange $(TIMERANGE),)
+	$(FREQ) backtesting --config $(CONFIG) --strategy $(STRATEGY) --strategy-path $(SPATH) --timeframe-detail 1m $(if $(TIMERANGE),--timerange $(TIMERANGE),)
 
 backtest-snapshot: install ## Run backtest on snapshot data with DATASET=<name> TIMERANGE=<start-end>
-	$(FREQ) backtesting --config $(CONFIG) --datadir $(SNAPSHOT_DATADIR) --strategy $(STRATEGY) --strategy-path $(SPATH) $(if $(TIMERANGE),--timerange $(TIMERANGE),)
+	$(FREQ) backtesting --config $(CONFIG) --datadir $(SNAPSHOT_DATADIR) --strategy $(STRATEGY) --strategy-path $(SPATH) --timeframe-detail 1m $(if $(TIMERANGE),--timerange $(TIMERANGE),)
 
 # Plot profit from latest backtest result; strategy must match the backtest
 plot: install ## Plot profit for the latest backtest

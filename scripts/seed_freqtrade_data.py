@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = ROOT / "config" / "config.futures.json"
 DEFAULT_DATA_ROOT = ROOT / "user_data" / "data"
 DEFAULT_DATASET = "active"
-DEFAULT_TIMEFRAMES = ["30m", "1h"]
+DEFAULT_TIMEFRAMES = ["30m", "1h", "1m"]
 SMC_BASKET = [
     "BTC/USDT:USDT",
     "PLAY/USDT:USDT",
