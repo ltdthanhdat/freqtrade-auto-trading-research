@@ -26,55 +26,55 @@ SMC_BASKET = [
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Seed OHLCV data theo format chuẩn của Freqtrade."
+        description="Seed OHLCV data in Freqtrade's standard format."
     )
     parser.add_argument(
         "--config",
         default=str(DEFAULT_CONFIG),
-        help="Config Freqtrade dùng để download data.",
+        help="Freqtrade config used to download data.",
     )
     parser.add_argument(
         "--dataset",
         default=DEFAULT_DATASET,
-        help="`active` để seed dataset chính, hoặc path tương đối dưới user_data/data. Ví dụ: snapshots/recent_selected.",
+        help="`active` to seed the default dataset, or a relative path under user_data/data. Example: snapshots/recent_selected.",
     )
     parser.add_argument(
         "--preset",
         choices=["smc-basket"],
-        help="Preset pair list có sẵn.",
+        help="Built-in pair list preset.",
     )
     parser.add_argument(
         "--pairs",
         nargs="+",
-        help="Danh sách pair Freqtrade. Ví dụ: BTC/USDT:USDT ETH/USDT:USDT",
+        help="List of Freqtrade pairs. Example: BTC/USDT:USDT ETH/USDT:USDT",
     )
     parser.add_argument(
         "--timeframes",
         nargs="+",
         default=DEFAULT_TIMEFRAMES,
-        help="Danh sách timeframe cần seed.",
+        help="List of timeframes to seed.",
     )
     parser.add_argument(
         "--days",
         type=int,
-        help="Download số ngày gần nhất.",
+        help="Download the most recent N days.",
     )
     parser.add_argument(
         "--timerange",
-        help="Timerange Freqtrade. Ví dụ: 20250101-20250301",
+        help="Freqtrade timerange. Example: 20250101-20250301",
     )
     parser.add_argument(
         "--erase",
         action="store_true",
-        help="Xóa data cũ của pair/timeframe trước khi download lại.",
+        help="Erase existing data for the pair/timeframe before downloading again.",
     )
     args = parser.parse_args()
 
     if bool(args.days) == bool(args.timerange):
-        parser.error("Chọn đúng một trong --days hoặc --timerange.")
+        parser.error("Specify exactly one of --days or --timerange.")
 
     if not args.preset and not args.pairs:
-        parser.error("Cần truyền --preset hoặc --pairs.")
+        parser.error("Must provide --preset or --pairs.")
 
     return args
 
@@ -84,7 +84,7 @@ def resolve_pairs(args: argparse.Namespace) -> list[str]:
         return args.pairs
     if args.preset == "smc-basket":
         return SMC_BASKET
-    raise ValueError("Không resolve được pair list.")
+    raise ValueError("Could not resolve pair list.")
 
 
 def resolve_datadir(args: argparse.Namespace) -> Path:
@@ -92,7 +92,7 @@ def resolve_datadir(args: argparse.Namespace) -> Path:
         return DEFAULT_DATA_ROOT / "binance"
     dataset = Path(args.dataset)
     if dataset.is_absolute() or ".." in dataset.parts:
-        raise ValueError("`--dataset` phải là path tương đối dưới user_data/data.")
+        raise ValueError("`--dataset` must be a relative path under user_data/data.")
     return DEFAULT_DATA_ROOT / dataset
 
 

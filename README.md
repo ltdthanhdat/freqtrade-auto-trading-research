@@ -1,39 +1,71 @@
 # Bot Trade
 
-Crypto trading bot dùng Freqtrade.
+Crypto trading bot built on Freqtrade.
 
 ## Current focus
 
-Repo này chạy độc lập trên Freqtrade.
-
-- strategy:
-  - `src/strategies/SMC_FVG_Context30m_Freqtrade.py`
-- futures config:
-  - `config/config.futures.json`
-- docs:
-  - `docs/smc_fvg_pinbar/README.md`
+- strategy: `src/strategies/SMC_FVG_Context30m_Freqtrade.py`
+- config: `config/config.futures.json`
+- research: `.research/smc_fvg_pinbar/README.md`
 
 ## Default strategy
 
-`SMC_FVG_Context30m_Freqtrade` là bản hybrid:
+`SMC_FVG_Context30m_Freqtrade` is a hybrid:
 
-- execution timeframe:
-  - `30m`
-- context timeframe:
-  - `1h`
-- base logic:
-  - giữ signal `1h` làm context chính
-  - map signal `1h` xuống hai nến `30m` tương ứng để vào lệnh
-- extra short edge:
-  - cho phép thêm `30m displacement short`
-  - chỉ khi `1h close < EMA20`
-  - và `1h EMA20 slope < 0`
+- execution timeframe: `30m`
+- context timeframe: `1h`
+- base logic: uses `1h` signal as primary context, maps it to the two corresponding `30m` candles for entry
+- extra short edge: allows `30m displacement short` when `1h close < EMA20` and `1h EMA20 slope < 0`
 
-Nói ngắn:
+In short: `1h` determines bias, `30m` executes earlier. This is the current default baseline.
 
-- `1h` quyết định bias chính
-- `30m` dùng để execution sớm hơn
-- đây là baseline mặc định hiện tại của repo
+## Research flow
+
+```mermaid
+flowchart TD
+    A[Read current state] --> B[State 1 hypothesis]
+    B --> C[Write experiment]
+    C --> D{Validation}
+
+    D --> E[Seed data]
+    E --> F[Single-pair backtest]
+    F --> G[Basket backtest]
+    G --> H[Dry-run]
+
+    H --> I[Log run]
+    I --> J{Keep / Discard?}
+
+    J -- keep --> K[Update state.md]
+    K --> L[New objective?]
+    L -- yes --> B
+    L -- no --> M[Use snapshot for dry-run / live]
+
+    J -- discard --> L
+
+    style A fill:#1a1a2e,color:#e0e0e0
+    style B fill:#16213e,color:#e0e0e0
+    style C fill:#0f3460,color:#e0e0e0
+    style D fill:#533483,color:#e0e0e0
+    style J fill:#533483,color:#e0e0e0
+    style K fill:#1a472a,color:#e0e0e0
+    style M fill:#1a472a,color:#e0e0e0
+```
+
+## Trace model
+
+```mermaid
+flowchart LR
+    H[Hypothesis] --> E[Experiment]
+    E --> R[Run]
+    R --> D[Decision]
+    D --> S[State]
+
+    style H fill:#16213e,color:#e0e0e0
+    style E fill:#0f3460,color:#e0e0e0
+    style R fill:#533483,color:#e0e0e0
+    style D fill:#1a472a,color:#e0e0e0
+    style S fill:#2d4a22,color:#e0e0e0
+```
 
 ## Quick Start
 
@@ -56,8 +88,8 @@ docker compose up -d freqtrade-live
 
 ## Seed data
 
-Script seed hiện tại gọi trực tiếp `freqtrade download-data`.
-Data active mặc định được lưu đúng format đã khai báo trong config:
+The seed script calls `freqtrade download-data` directly.
+Active data is saved in the format declared in config:
 
 - `datadir = user_data/data`
 - `dataformat_ohlcv = feather`
@@ -65,10 +97,8 @@ Data active mặc định được lưu đúng format đã khai báo trong confi
 
 Layout:
 
-- dataset active:
-  - `user_data/data/binance/futures`
-- dataset snapshot:
-  - `user_data/data/snapshots/<name>/futures`
+- dataset active: `user_data/data/binance/futures`
+- dataset snapshot: `user_data/data/snapshots/<name>/futures`
 
 Make targets:
 
@@ -85,7 +115,7 @@ Make targets:
 - `make demo`
 - `make live`
 
-Ví dụ:
+Examples:
 
 ```bash
 uv run python scripts/seed_freqtrade_data.py --preset smc-basket --days 90
@@ -94,7 +124,7 @@ uv run python scripts/seed_freqtrade_data.py --preset smc-basket --timerange 202
 uv run python scripts/seed_freqtrade_data.py --preset smc-basket --dataset snapshots/recent_selected --days 30
 ```
 
-Basket futures mặc định:
+Default futures basket:
 
 - `PLAY/USDT:USDT`
 - `BIO/USDT:USDT`
