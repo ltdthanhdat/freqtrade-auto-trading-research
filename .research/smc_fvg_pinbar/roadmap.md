@@ -1,7 +1,7 @@
 # SMC_FVG_PinBar Roadmap
 
 Status: active
-Current phase: `accepted cadence-pass snapshot, prioritize execution validation`
+Current phase: `accepted cadence-pass snapshot, decay watch active`
 
 ## Goal
 

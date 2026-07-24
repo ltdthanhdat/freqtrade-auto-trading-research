@@ -65,3 +65,9 @@
 - use `SMC_FVG_Context30m_Freqtrade`, timeframe `30m`, `max_open_trades = 3`, `1h` signal active on both `30m` candles + `30m displacement short` when `1h` bearish
 - reason: `117` trades / `70.94%` / `1.33/day` / `424.35%` profit / `2.593` PF / `8.17%` DD, sub-window `1.22 → 1.48/day` / `71.83% → 79.01%`
 - impact: accepted snapshot changes to hybrid 30m; cadence objective passes; next phase returns to execution validation
+
+## D012 - Keep strategy, do not discard on current decay evidence; fix basket drift; add monitoring
+- `2026-07-23` | keep | — | run: `2026-07-23_demo_live_divergence_and_decay_investigation.md`
+- do not discard `SMC_FVG_Context30m_Freqtrade`; last-month underperformance (`63` trades / `46.0%` win / `-22.5%`) is a real statistical outlier (block-bootstrap `p≈0.9%`) but correlates with an unfavorable market-direction regime (`r=+0.548`), not with pure calendar-time decay (residual `r≈-0.07`) -- inconclusive for permanent alpha decay
+- reason: reproduced `D011` snapshot exactly on its original window (`115` trades / `72.2%` / `+509.84%`); confirmed `config.binance.demo.json` re-adds `BTC/D/STG` pruned by `D005`/`D007` (9-pair basket vs accepted 6), which is the real driver of demo/live position divergence, not wallet size or the (dead) `stake_amount` field
+- impact: reconcile `config.binance.demo.json`/`config.binance.live.json` pair whitelist with the accepted 6-pair basket; use `scripts/monitor_decay.py` against real live/demo trade history going forward instead of ad-hoc re-backtesting on suspicion; re-evaluate decay verdict after 4-8 more weeks of real trades

@@ -1,6 +1,6 @@
 # SMC_FVG_PinBar Current State
 
-Last updated: 2026-05-18
+Last updated: 2026-07-23
 
 ## Current truth
 
@@ -42,13 +42,27 @@ Last updated: 2026-05-18
 
 ## Current phase
 
-- `accepted cadence-pass snapshot`
-- objective: keep hybrid 30m snapshot as baseline, prioritize execution validation
+- `accepted cadence-pass snapshot, decay watch active`
+- objective: fix known config drift, monitor real trade history for decay, do not tune blind
+
+## Known issue: demo/live basket drift
+
+- `config.binance.demo.json` pair_whitelist still has 9 pairs (adds `BTC/D/STG`, pruned by `D005`/`D007`)
+- `config.futures.json` (base) and post-pull `config.binance.live.json` correctly hold the accepted 6-pair basket
+- this is the primary cause of demo vs live position divergence -- not wallet size, not the (dead) `stake_amount` field
+- see `D012`, run `2026-07-23_demo_live_divergence_and_decay_investigation.md`
+
+## Decay watch
+
+- last-month backtest (`20260623`-`20260723`, 6-pair basket): `63` trades / `46.0%` win / `-22.5%` -- statistically a real outlier (block-bootstrap `p≈0.9%`), not noise
+- correlates with market-direction regime (`r=+0.548`), not with pure time decay (residual `r≈-0.07`) -- inconclusive on permanent alpha decay, do not discard strategy yet
+- use `scripts/monitor_decay.py` against real live/demo trade DB going forward; re-evaluate after 4-8 more weeks
 
 ## Next step
 
-1. dry-run with the current accepted snapshot
-2. only tune further when there is a new objective beyond the current cadence
+1. reconcile `config.binance.demo.json` whitelist with the accepted 6-pair basket (or explicitly document why it differs)
+2. run `scripts/monitor_decay.py` against real live/demo trade history once available
+3. only tune the strategy itself when there is a new objective beyond the current cadence and decay watch
 
 ## Implementation notes
 
