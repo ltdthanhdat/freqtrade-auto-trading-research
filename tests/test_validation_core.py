@@ -63,6 +63,24 @@ def test_bootstrap_equity_paths_are_deterministic(policy):
     assert bootstrap_equity_paths(trades, policy) == bootstrap_equity_paths(trades, policy)
 
 
+def test_bootstrap_equity_paths_resamples_stressed_whole_blocks():
+    policy = ValidationPolicy(120, 30, 3, 100, 0.15, 0.001, 0.0005, 7, 1, "2W")
+    trades = pd.DataFrame(
+        {
+            "open_date": pd.to_datetime(
+                ["2026-01-01", "2026-01-02", "2026-01-20", "2026-01-21", "2026-01-22"]
+            ),
+            "profit_ratio": [0.04, 0.03, 0.01, -0.02, 0.02],
+        }
+    )
+
+    summary = bootstrap_equity_paths(trades, policy)
+
+    assert summary.p95_max_drawdown == pytest.approx(0.021)
+    assert summary.p05_net_profit == pytest.approx(0.0132021066227888)
+    assert summary.p95_losing_streak == 1
+
+
 def test_verdict_fails_on_drawdown_breach(policy):
     assert evaluate_verdict(
         Checks(True, True, True), [FoldMetrics(100, 0.02, 0.151)], 0.10, policy

@@ -110,10 +110,10 @@ def bootstrap_equity_paths(trades: pd.DataFrame, policy: ValidationPolicy) -> Bo
         max_drawdowns[index] = (1 - equity / np.maximum.accumulate(equity)).max()
         net_profits[index] = equity[-1] - 1
         losses = returns < 0
-        losing_streaks[index] = max(
-            (len(run) for run in np.split(losses, np.flatnonzero(~losses) + 1) if run.all()),
-            default=0,
-        )
+        boundaries = np.diff(np.concatenate(([False], losses, [False])).astype(int))
+        starts = np.flatnonzero(boundaries == 1)
+        ends = np.flatnonzero(boundaries == -1)
+        losing_streaks[index] = max(ends - starts, default=0)
 
     return BootstrapSummary(
         p95_max_drawdown=float(np.percentile(max_drawdowns, 95)),
