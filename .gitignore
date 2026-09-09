@@ -36,6 +36,7 @@ user_data/freqaimodels/
 tradesv3.sqlite
 tradesv3.sqlite-shm
 tradesv3.sqlite-wal
+user_data/validation_state.sqlite*
 storage/
 
 # Secrets

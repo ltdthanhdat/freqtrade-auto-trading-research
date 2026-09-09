@@ -1,8 +1,10 @@
 """Pure policy, fold, and verdict primitives for baseline validation."""
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import json
 from pathlib import Path
+import sqlite3
 
 import numpy as np
 import pandas as pd
@@ -68,6 +70,89 @@ class BootstrapSummary:
     p95_max_drawdown: float
     p05_net_profit: float
     p95_losing_streak: float
+
+
+class ValidationStateStore:
+    def __init__(self, path: Path):
+        self.path = path
+        with sqlite3.connect(self.path) as connection:
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS current_state (
+                    scope TEXT PRIMARY KEY,
+                    state TEXT NOT NULL,
+                    reason TEXT NOT NULL,
+                    metrics TEXT NOT NULL,
+                    lock_until TEXT,
+                    run_id TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS state_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    scope TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    reason TEXT NOT NULL,
+                    metrics TEXT NOT NULL,
+                    lock_until TEXT,
+                    run_id TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+
+    def transition(
+        self,
+        scope: str,
+        state: str,
+        reason: str,
+        metrics: dict,
+        lock_until: str | None,
+        run_id: str,
+    ) -> None:
+        with sqlite3.connect(self.path) as connection:
+            current = connection.execute(
+                "SELECT state FROM current_state WHERE scope = ?", (scope,)
+            ).fetchone()
+            if current and current[0] == "PAUSED" and state == "ACTIVE" and reason != "review-approved":
+                raise ValueError("review approval is required to reopen a paused state")
+
+            timestamp = datetime.now(timezone.utc).isoformat()
+            values = (
+                scope,
+                state,
+                reason,
+                json.dumps(metrics, sort_keys=True),
+                lock_until,
+                run_id,
+                timestamp,
+            )
+            connection.execute(
+                """
+                INSERT INTO state_events
+                    (scope, state, reason, metrics, lock_until, run_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                values,
+            )
+            connection.execute(
+                """
+                INSERT INTO current_state
+                    (scope, state, reason, metrics, lock_until, run_id, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(scope) DO UPDATE SET
+                    state = excluded.state,
+                    reason = excluded.reason,
+                    metrics = excluded.metrics,
+                    lock_until = excluded.lock_until,
+                    run_id = excluded.run_id,
+                    updated_at = excluded.updated_at
+                """,
+                values,
+            )
 
 
 def build_oos_folds(
