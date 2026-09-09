@@ -14,6 +14,40 @@ def test_makefile_exposes_validate_snapshot():
     assert "scripts/validate_baseline.py" in makefile
 
 
+def test_make_validate_snapshot_passes_required_runner_inputs():
+    result = subprocess.run(
+        [
+            "make",
+            "--no-print-directory",
+            "--dry-run",
+            "validate-snapshot",
+            "CONFIG=config/custom.json",
+            "DATASET=accepted_6pair_2026q3",
+            "STRATEGY=FrozenStrategy",
+            "SPATH=custom/strategies",
+            "VALIDATION_START=2026-01-01",
+            "VALIDATION_END=2026-08-01",
+            "APPROVED_IDENTITY=approved.json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert "scripts/validate_baseline.py" in result.stdout
+    assert "--config config/custom.json" in result.stdout
+    assert "--datadir user_data/data/snapshots/accepted_6pair_2026q3" in result.stdout
+    assert "--policy config/validation.baseline.json" in result.stdout
+    assert "--strategy FrozenStrategy" in result.stdout
+    assert "--strategy-path custom/strategies" in result.stdout
+    assert "--strategy-file custom/strategies/FrozenStrategy.py" in result.stdout
+    assert "--start 2026-01-01" in result.stdout
+    assert "--end 2026-08-01" in result.stdout
+    assert "--runs-dir .research/smc_fvg_pinbar/runs" in result.stdout
+    assert "--approved-identity approved.json" in result.stdout
+
+
 def test_make_dry_run_requires_validate_pass_gate():
     makefile = Path("Makefile").read_text()
 
@@ -69,6 +103,47 @@ def test_make_dry_run_blocks_nonpassing_manifests_before_freqtrade(tmp_path):
 
         assert result.returncode != 0
         assert not started.exists()
+
+
+def test_make_dry_run_reaches_trade_only_with_pass_manifest(tmp_path):
+    manifest = tmp_path / "passed.json"
+    invoked = tmp_path / "freqtrade-arguments.json"
+    fake_freqtrade = tmp_path / "fake-freqtrade"
+    override = tmp_path / "override.mk"
+    manifest.write_text('{"verdict": "PASS"}\n')
+    fake_freqtrade.write_text(
+        "#!/bin/sh\n"
+        f"printf '%s\\n' \"$@\" > {invoked}\n"
+    )
+    fake_freqtrade.chmod(0o755)
+    override.write_text(f"install:\n\t@:\nFREQ := {fake_freqtrade}\n")
+
+    result = subprocess.run(
+        [
+            "make",
+            "--no-print-directory",
+            "-f",
+            "Makefile",
+            "-f",
+            str(override),
+            "dry-run",
+            f"VALIDATION_MANIFEST={manifest}",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert invoked.read_text().splitlines() == [
+        "trade",
+        "--config",
+        "config/config.futures.json",
+        "--strategy",
+        "SMC_FVG_Context30m_Freqtrade",
+        "--strategy-path",
+        "src/strategies",
+    ]
 
 
 class FakeExecutor:

@@ -125,7 +125,7 @@ Make targets:
 - `make monitor-decay BASELINE=user_data/backtest_results/baseline.zip DB=user_data/tradesv3.demo.sqlite`
 - `make plot`
 - `make plot-df PAIR=BTC/USDT:USDT`
-- `make dry-run`
+- `make dry-run VALIDATION_MANIFEST=.research/smc_fvg_pinbar/runs/<run-id>/manifest.json`
 - `make demo`
 - `make live`
 
