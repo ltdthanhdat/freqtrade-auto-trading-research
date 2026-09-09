@@ -9,6 +9,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from scripts.validation_core import ValidationPolicy, bootstrap_equity_paths
+
 ROOT = Path(__file__).resolve().parents[1]
 
 DEFAULT_BLOCK_FREQ = "2W"
@@ -142,7 +144,7 @@ def build_block_null_distribution(
     return win_rates
 
 
-def main() -> None:
+def main() -> int:
     args = parse_args()
 
     baseline = load_backtest_trades(args.baseline)
@@ -157,6 +159,8 @@ def main() -> None:
 
     observed_win_rate = recent_window["is_win"].mean()
     observed_mean_profit = recent_window["profit_ratio"].mean()
+    policy = ValidationPolicy.from_path(ROOT / "config/validation.baseline.json")
+    bootstrap = bootstrap_equity_paths(baseline, policy)
 
     null_dist = build_block_null_distribution(
         baseline, len(recent_window), args.block_freq, args.n_boot, args.seed
@@ -172,6 +176,9 @@ def main() -> None:
     print(f"Baseline 95% CI   : [{lo:.3%}, {hi:.3%}]  (block-bootstrap, block={args.block_freq})")
     print(f"Alert threshold   : win rate <= {alert_threshold:.3%} (p{args.alert_percentile:.0f} of baseline)")
     print(f"Observed percentile rank vs baseline: {percentile_rank:.1f}th")
+    print(f"Monte Carlo p95 DD: {bootstrap.p95_max_drawdown:.3%}")
+    print(f"Monte Carlo p05 net profit: {bootstrap.p05_net_profit:.3%}")
+    print(f"Monte Carlo p95 losing streak: {bootstrap.p95_losing_streak:.0f}")
 
     if observed_win_rate <= alert_threshold:
         print(
@@ -180,9 +187,11 @@ def main() -> None:
             "This is not typical variance for this strategy's history -- "
             "reduce size / re-investigate before scaling further."
         )
+        return 1
     else:
         print("\nOK: recent performance is within the normal range of historical variation.")
+        return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import json
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 
@@ -62,6 +63,13 @@ class FoldMetrics:
     max_drawdown: float
 
 
+@dataclass(frozen=True)
+class BootstrapSummary:
+    p95_max_drawdown: float
+    p05_net_profit: float
+    p95_losing_streak: float
+
+
 def build_oos_folds(
     start: pd.Timestamp, end: pd.Timestamp, policy: ValidationPolicy
 ) -> list[OosFold]:
@@ -71,6 +79,47 @@ def build_oos_folds(
         folds.append(OosFold(start, cursor, cursor, cursor + pd.Timedelta(days=policy.oos_days)))
         cursor += pd.Timedelta(days=policy.oos_days)
     return folds
+
+
+def bootstrap_equity_paths(trades: pd.DataFrame, policy: ValidationPolicy) -> BootstrapSummary:
+    if trades.empty:
+        raise ValueError("bootstrap requires at least one trade")
+    if not {"open_date", "profit_ratio"}.issubset(trades.columns):
+        raise ValueError("bootstrap requires open_date and profit_ratio")
+
+    grouped = trades.copy()
+    open_dates = pd.to_datetime(grouped["open_date"])
+    if getattr(open_dates.dt, "tz", None) is not None:
+        open_dates = open_dates.dt.tz_localize(None)
+    grouped["block"] = open_dates.dt.to_period(policy.bootstrap_block)
+    blocks = grouped["block"].unique()
+    returns_by_block = {
+        block: grouped.loc[grouped["block"] == block, "profit_ratio"].to_numpy(dtype=float)
+        for block in blocks
+    }
+
+    rng = np.random.default_rng(policy.bootstrap_seed)
+    max_drawdowns = np.empty(policy.bootstrap_samples)
+    net_profits = np.empty(policy.bootstrap_samples)
+    losing_streaks = np.empty(policy.bootstrap_samples)
+    stressed_cost = 2 * policy.slippage_per_side
+    for index in range(policy.bootstrap_samples):
+        chosen = rng.choice(blocks, size=len(blocks), replace=True)
+        returns = np.concatenate([returns_by_block[block] for block in chosen]) - stressed_cost
+        equity = np.concatenate(([1.0], np.cumprod(1 + returns)))
+        max_drawdowns[index] = (1 - equity / np.maximum.accumulate(equity)).max()
+        net_profits[index] = equity[-1] - 1
+        losses = returns < 0
+        losing_streaks[index] = max(
+            (len(run) for run in np.split(losses, np.flatnonzero(~losses) + 1) if run.all()),
+            default=0,
+        )
+
+    return BootstrapSummary(
+        p95_max_drawdown=float(np.percentile(max_drawdowns, 95)),
+        p05_net_profit=float(np.percentile(net_profits, 5)),
+        p95_losing_streak=float(np.percentile(losing_streaks, 95)),
+    )
 
 
 def evaluate_verdict(

@@ -7,6 +7,7 @@ from scripts.validation_core import (
     Checks,
     FoldMetrics,
     ValidationPolicy,
+    bootstrap_equity_paths,
     build_oos_folds,
     evaluate_verdict,
 )
@@ -49,6 +50,17 @@ def test_oos_folds_are_chronological_and_non_overlapping(policy):
     assert len(folds) == 3
     assert folds[0].oos_end <= folds[1].oos_start
     assert all(folds[index].oos_end <= folds[index + 1].oos_start for index in range(2))
+
+
+def test_bootstrap_equity_paths_are_deterministic(policy):
+    trades = pd.DataFrame(
+        {
+            "open_date": pd.date_range("2026-01-01", periods=8, freq="D"),
+            "profit_ratio": [0.01, -0.02] * 4,
+        }
+    )
+
+    assert bootstrap_equity_paths(trades, policy) == bootstrap_equity_paths(trades, policy)
 
 
 def test_verdict_fails_on_drawdown_breach(policy):
