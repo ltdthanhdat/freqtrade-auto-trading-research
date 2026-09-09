@@ -140,9 +140,11 @@ def _attribution_is_evidenced(trades: pd.DataFrame) -> bool:
     return (contribution > 0).sum() > 1
 
 
-def _validate_folds(folds: tuple[OosFold, ...]) -> list[str]:
+def _validate_folds(folds: tuple[OosFold, ...], policy: ValidationPolicy) -> list[str]:
     if not folds:
         return ["no OOS folds available"]
+    if len(folds) < policy.required_folds:
+        return [f"requires {policy.required_folds} OOS folds, found {len(folds)}"]
     if any(folds[index].oos_end > folds[index + 1].oos_start for index in range(len(folds) - 1)):
         return ["OOS folds overlap"]
     if any(fold.oos_start >= fold.oos_end for fold in folds):
@@ -156,7 +158,7 @@ def run_oos_folds(
     folds = build_oos_folds(pd.Timestamp(args.start, tz="UTC"), pd.Timestamp(args.end, tz="UTC"), policy)
     fold_metrics: list[FoldMetrics] = []
     trade_frames: list[pd.DataFrame] = []
-    reasons = _validate_folds(tuple(folds))
+    reasons = _validate_folds(tuple(folds), policy)
     for index, fold in enumerate(folds, start=1):
         filename = run_dir / f"fold-{index}-{fold.oos_start:%Y%m%d}-{fold.oos_end:%Y%m%d}.json"
         command = _freqtrade_command(args, "backtesting") + [

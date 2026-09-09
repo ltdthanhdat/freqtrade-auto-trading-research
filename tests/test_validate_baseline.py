@@ -110,6 +110,16 @@ def test_runner_records_three_chronological_folds_and_100_trade_pass_gate(tmp_pa
     assert result.verdict == "PASS"
 
 
+def test_runner_fails_when_oos_fold_count_is_below_policy_requirement(tmp_path):
+    args = make_args(tmp_path, complete=True)
+    args.end = "2025-06-01"
+
+    result = run_validation(args, executor=FakeExecutor())
+
+    assert result.verdict == "FAIL"
+    assert "requires 3 OOS folds, found 1" in result.reasons
+
+
 def test_runner_fails_closed_when_attribution_cannot_be_evidenced(tmp_path):
     trades = [
         {"pair": "PLAY/USDT:USDT", "enter_tag": "base", "profit_ratio": 0.01}
