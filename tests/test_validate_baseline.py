@@ -2,6 +2,7 @@ import argparse
 from dataclasses import asdict
 import json
 from pathlib import Path
+import subprocess
 
 from scripts.validate_baseline import collect_identity, run_validation
 
@@ -11,6 +12,63 @@ def test_makefile_exposes_validate_snapshot():
 
     assert "validate-snapshot:" in makefile
     assert "scripts/validate_baseline.py" in makefile
+
+
+def test_make_dry_run_requires_validate_pass_gate():
+    makefile = Path("Makefile").read_text()
+
+    assert "dry-run: validate-pass install" in makefile
+
+
+def test_make_validate_pass_requires_a_pass_manifest(tmp_path):
+    passed = tmp_path / "passed.json"
+    warned = tmp_path / "warned.json"
+    failed = tmp_path / "failed.json"
+    missing = tmp_path / "missing.json"
+    passed.write_text('{"verdict": "PASS"}\n')
+    warned.write_text('{"verdict": "WARN"}\n')
+    failed.write_text('{"verdict": "FAIL"}\n')
+
+    def validate(manifest: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["make", "--no-print-directory", "validate-pass", f"VALIDATION_MANIFEST={manifest}"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    assert validate(passed).returncode == 0
+    assert validate(warned).returncode != 0
+    assert validate(failed).returncode != 0
+    assert validate(missing).returncode != 0
+
+
+def test_make_dry_run_blocks_nonpassing_manifests_before_freqtrade(tmp_path):
+    manifests = {
+        "missing": tmp_path / "missing.json",
+        "warn": tmp_path / "warn.json",
+        "fail": tmp_path / "fail.json",
+    }
+    manifests["warn"].write_text('{"verdict": "WARN"}\n')
+    manifests["fail"].write_text('{"verdict": "FAIL"}\n')
+
+    for name, manifest in manifests.items():
+        started = tmp_path / f"freqtrade-{name}-started"
+        result = subprocess.run(
+            [
+                "make",
+                "--no-print-directory",
+                "dry-run",
+                f"VALIDATION_MANIFEST={manifest}",
+                f"FREQ=touch {started}",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode != 0
+        assert not started.exists()
 
 
 class FakeExecutor:

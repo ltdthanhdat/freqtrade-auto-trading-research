@@ -12,13 +12,14 @@ DATASET  ?= recent_selected
 VALIDATION_START ?= 2026-02-18
 VALIDATION_END ?= 2026-05-17
 APPROVED_IDENTITY ?= .research/smc_fvg_pinbar/approved-baseline-identity.json
+VALIDATION_MANIFEST ?=
 BASELINE ?= user_data/backtest_results/baseline.zip
 DB ?= user_data/tradesv3.demo.sqlite
 
 PAIR     ?= BTC/USDT:USDT
 SNAPSHOT_DATADIR := user_data/data/snapshots/$(DATASET)
 
-.PHONY: help install seed seed-range seed-snapshot list-data list-snapshot backtest backtest-snapshot validate-snapshot monitor-decay plot plot-df dry-run demo live compose-demo compose-live list-strategies clean clean-backtest-results
+.PHONY: help install seed seed-range seed-snapshot list-data list-snapshot backtest backtest-snapshot validate-snapshot validate-pass monitor-decay plot plot-df dry-run demo live compose-demo compose-live list-strategies clean clean-backtest-results
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -52,6 +53,11 @@ backtest-snapshot: install ## Run backtest on snapshot data with DATASET=<name> 
 validate-snapshot: install ## Validate snapshot gate with DATASET=<name>
 	$(PYTHON) scripts/validate_baseline.py --config $(CONFIG) --datadir $(SNAPSHOT_DATADIR) --policy config/validation.baseline.json --strategy $(STRATEGY) --strategy-path $(SPATH) --strategy-file $(SPATH)/$(STRATEGY).py --start $(VALIDATION_START) --end $(VALIDATION_END) --runs-dir .research/smc_fvg_pinbar/runs --approved-identity $(APPROVED_IDENTITY)
 
+validate-pass: ## Require VALIDATION_MANIFEST with verdict PASS
+	@test -n "$(VALIDATION_MANIFEST)" || { echo "VALIDATION_MANIFEST is required" >&2; exit 1; }
+	@test -f "$(VALIDATION_MANIFEST)" || { echo "validation manifest not found: $(VALIDATION_MANIFEST)" >&2; exit 1; }
+	@jq -e '.verdict == "PASS"' "$(VALIDATION_MANIFEST)" >/dev/null || { echo "validation verdict is not PASS" >&2; exit 1; }
+
 monitor-decay: install ## Monitor demo/live decay with BASELINE=<zip> DB=<sqlite>
 	$(PYTHON) scripts/monitor_decay.py --baseline $(BASELINE) --db $(DB)
 
@@ -63,7 +69,7 @@ plot: install ## Plot profit for the latest backtest
 plot-df: install ## Plot candles and entries for PAIR=<pair>
 	$(FREQ) plot-dataframe --config $(CONFIG) --strategy $(STRATEGY) --strategy-path $(SPATH) --pairs $(PAIR)
 
-dry-run: install ## Run dry-run with base futures config
+dry-run: validate-pass install ## Run dry-run only with a PASS validation manifest
 	$(FREQ) trade --config $(CONFIG) --strategy $(STRATEGY) --strategy-path $(SPATH)
 
 demo: install ## Run Binance demo trading with env override config

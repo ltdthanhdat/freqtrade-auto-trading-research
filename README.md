@@ -79,10 +79,16 @@ set +a
 make validate-snapshot DATASET=accepted_6pair_2026q3
 ```
 
-Start `make dry-run` only after the validation run reports `PASS`. A `WARN` or
-`FAIL` retains its manifest and Freqtrade exports in
-`.research/smc_fvg_pinbar/runs/` and blocks dry-run; create a new hypothesis
-instead of changing thresholds in the same loop.
+Start dry-run only with the `PASS` manifest from validation:
+
+```bash
+make dry-run VALIDATION_MANIFEST=.research/smc_fvg_pinbar/runs/<run-id>/manifest.json
+```
+
+A `WARN`, `FAIL`, or missing manifest blocks dry-run before Freqtrade starts.
+`WARN` and `FAIL` retain their manifest and Freqtrade exports in
+`.research/smc_fvg_pinbar/runs/`; create a new hypothesis instead of changing
+thresholds in the same loop.
 
 Compose option:
 
@@ -115,6 +121,7 @@ Make targets:
 - `make backtest TIMERANGE=20260218-20260518`
 - `make backtest-snapshot DATASET=recent_selected TIMERANGE=20260218-20260518`
 - `make validate-snapshot DATASET=accepted_6pair_2026q3`
+- `make validate-pass VALIDATION_MANIFEST=.research/smc_fvg_pinbar/runs/<run-id>/manifest.json`
 - `make monitor-decay BASELINE=user_data/backtest_results/baseline.zip DB=user_data/tradesv3.demo.sqlite`
 - `make plot`
 - `make plot-df PAIR=BTC/USDT:USDT`
@@ -158,6 +165,15 @@ The command uses `config/config.futures.json`, the named snapshot datadir,
 allows `make dry-run`. `WARN` and `FAIL` keep the validation artifacts and
 block dry-run; record a new hypothesis before rerunning, without changing
 thresholds in that loop. No named snapshot has been validated yet.
+
+Pass the resulting manifest explicitly when starting dry-run:
+
+```bash
+make dry-run VALIDATION_MANIFEST=.research/smc_fvg_pinbar/runs/<run-id>/manifest.json
+```
+
+`make dry-run` rejects a missing manifest and any verdict other than `PASS`
+before it runs Freqtrade.
 
 Monitor closed demo or live trades against a retained baseline export:
 
