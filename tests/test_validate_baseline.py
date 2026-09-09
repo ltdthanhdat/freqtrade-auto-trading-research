@@ -6,6 +6,13 @@ from pathlib import Path
 from scripts.validate_baseline import collect_identity, run_validation
 
 
+def test_makefile_exposes_validate_snapshot():
+    makefile = Path("Makefile").read_text()
+
+    assert "validate-snapshot:" in makefile
+    assert "scripts/validate_baseline.py" in makefile
+
+
 class FakeExecutor:
     def __init__(self, trades=None):
         self.commands: list[list[str]] = []

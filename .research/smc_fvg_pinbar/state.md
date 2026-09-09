@@ -1,6 +1,6 @@
 # SMC_FVG_PinBar Current State
 
-Last updated: 2026-07-23
+Last updated: 2026-09-10
 
 ## Current truth
 
@@ -42,8 +42,8 @@ Last updated: 2026-07-23
 
 ## Current phase
 
-- `accepted cadence-pass snapshot, decay watch active`
-- objective: fix known config drift, monitor real trade history for decay, do not tune blind
+- `validation gate pending`
+- objective: seed and validate the accepted six-pair snapshot before dry-run; do not tune blind
 
 ## Known issue: demo/live basket drift
 
@@ -60,9 +60,9 @@ Last updated: 2026-07-23
 
 ## Next step
 
-1. reconcile `config.binance.demo.json` whitelist with the accepted 6-pair basket (or explicitly document why it differs)
-2. run `scripts/monitor_decay.py` against real live/demo trade history once available
-3. only tune the strategy itself when there is a new objective beyond the current cadence and decay watch
+1. seed a named accepted six-pair snapshot with `1m`, `30m`, and `1h` data
+2. run `make validate-snapshot DATASET=accepted_6pair_2026q3` and retain its manifest and Freqtrade exports
+3. start dry-run only after `PASS`; for `WARN` or `FAIL`, retain evidence and create a new hypothesis without changing thresholds in the same loop
 
 ## Implementation notes
 

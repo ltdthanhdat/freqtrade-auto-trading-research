@@ -76,8 +76,13 @@ set -a
 source .env
 set +a
 
-make dry-run
+make validate-snapshot DATASET=accepted_6pair_2026q3
 ```
+
+Start `make dry-run` only after the validation run reports `PASS`. A `WARN` or
+`FAIL` retains its manifest and Freqtrade exports in
+`.research/smc_fvg_pinbar/runs/` and blocks dry-run; create a new hypothesis
+instead of changing thresholds in the same loop.
 
 Compose option:
 
@@ -109,6 +114,8 @@ Make targets:
 - `make list-snapshot DATASET=recent_selected`
 - `make backtest TIMERANGE=20260218-20260518`
 - `make backtest-snapshot DATASET=recent_selected TIMERANGE=20260218-20260518`
+- `make validate-snapshot DATASET=accepted_6pair_2026q3`
+- `make monitor-decay BASELINE=user_data/backtest_results/baseline.zip DB=user_data/tradesv3.demo.sqlite`
 - `make plot`
 - `make plot-df PAIR=BTC/USDT:USDT`
 - `make dry-run`
@@ -132,3 +139,29 @@ Default futures basket:
 - `PENDLE/USDT:USDT`
 - `BR/USDT:USDT`
 - `YGG/USDT:USDT`
+
+## Dry-run validation gate
+
+Seed the named accepted six-pair snapshot with `1m`, `30m`, and `1h` data,
+then provide an approved identity manifest and validation window. The gate
+itself requires the frozen policy's OOS folds:
+
+```bash
+make validate-snapshot DATASET=accepted_6pair_2026q3 \\
+  VALIDATION_START=2026-02-18 VALIDATION_END=2026-05-17 \\
+  APPROVED_IDENTITY=.research/smc_fvg_pinbar/approved-baseline-identity.json
+```
+
+The command uses `config/config.futures.json`, the named snapshot datadir,
+`config/validation.baseline.json`, `SMC_FVG_Context30m_Freqtrade`,
+`src/strategies`, and `.research/smc_fvg_pinbar/runs/`. Only a `PASS` verdict
+allows `make dry-run`. `WARN` and `FAIL` keep the validation artifacts and
+block dry-run; record a new hypothesis before rerunning, without changing
+thresholds in that loop. No named snapshot has been validated yet.
+
+Monitor closed demo or live trades against a retained baseline export:
+
+```bash
+make monitor-decay BASELINE=user_data/backtest_results/baseline.zip \\
+  DB=user_data/tradesv3.demo.sqlite
+```

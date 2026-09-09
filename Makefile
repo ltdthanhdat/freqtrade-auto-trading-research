@@ -9,11 +9,16 @@ DAYS     ?= 60
 TIMERANGE ?=
 TIMEFRAMES ?= 30m,1h,1m
 DATASET  ?= recent_selected
+VALIDATION_START ?= 2026-02-18
+VALIDATION_END ?= 2026-05-17
+APPROVED_IDENTITY ?= .research/smc_fvg_pinbar/approved-baseline-identity.json
+BASELINE ?= user_data/backtest_results/baseline.zip
+DB ?= user_data/tradesv3.demo.sqlite
 
 PAIR     ?= BTC/USDT:USDT
 SNAPSHOT_DATADIR := user_data/data/snapshots/$(DATASET)
 
-.PHONY: help install seed seed-range seed-snapshot list-data list-snapshot backtest backtest-snapshot plot plot-df dry-run demo live compose-demo compose-live list-strategies clean clean-backtest-results
+.PHONY: help install seed seed-range seed-snapshot list-data list-snapshot backtest backtest-snapshot validate-snapshot monitor-decay plot plot-df dry-run demo live compose-demo compose-live list-strategies clean clean-backtest-results
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -43,6 +48,12 @@ backtest: install ## Run backtest with optional TIMERANGE=<start-end>
 
 backtest-snapshot: install ## Run backtest on snapshot data with DATASET=<name> TIMERANGE=<start-end>
 	$(FREQ) backtesting --config $(CONFIG) --datadir $(SNAPSHOT_DATADIR) --strategy $(STRATEGY) --strategy-path $(SPATH) --timeframe-detail 1m $(if $(TIMERANGE),--timerange $(TIMERANGE),)
+
+validate-snapshot: install ## Validate snapshot gate with DATASET=<name>
+	$(PYTHON) scripts/validate_baseline.py --config $(CONFIG) --datadir $(SNAPSHOT_DATADIR) --policy config/validation.baseline.json --strategy $(STRATEGY) --strategy-path $(SPATH) --strategy-file $(SPATH)/$(STRATEGY).py --start $(VALIDATION_START) --end $(VALIDATION_END) --runs-dir .research/smc_fvg_pinbar/runs --approved-identity $(APPROVED_IDENTITY)
+
+monitor-decay: install ## Monitor demo/live decay with BASELINE=<zip> DB=<sqlite>
+	$(PYTHON) scripts/monitor_decay.py --baseline $(BASELINE) --db $(DB)
 
 # Plot profit from latest backtest result; strategy must match the backtest
 plot: install ## Plot profit for the latest backtest
