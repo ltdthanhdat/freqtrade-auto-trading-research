@@ -493,6 +493,13 @@ def _fold_metrics(trades: pd.DataFrame) -> FoldMetrics:
     )
 
 
+def _canonical_entry_tag(value: object) -> str:
+    if not isinstance(value, str):
+        return "untagged"
+    signal_kind = value.split("|", 1)[0].strip().casefold()
+    return signal_kind or "untagged"
+
+
 def _attribution(trades: pd.DataFrame) -> tuple[dict[str, object], bool]:
     if trades.empty:
         return {
@@ -505,13 +512,7 @@ def _attribution(trades: pd.DataFrame) -> tuple[dict[str, object], bool]:
     if not required.issubset(trades.columns):
         raise ValueError("attribution fields are incomplete")
     normalized = trades.copy()
-    normalized["entry_tag"] = (
-        normalized["enter_tag"]
-        .fillna("untagged")
-        .astype(str)
-        .str.strip()
-        .str.casefold()
-    ).replace("", "untagged")
+    normalized["entry_tag"] = normalized["enter_tag"].map(_canonical_entry_tag)
     normalized["side"] = np.where(normalized["is_short"].astype(bool), "short", "long")
 
     def grouped(column: str) -> dict[str, float]:

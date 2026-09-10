@@ -8,7 +8,7 @@ import zipfile
 import pandas as pd
 import pytest
 
-from scripts.validate_baseline import collect_identity, run_validation
+from scripts.validate_baseline import _attribution, collect_identity, run_validation
 
 
 PAIRS = ("PLAY/USDT:USDT", "BIO/USDT:USDT")
@@ -347,6 +347,43 @@ def test_single_pair_or_tag_source_cannot_pass(tmp_path):
 
     assert result.verdict != "PASS"
     assert manifest["attribution"]["single_source"] is True
+
+
+def test_attribution_does_not_count_stop_suffixes_as_distinct_tag_sources():
+    attribution, diversified = _attribution(
+        pd.DataFrame(
+            {
+                "pair": list(PAIRS),
+                "enter_tag": [
+                    " displacement|100.0000000000",
+                    "DISPLACEMENT|101.0000000000 ",
+                ],
+                "is_short": [False, True],
+                "stressed_profit_abs": [10.0, 10.0],
+            }
+        )
+    )
+
+    assert attribution["by_tag"] == {"displacement": 20.0}
+    assert attribution["single_source"] is True
+    assert diversified is False
+
+
+def test_attribution_maps_empty_signal_kinds_to_untagged():
+    attribution, diversified = _attribution(
+        pd.DataFrame(
+            {
+                "pair": list(PAIRS),
+                "enter_tag": [None, " |100.0000000000"],
+                "is_short": [False, True],
+                "stressed_profit_abs": [10.0, 10.0],
+            }
+        )
+    )
+
+    assert attribution["by_tag"] == {"untagged": 20.0}
+    assert attribution["single_source"] is True
+    assert diversified is False
 
 
 @pytest.mark.parametrize("failure", ["malformed-trades", "malformed-config"])
