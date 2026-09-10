@@ -32,6 +32,14 @@
 - gate check: `make validate-pass VALIDATION_MANIFEST=.research/smc_fvg_pinbar/runs/20260910T142336334271Z/manifest.json` rejected the manifest (`validation verdict is not PASS`)
 - keep_or_discard: keep as supplementary failure evidence; it does not override the fixed WFO failure
 
+## H018 - halve the target ROI while keeping entries and stops frozen
+
+- verify: real validation on the frozen WFO snapshot, manifest `.research/smc_fvg_pinbar/runs/20260910T143726751765Z/manifest.json`
+- changed scope: candidate exit target only (`1R -> 0.5R`); entry logic, stop, basket, fee/slippage, and policy unchanged
+- result: `FAIL`; folds `46 / 28 / 25` trades, stressed returns `-12.38% / -12.90% / -4.93%`, drawdowns `21.28% / 20.98% / 11.56%`; aggregate `99` trades, below the required `100`
+- interpretation: win-rate improved to roughly `61% / 57% / 60%`, but expectancy stayed negative; long-side losses and single-source attribution remain
+- keep_or_discard: discard H018; do not promote the half-R target or sweep more ROI values against this sample
+
 ## Conclusion
 
 The frozen strategy is not eligible for dry-run. Three small entry-filter hypotheses were discarded, and the rolling diagnostic reproduces negative OOS behavior without a correctness failure. Further parameter or basket tuning would be post-hoc selection against the failed window; require a separately specified strategy thesis before another candidate.

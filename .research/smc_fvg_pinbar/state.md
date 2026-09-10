@@ -57,6 +57,7 @@ Last updated: 2026-09-10
 ### Supplementary screening (2026-09-10)
 
 - H014/H015/H016 candidate entry filters all failed real WFO validation; none changed the frozen strategy
+- H018 half-R exit candidate improved win-rate but still failed all performance gates; it was not promoted
 - H017 rolling current-window diagnostic (`2026-02-12 -> 2026-09-10`) also failed: `78` OOS trades, stressed returns `-21.97% / -7.66% / -6.74%`, drawdowns `23.28% / 17.58% / 10.83%`
 - supplementary bootstrap below the policy trade minimum is also adverse: rolling p95 DD `68.55%` / p05 profit `-66.10%`; fixed WFO p95 DD `92.42%` / p05 profit `-86.04%`
 - lookahead and recursive checks passed; therefore the block is a robustness/performance finding, not a detected lookahead defect

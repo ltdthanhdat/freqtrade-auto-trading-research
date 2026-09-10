@@ -97,3 +97,8 @@
 - `2026-09-10` | keep evidence / block dry-run | H017 | run: `2026-09-10_candidate_screening.md`
 - current rolling data produced three negative OOS folds and two drawdown breaches (`78` trades total); a supplementary below-minimum bootstrap gave p95 DD `68.55%` and p05 profit `-66.10%`; correctness checks passed, so the block is performance robustness rather than lookahead evidence
 - impact: dry-run remains blocked; do not override the fixed WFO verdict or tune the policy to fit this sample
+
+## D018 - Discard half-R target candidate
+- `2026-09-10` | discard | H018 | run: `2026-09-10_candidate_screening.md`
+- halving the target ROI improved fold win-rate but left all three stressed OOS folds negative, with two drawdown breaches and `99` trades
+- impact: keep the baseline and target policy frozen; do not sweep more ROI values against this failed sample

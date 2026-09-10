@@ -46,6 +46,7 @@ strategy edit.
 | H015 | discard | require 1h price and EMA20 slope alignment |
 | H016 | discard | require 1h price/EMA20 side alignment only |
 | H017 | keep evidence / block dry-run | rolling current-window diagnostic fails |
+| H018 | discard | half-R target improves win-rate but remains negative OOS |
 
 ## Rules
 
