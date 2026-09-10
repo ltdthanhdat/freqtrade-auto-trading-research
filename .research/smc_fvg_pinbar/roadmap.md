@@ -51,6 +51,7 @@ strategy edit.
 | H020 | discard | symmetric displacement branch generated no new signals |
 | H021 | discard | pure 1h FVG baseline worsens OOS despite more trades |
 | H022 | discard | breakout-retest fails first OOS fold smoke with extreme drawdown |
+| H023 | discard | Bollinger pullback is under-sampled and negative OOS |
 
 ## Rules
 

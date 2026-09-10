@@ -122,3 +122,8 @@
 - `2026-09-10` | discard | H022 | run: `2026-09-10_candidate_screening.md`
 - first OOS fold smoke already lost `63.70%` under stress with `73.35%` drawdown; full lookahead was stopped after excessive repeated-signal runtime
 - impact: keep the frozen FVG baseline blocked; do not parameter-sweep this model
+
+## D023 - Discard Bollinger pullback candidate
+- `2026-09-10` | discard | H023 | run: `2026-09-10_candidate_screening.md`
+- alternative Bollinger pullback entry passed correctness but produced only `37` OOS trades and negative stressed profit with two DD breaches
+- impact: do not replace the baseline; no dry-run admission or parameter sweep

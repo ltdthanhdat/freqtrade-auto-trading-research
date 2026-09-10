@@ -73,6 +73,15 @@
 - runtime note: repeated retest signals made the full lookahead command exceed 21 minutes before it was stopped; this is a candidate performance/design failure, not a baseline runner failure
 - keep_or_discard: discard H022; do not promote the breakout-retest model or tune its lookback/age/ATR parameters from this failed fold
 
+## H023 - trend-aligned Bollinger pullback model
+
+- verify: smoke artifact `.research/smc_fvg_pinbar/runs/h023-smoke-trades/backtest-result-2026-09-10_22-28-52.zip`, then full gate manifest `.research/smc_fvg_pinbar/runs/20260910T153005273638Z/manifest.json`
+- changed scope: replace FVG entry with 30m Bollinger-band re-entry plus 1h EMA20 direction; ATR14 stop; callback/risk/protection/basket/policy unchanged
+- smoke: `9` trades, raw net `+0.13%`, win rate `55.6%`, DD `15.61%` (insufficient evidence)
+- full result: `FAIL`; folds `9 / 13 / 15` trades, stressed returns `-0.05% / -17.92% / -4.42%`, drawdowns `15.70% / 17.93% / 10.95%`; aggregate `37` trades and one entry-tag source
+- correctness: lookahead passed (`20` signals, no bias); recursive analysis conclusive
+- keep_or_discard: discard H023; the alternative model is under-sampled and negative OOS, so it cannot replace the frozen baseline
+
 ## Conclusion
 
 The frozen strategy is not eligible for dry-run. Three small entry-filter hypotheses were discarded, and the rolling diagnostic reproduces negative OOS behavior without a correctness failure. Further parameter or basket tuning would be post-hoc selection against the failed window; require a separately specified strategy thesis before another candidate.
