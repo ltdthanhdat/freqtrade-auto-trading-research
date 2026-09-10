@@ -237,6 +237,17 @@ def test_runner_uses_frozen_analysis_and_supported_fold_artifact_contract(tmp_pa
     assert len(manifest["backtest_artifacts"]) == 3
 
 
+def test_runner_omits_unsupported_cache_option_from_lookahead_command(tmp_path):
+    executor = FakeExecutor()
+
+    run_validation(make_args(tmp_path), executor=executor)
+
+    lookahead_command = next(
+        command for command in executor.commands if command[3] == "lookahead-analysis"
+    )
+    assert "--cache" not in lookahead_command
+
+
 @pytest.mark.parametrize(
     ("executor", "reason"),
     [

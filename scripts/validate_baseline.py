@@ -301,8 +301,6 @@ def run_correctness_checks(
         + [
             "--timerange",
             timerange,
-            "--cache",
-            "none",
             "--timeframe-detail",
             "1m",
             "--export",
