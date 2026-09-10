@@ -38,6 +38,7 @@
 - changed scope: candidate exit target only (`1R -> 0.5R`); entry logic, stop, basket, fee/slippage, and policy unchanged
 - result: `FAIL`; folds `46 / 28 / 25` trades, stressed returns `-12.38% / -12.90% / -4.93%`, drawdowns `21.28% / 20.98% / 11.56%`; aggregate `99` trades, below the required `100`
 - interpretation: win-rate improved to roughly `61% / 57% / 60%`, but expectancy stayed negative; long-side losses and single-source attribution remain
+- supplementary bootstrap below the policy minimum: p95 max drawdown `68.72%`, p05 net profit `-62.29%`, p95 losing streak `4` trades
 - keep_or_discard: discard H018; do not promote the half-R target or sweep more ROI values against this sample
 
 ## Conclusion
