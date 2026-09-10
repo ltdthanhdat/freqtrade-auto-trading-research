@@ -21,6 +21,7 @@ strategy edit.
 ## Open hypotheses
 
 - H013 result: fixed WFO and rolling current-window diagnostics both fail while lookahead/recursive checks pass; treat the current issue as performance robustness, not a correctness defect
+- H-RSI-01 through H-RSI-07 were screened on a separate 24-pair liquidity/coverage-filtered universe; none passed the smoke/WFO robustness gates, so the RSI-divergence branch is closed for this sample
 - next hypothesis must be a separately justified strategy thesis; no threshold, basket, or policy tuning is approved from the retained failures
 
 ## Deferred
@@ -56,6 +57,13 @@ strategy edit.
 | H025 | discard | short-only smoke improvement fails full WFO and trade-count gate |
 | H026 | discard | BTC 1h EMA50 regime filter fails first OOS fold |
 | H027 | discard | removing displacement confirmations fails first OOS fold |
+| H-RSI-01 | discard | standalone 30m regular RSI divergence loses heavily |
+| H-RSI-02 | discard | 30m RSI divergence plus 1h EMA50 remains negative/high-DD |
+| H-RSI-03 | discard | hidden 30m RSI divergence loses heavily |
+| H-RSI-04 | discard | regular RSI divergence on 1h breaches drawdown ceiling |
+| H-RSI-05 | discard | 1h regular divergence plus EMA50 fails WFO/Monte Carlo |
+| H-RSI-06 | discard | short-only branch fails fold two, trade minimum, and tail-risk checks |
+| H-RSI-07 | discard | 4h EMA50 regime filter still breaches the smoke DD ceiling |
 
 The validation runner now records block-bootstrap diagnostics below the trade
 minimum while keeping those diagnostics out of the PASS gate until the sample

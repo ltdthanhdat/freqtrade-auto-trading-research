@@ -1,0 +1,28 @@
+{
+  "audit_timestamp_utc": "2026-09-10T16:16:47Z",
+  "exchange": "binance",
+  "market_type": "active linear USDT swaps",
+  "candidate_count": 30,
+  "filter": {
+    "volume_proxy": "median(close * volume) over 2026-01-24 through 2026-04-23 inclusive",
+    "minimum_median_usd_proxy": 20000000,
+    "performance_or_oos_selection": false
+  },
+  "retained_pairs": [
+    "BTC/USDT:USDT", "ETH/USDT:USDT", "SOL/USDT:USDT", "BNB/USDT:USDT",
+    "XRP/USDT:USDT", "DOGE/USDT:USDT", "ADA/USDT:USDT", "AVAX/USDT:USDT",
+    "LINK/USDT:USDT", "LTC/USDT:USDT", "DOT/USDT:USDT", "UNI/USDT:USDT",
+    "AAVE/USDT:USDT", "NEAR/USDT:USDT", "ARB/USDT:USDT", "OP/USDT:USDT",
+    "SUI/USDT:USDT", "FIL/USDT:USDT", "ETC/USDT:USDT", "BCH/USDT:USDT",
+    "XLM/USDT:USDT", "APT/USDT:USDT", "WLD/USDT:USDT", "TAO/USDT:USDT"
+  ],
+  "excluded_pairs": [
+    "ATOM/USDT:USDT", "INJ/USDT:USDT", "PENDLE/USDT:USDT",
+    "RUNE/USDT:USDT", "SEI/USDT:USDT", "TIA/USDT:USDT"
+  ],
+  "snapshot": {
+    "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo",
+    "timerange": "20260124-20260823",
+    "timeframes": ["1m", "30m", "1h"]
+  }
+}

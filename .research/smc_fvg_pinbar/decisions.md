@@ -157,3 +157,13 @@
 - `2026-09-10` | keep evidence / block dry-run | H013 rerun | manifest: `20260910T154811581578Z`
 - correctness remains clean, but all three stressed folds are negative, p95 bootstrap DD is `92.42%`, p05 bootstrap profit is `-86.04%`, and attribution lacks two positive sources
 - impact: the Monte Carlo reporting change adds evidence only; it does not change the frozen FAIL verdict or admit dry-run
+
+## D030 - Discard RSI divergence short-only branch
+- `2026-09-10` | discard | H-RSI-06 | run: `2026-09-10_rsi_divergence_screening.md`
+- the 1h regular-divergence plus EMA50 short-only candidate failed the second chronological fold (`-23.24%`, `30.83%` DD), remained below `100` aggregate trades, and had adverse bootstrap diagnostics
+- impact: do not promote the short-only RSI branch or tune its risk/ROI parameters
+
+## D031 - Discard 4h regime filter for RSI divergence
+- `2026-09-10` | discard | H-RSI-07 | run: `2026-09-10_rsi_divergence_screening.md`
+- adding `4h close < 4h EMA50` to H-RSI-06 produced `32` smoke trades, `+17.11%` raw profit, and `15.94%` drawdown; it is weaker than H-RSI-06 and breaches the fixed `15%` screen ceiling
+- impact: stop the RSI-divergence branch for this sample; production strategy/config and dry-run gate remain unchanged

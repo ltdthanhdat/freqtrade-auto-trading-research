@@ -68,6 +68,8 @@ Last updated: 2026-09-10
 - H025 short-only passed the first-fold smoke but failed full WFO (`62` trades; stressed `+0.19% / -8.97% / +4.92%`; aggregate negative)
 - H026 BTC 1h EMA50 regime filter failed the first fold (`-7.25%` stressed, `20.41%` DD)
 - H027 no-displacement entry family failed the first fold (`-15.78%` stressed, `18.20%` DD)
+- H-RSI-01..07 RSI-divergence research used a separate immutable 24-pair liquidity/coverage-filtered universe; standalone, hidden, EMA50, short-only, and 4h-regime variants all failed the smoke or WFO robustness gates. The best branch (H-RSI-05) still had fold two `-29.31%` / `39.83%` DD and bootstrap p95 DD `92.93%`.
+- H-RSI-07 4h regime smoke was also rejected (`32` trades, `+17.11%`, `15.94%` DD), so no RSI candidate replaces the frozen production strategy.
 - H017 rolling current-window diagnostic (`2026-02-12 -> 2026-09-10`) also failed: `78` OOS trades, stressed returns `-21.97% / -7.66% / -6.74%`, drawdowns `23.28% / 17.58% / 10.83%`
 - supplementary bootstrap below the policy trade minimum is also adverse: rolling p95 DD `68.55%` / p05 profit `-66.10%`; fixed WFO p95 DD `92.42%` / p05 profit `-86.04%` (now persisted automatically)
 - lookahead and recursive checks passed; therefore the block is a robustness/performance finding, not a detected lookahead defect
