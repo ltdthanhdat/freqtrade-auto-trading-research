@@ -102,3 +102,8 @@
 - `2026-09-10` | discard | H018 | run: `2026-09-10_candidate_screening.md`
 - halving the target ROI improved fold win-rate but left all three stressed OOS folds negative, with two drawdown breaches and `99` trades
 - impact: keep the baseline and target policy frozen; do not sweep more ROI values against this failed sample
+
+## D019 - Discard no-cooldown candidate
+- `2026-09-10` | discard | H019 | run: `2026-09-10_candidate_screening.md`
+- removing the one-candle cooldown left `99` trades and worsened stressed OOS returns, especially the first fold (`-33.41%`, DD `33.41%`)
+- impact: retain the cooldown protection; missing trade count is not the primary failure cause

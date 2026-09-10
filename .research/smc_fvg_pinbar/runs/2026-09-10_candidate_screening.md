@@ -41,6 +41,14 @@
 - supplementary bootstrap below the policy minimum: p95 max drawdown `68.72%`, p05 net profit `-62.29%`, p95 losing streak `4` trades
 - keep_or_discard: discard H018; do not promote the half-R target or sweep more ROI values against this sample
 
+## H019 - remove the one-candle cooldown protection
+
+- verify: real validation on the frozen WFO snapshot, manifest `.research/smc_fvg_pinbar/runs/20260910T144320123086Z/manifest.json`
+- changed scope: protection only; entry, stop, ROI, basket, fee/slippage, and policy unchanged
+- result: `FAIL`; folds `45 / 28 / 26` trades, stressed returns `-33.41% / -13.51% / -7.99%`, drawdowns `33.41% / 17.93% / 14.17%`; aggregate `99` trades
+- interpretation: removing cooldown did not recover the missing trade budget and materially worsened fold one; correctness checks still passed
+- keep_or_discard: discard H019; retain the one-candle cooldown in the baseline
+
 ## Conclusion
 
 The frozen strategy is not eligible for dry-run. Three small entry-filter hypotheses were discarded, and the rolling diagnostic reproduces negative OOS behavior without a correctness failure. Further parameter or basket tuning would be post-hoc selection against the failed window; require a separately specified strategy thesis before another candidate.
