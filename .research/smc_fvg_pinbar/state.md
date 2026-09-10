@@ -42,8 +42,24 @@ Last updated: 2026-09-10
 
 ## Current phase
 
-- `validation gate pending`
-- objective: seed and validate the accepted six-pair snapshot before dry-run; do not tune blind
+- `validation gate failed; OOS robustness investigation`
+- objective: keep dry-run blocked after the real WFO failure; investigate the regime/entry failure before any strategy change
+
+## Latest validation evidence
+
+- snapshot: `accepted_6pair_2026q3_wfo`
+- window: `2026-01-24 -> 2026-08-22`
+- correctness: lookahead passed (`20` signals, no bias); recursive analysis conclusive
+- OOS: `95` trades across three folds, stressed returns `-31.66% / -14.80% / -7.64%`, drawdown `31.66% / 19.28% / 14.17%`
+- verdict: `FAIL`; retained at `.research/smc_fvg_pinbar/runs/20260910T135821667756Z/manifest.json`
+- action: no dry-run; no threshold or basket tuning in the same loop
+
+### Supplementary screening (2026-09-10)
+
+- H014/H015/H016 candidate entry filters all failed real WFO validation; none changed the frozen strategy
+- H017 rolling current-window diagnostic (`2026-02-12 -> 2026-09-10`) also failed: `78` OOS trades, stressed returns `-21.97% / -7.66% / -6.74%`, drawdowns `23.28% / 17.58% / 10.83%`
+- lookahead and recursive checks passed; therefore the block is a robustness/performance finding, not a detected lookahead defect
+- `make validate-pass` rejected the H017 manifest as expected; no dry-run process was started
 
 ## Known issue: demo/live basket drift
 
@@ -60,9 +76,9 @@ Last updated: 2026-09-10
 
 ## Next step
 
-1. seed a named accepted six-pair snapshot with `1m`, `30m`, and `1h` data
-2. run `make validate-snapshot DATASET=accepted_6pair_2026q3` and retain its manifest and Freqtrade exports
-3. start dry-run only after `PASS`; for `WARN` or `FAIL`, retain evidence and create a new hypothesis without changing thresholds in the same loop
+1. require a separately specified strategy thesis before any new candidate; do not keep probing filters or thresholds against this failed sample
+2. if a future candidate is evaluated, rerun the full frozen correctness + WFO + stress + bootstrap gate on an immutable snapshot
+3. start dry-run only after a future run reaches `PASS`; the retained `FAIL` manifests cannot be overridden
 
 ## Implementation notes
 

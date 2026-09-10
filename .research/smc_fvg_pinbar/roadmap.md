@@ -1,7 +1,7 @@
 # SMC_FVG_PinBar Roadmap
 
 Status: active
-Current phase: `accepted cadence-pass snapshot, decay watch active`
+Current phase: `validation failed; OOS robustness investigation`
 
 ## Goal
 
@@ -14,9 +14,14 @@ Use Freqtrade as a stable execution engine: seed data -> reproducible backtest -
 3. dry-run with the currently accepted snapshot
 4. only tune further when there is a new objective
 
+The current validation run failed the OOS gate, so step 3 is blocked. The next
+loop must inspect retained fold evidence and state one hypothesis before any
+strategy edit.
+
 ## Open hypotheses
 
-- none
+- H013 result: fixed WFO and rolling current-window diagnostics both fail while lookahead/recursive checks pass; treat the current issue as performance robustness, not a correctness defect
+- next hypothesis must be a separately justified strategy thesis; no threshold, basket, or policy tuning is approved from the retained failures
 
 ## Deferred
 
@@ -36,6 +41,11 @@ Use Freqtrade as a stable execution engine: seed data -> reproducible backtest -
 | H010 | discard | simple add-on branches |
 | H011 | discard | `30m execution + 1h context` (old) |
 | H012 | keep | hybrid `30m` with active `1h` base |
+| H013 | discard dry-run admission | D011 fails fixed WFO; rolling diagnostic confirms the failure is not confined to one window |
+| H014 | discard | remove extra 30m short branch |
+| H015 | discard | require 1h price and EMA20 slope alignment |
+| H016 | discard | require 1h price/EMA20 side alignment only |
+| H017 | keep evidence / block dry-run | rolling current-window diagnostic fails |
 
 ## Rules
 

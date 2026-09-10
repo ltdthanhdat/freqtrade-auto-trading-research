@@ -71,3 +71,29 @@
 - do not discard `SMC_FVG_Context30m_Freqtrade`; last-month underperformance (`63` trades / `46.0%` win / `-22.5%`) is a real statistical outlier (block-bootstrap `p≈0.9%`) but correlates with an unfavorable market-direction regime (`r=+0.548`), not with pure calendar-time decay (residual `r≈-0.07`) -- inconclusive for permanent alpha decay
 - reason: reproduced `D011` snapshot exactly on its original window (`115` trades / `72.2%` / `+509.84%`); confirmed `config.binance.demo.json` re-adds `BTC/D/STG` pruned by `D005`/`D007` (9-pair basket vs accepted 6), which is the real driver of demo/live position divergence, not wallet size or the (dead) `stake_amount` field
 - impact: reconcile `config.binance.demo.json`/`config.binance.live.json` pair whitelist with the accepted 6-pair basket; use `scripts/monitor_decay.py` against real live/demo trade history going forward instead of ad-hoc re-backtesting on suspicion; re-evaluate decay verdict after 4-8 more weeks of real trades
+
+## D013 - Block dry-run after real WFO failure
+- `2026-09-10` | discard for dry-run | H013 | run: `2026-09-10_wfo_validation_fail.md`
+- keep the D011 strategy frozen, but do not admit it to dry-run on the current evidence
+- reason: correctness checks pass, while all three chronological stressed OOS folds are negative and two breach the 15% drawdown budget; aggregate trades are `95`, below the required `100`
+- impact: investigate regime/entry robustness as a new hypothesis; do not tune thresholds or override the manifest in this loop
+
+## D014 - Discard extra-short removal candidate
+- `2026-09-10` | discard | H014 | run: `2026-09-10_candidate_screening.md`
+- removing the 30m displacement short branch still failed all three OOS folds and worsened the first-fold drawdown
+- impact: keep D011 frozen; do not use this candidate for dry-run
+
+## D015 - Discard trend-aligned entry filter
+- `2026-09-10` | discard | H015 | run: `2026-09-10_candidate_screening.md`
+- requiring 1h price and EMA20 slope alignment reduced trades to `74` and left aggregate stressed OOS profit negative
+- impact: no entry-filter promotion
+
+## D016 - Discard side-only trend filter
+- `2026-09-10` | discard | H016 | run: `2026-09-10_candidate_screening.md`
+- removing the slope requirement produced identical validation results to H015, so the extra condition had no signal effect in this sample
+- impact: no entry-filter promotion
+
+## D017 - Keep rolling diagnostic as failure evidence
+- `2026-09-10` | keep evidence / block dry-run | H017 | run: `2026-09-10_candidate_screening.md`
+- current rolling data produced three negative OOS folds and two drawdown breaches (`78` trades total); correctness checks passed, so the block is performance robustness rather than lookahead evidence
+- impact: dry-run remains blocked; do not override the fixed WFO verdict or tune the policy to fit this sample

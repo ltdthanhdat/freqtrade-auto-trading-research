@@ -169,7 +169,8 @@ The command uses `config/config.futures.json`, the named snapshot datadir,
 `src/strategies`, and `.research/smc_fvg_pinbar/runs/`. Only a `PASS` verdict
 allows `make dry-run`. `WARN` and `FAIL` keep the validation artifacts and
 block dry-run; record a new hypothesis before rerunning, without changing
-thresholds in that loop. No named snapshot has been validated yet.
+thresholds in that loop. Named snapshots have been validated with retained
+`WARN`/`FAIL` results, but none has reached `PASS`.
 
 Pass the resulting manifest explicitly when starting dry-run:
 
@@ -180,7 +181,8 @@ make dry-run VALIDATION_MANIFEST=.research/smc_fvg_pinbar/runs/<run-id>/manifest
 `make dry-run` re-hashes the effective config, policy, strategy and its local
 dependencies (including `SMC_FVG_Confirmation_Freqtrade.py`), verifies the
 accepted basket and `dry_run: true`, and rejects any mismatch before it runs
-Freqtrade.
+Freqtrade. The named snapshots currently have retained `WARN`/`FAIL`
+validation manifests only; none has reached `PASS`, so dry-run remains blocked.
 
 Monitor closed demo or live trades against a retained baseline export:
 
