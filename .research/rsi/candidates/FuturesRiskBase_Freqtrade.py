@@ -88,7 +88,7 @@ class FuturesRiskBase_Freqtrade(IStrategy):
         side: str,
         **kwargs,
     ) -> float:
-        configured_leverage = self.config.get("smc_leverage")
+        configured_leverage = self.config.get("research_leverage")
         if configured_leverage == "max":
             return max_leverage
         if configured_leverage is None:
@@ -124,8 +124,8 @@ class FuturesRiskBase_Freqtrade(IStrategy):
         if distance_ratio <= 0:
             return 0
 
-        risk_per_trade = self.config.get("smc_risk_per_trade")
-        capital_cap_ratio = self.config.get("smc_capital_cap")
+        risk_per_trade = self.config.get("research_risk_per_trade")
+        capital_cap_ratio = self.config.get("research_capital_cap")
         if risk_per_trade is None or capital_cap_ratio is None:
             return min(proposed_stake, max_stake)
         if leverage <= 0:
@@ -161,9 +161,9 @@ class FuturesRiskBase_Freqtrade(IStrategy):
         stop_rate = float(stop_rate)
         risk_ratio = abs(trade.open_rate - stop_rate) / trade.open_rate
         target_roi = risk_ratio * trade.leverage
-        trade.set_custom_data("smc_signal_kind", signal_kind or "unknown")
-        trade.set_custom_data("smc_stop_rate", stop_rate)
-        trade.set_custom_data("smc_target_roi", target_roi)
+        trade.set_custom_data("research_signal_kind", signal_kind or "unknown")
+        trade.set_custom_data("research_stop_rate", stop_rate)
+        trade.set_custom_data("research_target_roi", target_roi)
 
     def custom_stoploss(
         self,
@@ -175,7 +175,7 @@ class FuturesRiskBase_Freqtrade(IStrategy):
         after_fill: bool,
         **kwargs,
     ) -> float | None:
-        stop_rate = trade.get_custom_data("smc_stop_rate")
+        stop_rate = trade.get_custom_data("research_stop_rate")
         if stop_rate is None:
             _, stop_rate = self._parse_enter_tag(trade.enter_tag)
         if stop_rate is None:
@@ -197,7 +197,7 @@ class FuturesRiskBase_Freqtrade(IStrategy):
         side: str,
         **kwargs,
     ) -> float | None:
-        target_roi = trade.get_custom_data("smc_target_roi")
+        target_roi = trade.get_custom_data("research_target_roi")
         if target_roi is not None:
             return float(target_roi)
 

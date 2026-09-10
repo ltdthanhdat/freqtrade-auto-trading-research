@@ -9,7 +9,7 @@ import pandas as pd
 CANDIDATE_DIR = (
     Path(__file__).resolve().parents[1]
     / ".research"
-    / "smc_fvg_pinbar"
+    / "rsi"
     / "candidates"
 )
 sys.path.insert(0, str(CANDIDATE_DIR))
@@ -92,13 +92,13 @@ def test_short_only_filter_clears_long_entry_state() -> None:
 
 def test_rsi_candidate_uses_independent_futures_base_not_smc_base() -> None:
     from RSI_Divergence30m_Freqtrade import RSI_Divergence30m_Freqtrade
-    from src.strategies.FuturesRiskBase_Freqtrade import FuturesRiskBase_Freqtrade
+    from FuturesRiskBase_Freqtrade import FuturesRiskBase_Freqtrade
     from src.strategies.SMC_FVG_Confirmation_Freqtrade import (
         SMC_FVG_Confirmation_Freqtrade,
     )
 
     assert issubclass(RSI_Divergence30m_Freqtrade, FuturesRiskBase_Freqtrade)
-    assert issubclass(SMC_FVG_Confirmation_Freqtrade, FuturesRiskBase_Freqtrade)
+    assert not issubclass(SMC_FVG_Confirmation_Freqtrade, FuturesRiskBase_Freqtrade)
     assert not issubclass(RSI_Divergence30m_Freqtrade, SMC_FVG_Confirmation_Freqtrade)
 
 

@@ -8,6 +8,11 @@ Crypto trading bot built on Freqtrade.
 - config: `config/config.futures.json`
 - research: `.research/smc_fvg_pinbar/README.md`
 
+Research trees are intentionally separated:
+
+- `.research/smc_fvg_pinbar/` — the SMC production research chain and dry-run gate
+- `.research/rsi/` — RSI-divergence candidates and evidence only; it is not a production strategy path
+
 ## Default strategy
 
 `SMC_FVG_Context30m_Freqtrade` is a hybrid:

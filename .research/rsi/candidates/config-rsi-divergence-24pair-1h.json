@@ -10,10 +10,10 @@
   "trading_mode": "futures",
   "margin_mode": "cross",
   "stake_amount_unlimited": false,
-  "timeframe": "30m",
-  "smc_risk_per_trade": 0.05,
-  "smc_capital_cap": 0.25,
-  "smc_leverage": 5,
+  "timeframe": "1h",
+  "research_risk_per_trade": 0.05,
+  "research_capital_cap": 0.25,
+  "research_leverage": 5,
   "entry_pricing": {
     "price_side": "other",
     "use_order_book": true,
@@ -28,30 +28,12 @@
     "ccxt_config": {},
     "ccxt_async_config": {},
     "pair_whitelist": [
-      "BTC/USDT:USDT",
-      "ETH/USDT:USDT",
-      "SOL/USDT:USDT",
-      "BNB/USDT:USDT",
-      "XRP/USDT:USDT",
-      "DOGE/USDT:USDT",
-      "ADA/USDT:USDT",
-      "AVAX/USDT:USDT",
-      "LINK/USDT:USDT",
-      "LTC/USDT:USDT",
-      "DOT/USDT:USDT",
-      "UNI/USDT:USDT",
-      "AAVE/USDT:USDT",
-      "NEAR/USDT:USDT",
-      "ARB/USDT:USDT",
-      "OP/USDT:USDT",
-      "SUI/USDT:USDT",
-      "FIL/USDT:USDT",
-      "ETC/USDT:USDT",
-      "BCH/USDT:USDT",
-      "XLM/USDT:USDT",
-      "APT/USDT:USDT",
-      "WLD/USDT:USDT",
-      "TAO/USDT:USDT"
+      "BTC/USDT:USDT", "ETH/USDT:USDT", "SOL/USDT:USDT", "BNB/USDT:USDT",
+      "XRP/USDT:USDT", "DOGE/USDT:USDT", "ADA/USDT:USDT", "AVAX/USDT:USDT",
+      "LINK/USDT:USDT", "LTC/USDT:USDT", "DOT/USDT:USDT", "UNI/USDT:USDT",
+      "AAVE/USDT:USDT", "NEAR/USDT:USDT", "ARB/USDT:USDT", "OP/USDT:USDT",
+      "SUI/USDT:USDT", "FIL/USDT:USDT", "ETC/USDT:USDT", "BCH/USDT:USDT",
+      "XLM/USDT:USDT", "APT/USDT:USDT", "WLD/USDT:USDT", "TAO/USDT:USDT"
     ],
     "pair_blacklist": []
   },
@@ -69,7 +51,7 @@
     "username": "",
     "password": ""
   },
-  "bot_name": "rsi-divergence-research",
+  "bot_name": "rsi-divergence-1h-research",
   "initial_state": "running",
   "force_entry_enable": false,
   "internals": {"process_throttle_secs": 5},
@@ -77,5 +59,5 @@
   "datadir": "user_data/data",
   "dataformat_ohlcv": "feather",
   "dataformat_trades": "feather",
-  "strategy_path": "src/strategies"
+  "strategy_path": ".research/rsi/candidates"
 }

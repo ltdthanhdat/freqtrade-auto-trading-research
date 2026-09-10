@@ -1,13 +1,13 @@
 {
+  "status": "historical-discarded",
   "config_sha256": "2d8cabeb5654baed4b33391e1a35e7af6bb5a5bbb0ffef8fb5804cf2186acccc",
-  "strategy_sha256": "cd73c040e53d1088360968638c7cffb01ae8be20cb7fee9fd4718e41d5a8727c",
+  "strategy_sha256": "462d8c13fd00cff19cfcf6d2fd30d6dda6c3e1b697ac8b8919fc7387f64d3840",
   "snapshot_sha256": "57aaf8292a738141b327027fc0f44f443e94eb1dc494d63cf27ed024b67c561b",
   "policy_sha256": "c5558701b48d67ff79d7012ee2885ba4a0bda956228af62706612b3894b87be9",
   "strategy_commit": "c1e46c03f8c20f00a71c2bc993a34864d23e12e7",
-  "strategy": "RSI_Divergence1h_EMA50Short_Freqtrade",
+  "strategy": "RSI_Divergence30m_EMA50_Freqtrade",
   "strategy_path": ".research/smc_fvg_pinbar/candidates",
   "strategy_files": {
-    ".research/smc_fvg_pinbar/candidates/RSI_Divergence1h_EMA50Short_Freqtrade.py": "1f4ee90e2c76c1e1bb7baa20bfe0f2276cea870015b84dca3d16f4734da9baea",
     ".research/smc_fvg_pinbar/candidates/RSI_Divergence30m_EMA50_Freqtrade.py": "84e41d07ebb61149244f933386387473f3b50582c7d3782af97aee41ef5468f5",
     ".research/smc_fvg_pinbar/candidates/RSI_Divergence30m_Freqtrade.py": "7a0cc30414bb842be5b43bfb6830f5524f2cab4a2c5e21916057b402b9400e7b",
     "src/strategies/SMC_FVG_Confirmation_Freqtrade.py": "af68c934e76c14598cb59b89c9ca4ae6cdfcc326ea5159f71eb07ad102666abe"

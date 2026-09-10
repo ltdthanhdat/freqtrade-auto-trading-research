@@ -16,7 +16,7 @@
 
 - Hypothesis: RSI(14) regular divergence on confirmed 30m pivots (`left=3`, `right=3`) can provide a standalone reversal signal; structural stop is the second confirmed price pivot.
 - Causality: a pivot at `p` is only evaluated on row `p+3`; no centered/future-filled series is used. Unit tests cover confirmation delay and future-prefix invariance.
-- Candidate: `.research/smc_fvg_pinbar/candidates/RSI_Divergence30m_Freqtrade.py`.
+- Candidate: `.research/rsi/candidates/RSI_Divergence30m_Freqtrade.py`.
 - Smoke verification: first OOS-sized window `20260524-20260623`, 24 pairs, `1m` detail, protections enabled, fee `0.001`.
 - Result: 235 trades, stressed-like raw backtest profit `-72.21%`, max drawdown `73.89%`, final balance `277.858 USDT`; long `-62.62%`, short `-9.59%`.
 - Decision: **DISCARD as a standalone signal**. Do not run the expensive 3-fold gate for this unfiltered version. Keep the causal helper/tests as the base for the next single-variable experiment.
@@ -75,7 +75,7 @@ Next experiment: add one higher-timeframe bearish-regime filter (`4h close < 4h 
 - Changed scope: one `4h` informative EMA50 regime filter; pivot, RSI, stop, fee, protection, leverage, and pair universe unchanged.
 - Smoke verification: `20260524-20260623`, 24 pairs, `1h` execution, `1m` detail, protections enabled, fee `0.001`; immutable snapshot `rsi_divergence_universe_2026q3_wfo_4h`.
 - Result: 32 short trades, raw profit `+17.11%`, win rate `59.4%`, max drawdown `15.94%`, final balance `1171.064 USDT`.
-- Artifact: `.research/smc_fvg_pinbar/runs/rsi-h007-smoke/backtest-result-2026-09-10_23-41-51.zip`.
+- Artifact: `.research/rsi/runs/rsi-h007-smoke/backtest-result-2026-09-10_23-41-51.zip`.
 - Decision: **DISCARD without full WFO**. The first OOS-sized screen already breaches the fixed `15%` drawdown ceiling and is weaker than H-RSI-06 on the same window; a full WFO would not be an economical gate candidate.
 
 RSI divergence screening stop condition: H-RSI-01 through H-RSI-07 have no candidate meeting the smoke/WFO robustness gates. Production strategy/config remains unchanged and dry-run remains blocked.

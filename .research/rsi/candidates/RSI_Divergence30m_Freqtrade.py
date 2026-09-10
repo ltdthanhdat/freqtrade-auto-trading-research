@@ -3,9 +3,7 @@ from __future__ import annotations
 import pandas as pd
 from pandas import DataFrame
 
-from src.strategies.FuturesRiskBase_Freqtrade import (
-    FuturesRiskBase_Freqtrade,
-)
+from FuturesRiskBase_Freqtrade import FuturesRiskBase_Freqtrade
 
 
 def _wilder_rsi(close: pd.Series, period: int = 14) -> pd.Series:
