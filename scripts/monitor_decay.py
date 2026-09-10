@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from scripts.validation_core import ValidationPolicy, bootstrap_equity_paths
+from scripts.validation_core import ValidationPolicy, bootstrap_equity_paths, time_blocks
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -61,7 +61,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--block-freq",
         default=DEFAULT_BLOCK_FREQ,
-        help="Pandas offset alias for the block size used in block-bootstrap (default: 2W).",
+        help="Fixed 14-day blocks anchored at 1970-01-05 UTC (2W).",
     )
     parser.add_argument(
         "--alert-percentile",
@@ -130,7 +130,7 @@ def build_block_null_distribution(
     seed: int,
 ) -> np.ndarray:
     baseline = baseline.copy()
-    baseline["block"] = baseline["open_date"].dt.tz_localize(None).dt.to_period(block_freq)
+    baseline["block"] = time_blocks(baseline["open_date"], block_freq)
     blocks = baseline["block"].unique()
     block_wins = {b: baseline.loc[baseline["block"] == b, "is_win"].values for b in blocks}
 

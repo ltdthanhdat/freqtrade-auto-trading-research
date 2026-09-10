@@ -71,12 +71,15 @@ flowchart LR
 
 ```bash
 uv sync
-uv run python scripts/seed_freqtrade_data.py --preset smc-basket --days 90
+uv run python -m scripts.seed_freqtrade_data --config config/config.futures.json \
+  --preset smc-basket --dataset snapshots/accepted_6pair_2026q3 \
+  --timerange 20251019-20260517
 set -a
 source .env
 set +a
 
-make validate-snapshot DATASET=accepted_6pair_2026q3
+make validate-snapshot DATASET=accepted_6pair_2026q3 \
+  VALIDATION_START=2025-10-19 VALIDATION_END=2026-05-17
 ```
 
 Start dry-run only with the `PASS` manifest from validation:
@@ -85,7 +88,9 @@ Start dry-run only with the `PASS` manifest from validation:
 make dry-run VALIDATION_MANIFEST=.research/smc_fvg_pinbar/runs/<run-id>/manifest.json
 ```
 
-A `WARN`, `FAIL`, or missing manifest blocks dry-run before Freqtrade starts.
+A `WARN`, `FAIL`, missing manifest, changed config/policy/strategy dependency,
+basket mismatch, or config without `dry_run: true` blocks dry-run before
+Freqtrade starts.
 `WARN` and `FAIL` retain their manifest and Freqtrade exports in
 `.research/smc_fvg_pinbar/runs/`; create a new hypothesis instead of changing
 thresholds in the same loop.
@@ -132,10 +137,10 @@ Make targets:
 Examples:
 
 ```bash
-uv run python scripts/seed_freqtrade_data.py --preset smc-basket --days 90
-uv run python scripts/seed_freqtrade_data.py --pairs BTC/USDT:USDT ETH/USDT:USDT --days 30
-uv run python scripts/seed_freqtrade_data.py --preset smc-basket --timerange 20250101-20250301
-uv run python scripts/seed_freqtrade_data.py --preset smc-basket --dataset snapshots/recent_selected --days 30
+uv run python -m scripts.seed_freqtrade_data --preset smc-basket --days 90
+uv run python -m scripts.seed_freqtrade_data --pairs BTC/USDT:USDT ETH/USDT:USDT --days 30
+uv run python -m scripts.seed_freqtrade_data --preset smc-basket --timerange 20250101-20250301
+uv run python -m scripts.seed_freqtrade_data --preset smc-basket --dataset snapshots/recent_selected --days 30
 ```
 
 Default futures basket:
@@ -154,8 +159,8 @@ then provide an approved identity manifest and validation window. The gate
 itself requires the frozen policy's OOS folds:
 
 ```bash
-make validate-snapshot DATASET=accepted_6pair_2026q3 \\
-  VALIDATION_START=2026-02-18 VALIDATION_END=2026-05-17 \\
+make validate-snapshot DATASET=accepted_6pair_2026q3 \
+  VALIDATION_START=2025-10-19 VALIDATION_END=2026-05-17 \
   APPROVED_IDENTITY=.research/smc_fvg_pinbar/approved-baseline-identity.json
 ```
 
@@ -172,8 +177,10 @@ Pass the resulting manifest explicitly when starting dry-run:
 make dry-run VALIDATION_MANIFEST=.research/smc_fvg_pinbar/runs/<run-id>/manifest.json
 ```
 
-`make dry-run` rejects a missing manifest and any verdict other than `PASS`
-before it runs Freqtrade.
+`make dry-run` re-hashes the effective config, policy, strategy and its local
+dependencies (including `SMC_FVG_Confirmation_Freqtrade.py`), verifies the
+accepted basket and `dry_run: true`, and rejects any mismatch before it runs
+Freqtrade.
 
 Monitor closed demo or live trades against a retained baseline export:
 

@@ -12,15 +12,12 @@ DEFAULT_DATA_ROOT = ROOT / "user_data" / "data"
 DEFAULT_DATASET = "active"
 DEFAULT_TIMEFRAMES = ["30m", "1h", "1m"]
 SMC_BASKET = [
-    "BTC/USDT:USDT",
     "PLAY/USDT:USDT",
     "BIO/USDT:USDT",
     "SPACE/USDT:USDT",
     "PENDLE/USDT:USDT",
     "BR/USDT:USDT",
-    "D/USDT:USDT",
     "YGG/USDT:USDT",
-    "STG/USDT:USDT",
 ]
 
 

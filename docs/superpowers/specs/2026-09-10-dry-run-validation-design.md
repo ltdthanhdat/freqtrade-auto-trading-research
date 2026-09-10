@@ -11,8 +11,9 @@ dry-run start. This design does not promote a bot to live trading.
 
 - The strategy, its entry logic, and the accepted six-pair basket are frozen
   while a validation run is evaluated.
-- Each validation run uses a pinned strategy commit, config hash, and data
-  snapshot hash.
+- Each validation run uses a pinned strategy commit, effective config and
+  policy hash, resolved local strategy-dependency hashes, and data snapshot
+  hash.
 - Missing required market data (`1m`, `30m`, or `1h`) is not silently filled
   from another source and cannot produce `PASS`.
 - Validation never tunes a parameter after seeing an OOS result. A failed run
@@ -33,7 +34,8 @@ Add `scripts/validate_baseline.py`. It receives a snapshot, the baseline
 config, and a fixed validation policy. It executes the stages below and writes
 one run directory under `.research/smc_fvg_pinbar/runs/`.
 
-1. Verify config basket, strategy commit, snapshot timeframes, and hashes.
+1. Verify config basket, strategy commit and dependencies, snapshot OHLCV
+   coverage for every accepted pair/timeframe, and hashes.
 2. Run Freqtrade strategy loading, lookahead analysis, and recursive analysis.
 3. Run chronological fixed-parameter OOS folds.
 4. Run predefined cost-stress cases and per-pair/per-side/per-entry-tag
@@ -114,8 +116,9 @@ policy before the corresponding run; they are not selected from its result.
 
 ## Dry-run workflow
 
-1. A `PASS` manifest and the dry-run config must share the same strategy,
-   basket, and config hashes.
+1. A `PASS` manifest and the dry-run command must share the same strategy and
+   dependency hashes, policy, basket, and config hash; the effective config
+   must explicitly set `dry_run: true`.
 2. Start Freqtrade dry-run with its own trade database.
 3. On each closed trade, native protections evaluate PairLocks and the state
    evaluator records state evidence.

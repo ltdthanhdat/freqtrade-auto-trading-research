@@ -9,10 +9,11 @@ DAYS     ?= 60
 TIMERANGE ?=
 TIMEFRAMES ?= 30m,1h,1m
 DATASET  ?= recent_selected
-VALIDATION_START ?= 2026-02-18
+VALIDATION_START ?= 2025-10-19
 VALIDATION_END ?= 2026-05-17
 APPROVED_IDENTITY ?= .research/smc_fvg_pinbar/approved-baseline-identity.json
 VALIDATION_MANIFEST ?=
+VALIDATION_POLICY ?= config/validation.baseline.json
 BASELINE ?= user_data/backtest_results/baseline.zip
 DB ?= user_data/tradesv3.demo.sqlite
 
@@ -28,13 +29,13 @@ install: ## Install dependencies with uv
 	uv sync
 
 seed: install ## Seed active data with DAYS=<n>
-	$(PYTHON) scripts/seed_freqtrade_data.py --config $(CONFIG) --preset smc-basket --days $(DAYS)
+	$(PYTHON) -m scripts.seed_freqtrade_data --config $(CONFIG) --preset smc-basket --days $(DAYS)
 
 seed-range: install ## Seed active data with TIMERANGE=<start-end>
-	$(PYTHON) scripts/seed_freqtrade_data.py --config $(CONFIG) --preset smc-basket --timerange $(TIMERANGE)
+	$(PYTHON) -m scripts.seed_freqtrade_data --config $(CONFIG) --preset smc-basket --timerange $(TIMERANGE)
 
 seed-snapshot: install ## Seed snapshot data with DATASET=<name> DAYS=<n>
-	$(PYTHON) scripts/seed_freqtrade_data.py --config $(CONFIG) --dataset snapshots/$(DATASET) --preset smc-basket --days $(DAYS)
+	$(PYTHON) -m scripts.seed_freqtrade_data --config $(CONFIG) --dataset snapshots/$(DATASET) --preset smc-basket --days $(DAYS)
 
 # List downloaded data
 list-data: ## List downloaded market data
@@ -51,15 +52,14 @@ backtest-snapshot: install ## Run backtest on snapshot data with DATASET=<name> 
 	$(FREQ) backtesting --config $(CONFIG) --datadir $(SNAPSHOT_DATADIR) --strategy $(STRATEGY) --strategy-path $(SPATH) --timeframe-detail 1m $(if $(TIMERANGE),--timerange $(TIMERANGE),)
 
 validate-snapshot: install ## Validate snapshot gate with DATASET=<name>
-	$(PYTHON) scripts/validate_baseline.py --config $(CONFIG) --datadir $(SNAPSHOT_DATADIR) --policy config/validation.baseline.json --strategy $(STRATEGY) --strategy-path $(SPATH) --strategy-file $(SPATH)/$(STRATEGY).py --start $(VALIDATION_START) --end $(VALIDATION_END) --runs-dir .research/smc_fvg_pinbar/runs --approved-identity $(APPROVED_IDENTITY)
+	$(PYTHON) -m scripts.validate_baseline --config $(CONFIG) --datadir $(SNAPSHOT_DATADIR) --policy $(VALIDATION_POLICY) --strategy $(STRATEGY) --strategy-path $(SPATH) --strategy-file $(SPATH)/$(STRATEGY).py --start $(VALIDATION_START) --end $(VALIDATION_END) --runs-dir .research/smc_fvg_pinbar/runs --approved-identity $(APPROVED_IDENTITY)
 
 validate-pass: ## Require VALIDATION_MANIFEST with verdict PASS
 	@test -n "$(VALIDATION_MANIFEST)" || { echo "VALIDATION_MANIFEST is required" >&2; exit 1; }
-	@test -f "$(VALIDATION_MANIFEST)" || { echo "validation manifest not found: $(VALIDATION_MANIFEST)" >&2; exit 1; }
-	@jq -e '.verdict == "PASS"' "$(VALIDATION_MANIFEST)" >/dev/null || { echo "validation verdict is not PASS" >&2; exit 1; }
+	@$(PYTHON) -m scripts.validate_manifest --manifest "$(VALIDATION_MANIFEST)" --config "$(CONFIG)" --policy "$(VALIDATION_POLICY)" --strategy "$(STRATEGY)" --strategy-path "$(SPATH)"
 
 monitor-decay: install ## Monitor demo/live decay with BASELINE=<zip> DB=<sqlite>
-	$(PYTHON) scripts/monitor_decay.py --baseline $(BASELINE) --db $(DB)
+	$(PYTHON) -m scripts.monitor_decay --baseline $(BASELINE) --db $(DB)
 
 # Plot profit from latest backtest result; strategy must match the backtest
 plot: install ## Plot profit for the latest backtest

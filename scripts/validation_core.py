@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
+import math
 from pathlib import Path
 import sqlite3
 
@@ -23,6 +24,18 @@ class ValidationPolicy:
     bootstrap_samples: int
     bootstrap_block: str
     accepted_pairs: tuple[str, ...] = ()
+
+    def __post_init__(self):
+        for name in ("in_sample_days", "oos_days", "required_folds", "min_oos_trades", "bootstrap_samples"):
+            value = getattr(self, name)
+            if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+                raise ValueError(f"invalid policy {name}")
+        for name in ("max_drawdown", "stress_fee", "slippage_per_side"):
+            value = getattr(self, name)
+            if not math.isfinite(value) or not 0 <= value < 1:
+                raise ValueError(f"invalid policy {name}")
+        if self.bootstrap_block != "2W":
+            raise ValueError("policy requires anchored 2W blocks")
 
     @classmethod
     def from_path(cls, path: Path) -> "ValidationPolicy":
@@ -63,6 +76,8 @@ class FoldMetrics:
     trades: int
     net_profit: float
     max_drawdown: float
+    raw_net_profit: float | None = None
+    stressed_profit_abs: float | None = None
 
 
 @dataclass(frozen=True)
@@ -117,7 +132,9 @@ class ValidationStateStore:
             current = connection.execute(
                 "SELECT state FROM current_state WHERE scope = ?", (scope,)
             ).fetchone()
-            if current and current[0] == "PAUSED" and state == "ACTIVE" and reason != "review-approved":
+            if state not in {"ACTIVE", "YELLOW", "PAIR_OR_SIDE_LOCKED", "PAUSED"}:
+                raise ValueError("invalid validation state")
+            if current and current[0] == "PAUSED" and state != "PAUSED" and reason != "review-approved":
                 raise ValueError("review approval is required to reopen a paused state")
 
             timestamp = datetime.now(timezone.utc).isoformat()
@@ -166,6 +183,16 @@ def build_oos_folds(
     return folds
 
 
+def time_blocks(dates: pd.Series, frequency: str = "2W") -> pd.Series:
+    """Non-overlapping 14-day blocks anchored at 1970-01-05 00:00 UTC."""
+    if frequency != "2W":
+        raise ValueError("only anchored 2W blocks are supported")
+    dates = pd.to_datetime(dates, utc=True, errors="raise")
+    if dates.isna().any():
+        raise ValueError("missing block date")
+    return (dates - pd.Timestamp("1970-01-05", tz="UTC")) // pd.Timedelta(days=14)
+
+
 def bootstrap_equity_paths(trades: pd.DataFrame, policy: ValidationPolicy) -> BootstrapSummary:
     if trades.empty:
         raise ValueError("bootstrap requires at least one trade")
@@ -173,13 +200,20 @@ def bootstrap_equity_paths(trades: pd.DataFrame, policy: ValidationPolicy) -> Bo
         raise ValueError("bootstrap requires open_date and profit_ratio")
 
     grouped = trades.copy()
-    open_dates = pd.to_datetime(grouped["open_date"])
-    if getattr(open_dates.dt, "tz", None) is not None:
-        open_dates = open_dates.dt.tz_localize(None)
-    grouped["block"] = open_dates.dt.to_period(policy.bootstrap_block)
+    date_column = "close_date" if "close_date" in grouped else "open_date"
+    grouped[date_column] = pd.to_datetime(grouped[date_column], utc=True, errors="raise")
+    grouped = grouped.sort_values(date_column)
+    grouped["block"] = time_blocks(grouped[date_column], policy.bootstrap_block)
+    # Runner supplies stressed absolute portfolio P&L / initial wallet; monitor's
+    # legacy ratio-only exports retain the historical compounded-return model.
+    portfolio = "portfolio_return" in grouped
+    column = "portfolio_return" if portfolio else "profit_ratio"
+    values = pd.to_numeric(grouped[column], errors="raise")
+    if not np.isfinite(values).all():
+        raise ValueError("non-finite bootstrap returns")
     blocks = grouped["block"].unique()
     returns_by_block = {
-        block: grouped.loc[grouped["block"] == block, "profit_ratio"].to_numpy(dtype=float)
+        block: grouped.loc[grouped["block"] == block, column].to_numpy(dtype=float)
         for block in blocks
     }
 
@@ -187,11 +221,13 @@ def bootstrap_equity_paths(trades: pd.DataFrame, policy: ValidationPolicy) -> Bo
     max_drawdowns = np.empty(policy.bootstrap_samples)
     net_profits = np.empty(policy.bootstrap_samples)
     losing_streaks = np.empty(policy.bootstrap_samples)
-    stressed_cost = 2 * policy.slippage_per_side
+    stressed_cost = 0 if portfolio else 2 * policy.slippage_per_side
     for index in range(policy.bootstrap_samples):
         chosen = rng.choice(blocks, size=len(blocks), replace=True)
         returns = np.concatenate([returns_by_block[block] for block in chosen]) - stressed_cost
-        equity = np.concatenate(([1.0], np.cumprod(1 + returns)))
+        equity = np.concatenate(([1.0], 1 + np.cumsum(returns) if portfolio else np.cumprod(1 + returns)))
+        if not np.isfinite(equity).all():
+            raise ValueError("non-finite bootstrap equity")
         max_drawdowns[index] = (1 - equity / np.maximum.accumulate(equity)).max()
         net_profits[index] = equity[-1] - 1
         losses = returns < 0
@@ -210,17 +246,26 @@ def bootstrap_equity_paths(trades: pd.DataFrame, policy: ValidationPolicy) -> Bo
 def evaluate_verdict(
     checks: Checks,
     folds: list[FoldMetrics],
-    p95_dd: float,
+    p95_dd: float | None,
     policy: ValidationPolicy,
 ) -> str:
-    if not all((checks.lookahead, checks.recursive, checks.attribution)):
+    if not checks.lookahead or not checks.recursive:
+        return "FAIL"
+    if any(not all(math.isfinite(v) for v in (f.trades, f.net_profit, f.max_drawdown))
+           or f.trades < 0 or f.max_drawdown < 0 for f in folds):
+        return "FAIL"
+    if p95_dd is not None and (not math.isfinite(p95_dd) or p95_dd < 0):
         return "FAIL"
     if any(fold.max_drawdown > policy.max_drawdown for fold in folds):
         return "FAIL"
-    if p95_dd > policy.max_drawdown:
+    if p95_dd is not None and p95_dd > policy.max_drawdown:
         return "FAIL"
-    if sum(fold.net_profit for fold in folds) <= 0:
+    if folds and sum(fold.net_profit for fold in folds) < 0:
         return "FAIL"
     if len(folds) < policy.required_folds or sum(fold.trades for fold in folds) < policy.min_oos_trades:
+        return "WARN"
+    if p95_dd is None:
+        return "FAIL"
+    if not checks.attribution:
         return "WARN"
     return "PASS"
