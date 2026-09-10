@@ -1,0 +1,297 @@
+Result for strategy SMC_FVG_Context30m_NoExtraShort_Freqtrade
+                                                 BACKTESTING REPORT                                                  
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             Pair ┃ Trades ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│  SPACE/USDT:USDT │      3 │         3.68 │          18.798 │         1.88 │      2:03:00 │    2     0     1  66.7 │
+│    YGG/USDT:USDT │      7 │        -0.89 │         -19.668 │        -1.97 │      4:32:00 │    3     0     4  42.9 │
+│    BIO/USDT:USDT │      4 │        -6.18 │         -53.585 │        -5.36 │      8:47:00 │    1     0     3  25.0 │
+│     BR/USDT:USDT │      6 │        -5.83 │         -60.961 │         -6.1 │     20:44:00 │    2     0     4  33.3 │
+│ PENDLE/USDT:USDT │      5 │        -11.5 │        -100.018 │        -10.0 │      6:38:00 │    1     0     4  20.0 │
+│   PLAY/USDT:USDT │      5 │        -38.5 │        -114.754 │       -11.48 │      9:14:00 │    1     0     4  20.0 │
+│            TOTAL │     30 │       -10.16 │        -330.188 │       -33.02 │      9:13:00 │   10     0    20  33.3 │
+└──────────────────┴────────┴──────────────┴─────────────────┴──────────────┴──────────────┴────────────────────────┘
+                                               LEFT OPEN TRADES REPORT                                               
+┏━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃         Pair ┃ Trades ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃     Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ BR/USDT:USDT │      1 │       -12.36 │         -11.030 │         -1.1 │ 3 days, 13:00:00 │    0     0     1     0 │
+│        TOTAL │      1 │       -12.36 │         -11.030 │         -1.1 │ 3 days, 13:00:00 │    0     0     1     0 │
+└──────────────┴────────┴──────────────┴─────────────────┴──────────────┴──────────────────┴────────────────────────┘
+                                                          ENTER TAG STATS                                                          
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                 Enter Tag ┃ Entries ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃     Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│      pin_bar|0.0325600000 │       1 │        21.29 │          45.931 │         4.59 │   1 day, 0:24:00 │    1     0     0   100 │
+│      pin_bar|0.1271200000 │       1 │        47.18 │          36.833 │         3.68 │         20:02:00 │    1     0     0   100 │
+│ displacement|0.0288400000 │       1 │        19.83 │          36.522 │         3.65 │          3:18:00 │    1     0     0   100 │
+│      pin_bar|0.0271500000 │       1 │        15.57 │          32.951 │          3.3 │          7:33:00 │    1     0     0   100 │
+│      pin_bar|0.0063380000 │       1 │        14.62 │          29.262 │         2.93 │          0:30:00 │    1     0     0   100 │
+│   trend_body|0.1037600000 │       1 │        11.08 │          22.424 │         2.24 │          2:07:00 │    1     0     0   100 │
+│      pin_bar|0.0257200000 │       1 │          8.1 │          16.803 │         1.68 │          2:40:00 │    1     0     0   100 │
+│   trend_body|1.8185000000 │       1 │         6.69 │          15.896 │         1.59 │          2:30:00 │    1     0     0   100 │
+│      pin_bar|0.0064220000 │       1 │         5.85 │          12.915 │         1.29 │          3:05:00 │    1     0     0   100 │
+│ displacement|0.0938400000 │       2 │       -36.35 │          -2.154 │        -0.22 │          2:26:00 │    1     0     1  50.0 │
+│ displacement|0.1331800000 │       1 │       -12.36 │         -11.030 │         -1.1 │ 3 days, 13:00:00 │    0     0     1     0 │
+│ displacement|0.0380600000 │       1 │        -5.76 │         -13.909 │        -1.39 │          1:25:00 │    0     0     1     0 │
+│ displacement|0.0357300000 │       1 │        -9.34 │         -16.100 │        -1.61 │          0:55:00 │    0     0     1     0 │
+│      pin_bar|0.0294800000 │       1 │        -7.68 │         -16.575 │        -1.66 │          0:17:00 │    0     0     1     0 │
+│      pin_bar|1.2542000000 │       1 │        -7.98 │         -17.562 │        -1.76 │          2:17:00 │    0     0     1     0 │
+│   trend_body|1.3244000000 │       1 │       -11.34 │         -22.973 │         -2.3 │          2:29:00 │    0     0     1     0 │
+│      pin_bar|0.0080230000 │       1 │        -9.44 │         -23.380 │        -2.34 │          2:34:00 │    0     0     1     0 │
+│      pin_bar|0.0250600000 │       1 │       -13.07 │         -24.418 │        -2.44 │          9:37:00 │    0     0     1     0 │
+│ displacement|0.1176200000 │       1 │       -11.91 │         -26.252 │        -2.63 │          4:06:00 │    0     0     1     0 │
+│      pin_bar|0.0254900000 │       1 │       -14.92 │         -31.017 │         -3.1 │          1:29:00 │    0     0     1     0 │
+│      pin_bar|1.4300000000 │       1 │       -18.11 │         -32.671 │        -3.27 │         16:38:00 │    0     0     1     0 │
+│ displacement|0.0368800000 │       1 │       -15.95 │         -36.599 │        -3.66 │          5:40:00 │    0     0     1     0 │
+│ displacement|0.0303900000 │       1 │       -17.54 │         -37.128 │        -3.71 │          3:24:00 │    0     0     1     0 │
+│      pin_bar|0.1884900000 │       1 │       -33.89 │         -40.525 │        -4.05 │          0:39:00 │    0     0     1     0 │
+│      pin_bar|0.1173600000 │       1 │       -35.07 │         -42.411 │        -4.24 │         12:29:00 │    0     0     1     0 │
+│      pin_bar|1.4006000000 │       1 │       -26.75 │         -42.708 │        -4.27 │          9:18:00 │    0     0     1     0 │
+│ displacement|0.0325600000 │       1 │       -20.79 │         -45.813 │        -4.58 │          7:02:00 │    0     0     1     0 │
+│      pin_bar|0.0725000000 │       1 │       -63.85 │         -46.731 │        -4.67 │         13:45:00 │    0     0     1     0 │
+│ displacement|0.0914600000 │       1 │       -46.59 │         -49.771 │        -4.98 │   1 day, 2:36:00 │    0     0     1     0 │
+│                     TOTAL │      30 │       -10.16 │        -330.188 │       -33.02 │          9:13:00 │   10     0    20  33.3 │
+└───────────────────────────┴─────────┴──────────────┴─────────────────┴──────────────┴──────────────────┴────────────────────────┘
+                                                    EXIT REASON STATS                                                     
+┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃        Exit Reason ┃ Exits ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃     Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│                roi │    10 │         21.7 │         288.646 │        28.86 │          6:40:00 │   10     0     0   100 │
+│         force_exit │     1 │       -12.36 │         -11.030 │         -1.1 │ 3 days, 13:00:00 │    0     0     1     0 │
+│ trailing_stop_loss │     7 │       -18.87 │        -227.759 │       -22.78 │          7:14:00 │    0     0     7     0 │
+│          stop_loss │    12 │       -31.45 │        -380.046 │        -38.0 │          6:12:00 │    0     0    12     0 │
+│              TOTAL │    30 │       -10.16 │        -330.188 │       -33.02 │          9:13:00 │   10     0    20  33.3 │
+└────────────────────┴───────┴──────────────┴─────────────────┴──────────────┴──────────────────┴────────────────────────┘
+                                                                    MIXED TAG STATS                                                                    
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                 Enter Tag ┃        Exit Reason ┃ Trades ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃     Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│      pin_bar|0.0325600000 │                roi │      1 │        21.29 │          45.931 │         4.59 │   1 day, 0:24:00 │    1     0     0   100 │
+│ displacement|0.0938400000 │                roi │      1 │        66.76 │          39.110 │         3.91 │          0:28:00 │    1     0     0   100 │
+│      pin_bar|0.1271200000 │                roi │      1 │        47.18 │          36.833 │         3.68 │         20:02:00 │    1     0     0   100 │
+│ displacement|0.0288400000 │                roi │      1 │        19.83 │          36.522 │         3.65 │          3:18:00 │    1     0     0   100 │
+│      pin_bar|0.0271500000 │                roi │      1 │        15.57 │          32.951 │          3.3 │          7:33:00 │    1     0     0   100 │
+│      pin_bar|0.0063380000 │                roi │      1 │        14.62 │          29.262 │         2.93 │          0:30:00 │    1     0     0   100 │
+│   trend_body|0.1037600000 │                roi │      1 │        11.08 │          22.424 │         2.24 │          2:07:00 │    1     0     0   100 │
+│      pin_bar|0.0257200000 │                roi │      1 │          8.1 │          16.803 │         1.68 │          2:40:00 │    1     0     0   100 │
+│   trend_body|1.8185000000 │                roi │      1 │         6.69 │          15.896 │         1.59 │          2:30:00 │    1     0     0   100 │
+│      pin_bar|0.0064220000 │                roi │      1 │         5.85 │          12.915 │         1.29 │          3:05:00 │    1     0     0   100 │
+│ displacement|0.1331800000 │         force_exit │      1 │       -12.36 │         -11.030 │         -1.1 │ 3 days, 13:00:00 │    0     0     1     0 │
+│ displacement|0.0380600000 │          stop_loss │      1 │        -5.76 │         -13.909 │        -1.39 │          1:25:00 │    0     0     1     0 │
+│ displacement|0.0357300000 │ trailing_stop_loss │      1 │        -9.34 │         -16.100 │        -1.61 │          0:55:00 │    0     0     1     0 │
+│      pin_bar|0.0294800000 │          stop_loss │      1 │        -7.68 │         -16.575 │        -1.66 │          0:17:00 │    0     0     1     0 │
+│      pin_bar|1.2542000000 │          stop_loss │      1 │        -7.98 │         -17.562 │        -1.76 │          2:17:00 │    0     0     1     0 │
+│   trend_body|1.3244000000 │          stop_loss │      1 │       -11.34 │         -22.973 │         -2.3 │          2:29:00 │    0     0     1     0 │
+│      pin_bar|0.0080230000 │          stop_loss │      1 │        -9.44 │         -23.380 │        -2.34 │          2:34:00 │    0     0     1     0 │
+│      pin_bar|0.0250600000 │          stop_loss │      1 │       -13.07 │         -24.418 │        -2.44 │          9:37:00 │    0     0     1     0 │
+│ displacement|0.1176200000 │ trailing_stop_loss │      1 │       -11.91 │         -26.252 │        -2.63 │          4:06:00 │    0     0     1     0 │
+│      pin_bar|0.0254900000 │ trailing_stop_loss │      1 │       -14.92 │         -31.017 │         -3.1 │          1:29:00 │    0     0     1     0 │
+│      pin_bar|1.4300000000 │ trailing_stop_loss │      1 │       -18.11 │         -32.671 │        -3.27 │         16:38:00 │    0     0     1     0 │
+│ displacement|0.0368800000 │ trailing_stop_loss │      1 │       -15.95 │         -36.599 │        -3.66 │          5:40:00 │    0     0     1     0 │
+│ displacement|0.0303900000 │          stop_loss │      1 │       -17.54 │         -37.128 │        -3.71 │          3:24:00 │    0     0     1     0 │
+│      pin_bar|0.1884900000 │          stop_loss │      1 │       -33.89 │         -40.525 │        -4.05 │          0:39:00 │    0     0     1     0 │
+│ displacement|0.0938400000 │          stop_loss │      1 │      -139.46 │         -41.264 │        -4.13 │          4:25:00 │    0     0     1     0 │
+│      pin_bar|0.1173600000 │ trailing_stop_loss │      1 │       -35.07 │         -42.411 │        -4.24 │         12:29:00 │    0     0     1     0 │
+│      pin_bar|1.4006000000 │ trailing_stop_loss │      1 │       -26.75 │         -42.708 │        -4.27 │          9:18:00 │    0     0     1     0 │
+│ displacement|0.0325600000 │          stop_loss │      1 │       -20.79 │         -45.813 │        -4.58 │          7:02:00 │    0     0     1     0 │
+│      pin_bar|0.0725000000 │          stop_loss │      1 │       -63.85 │         -46.731 │        -4.67 │         13:45:00 │    0     0     1     0 │
+│ displacement|0.0914600000 │          stop_loss │      1 │       -46.59 │         -49.771 │        -4.98 │   1 day, 2:36:00 │    0     0     1     0 │
+│                     TOTAL │                    │     30 │       -10.16 │        -330.188 │       -33.02 │          9:13:00 │   10     0    20  33.3 │
+└───────────────────────────┴────────────────────┴────────┴──────────────┴─────────────────┴──────────────┴──────────────────┴────────────────────────┘
+                         SUMMARY METRICS                          
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Metric                        ┃ Value                          ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ Backtesting from              │ 2026-05-24 00:00:00            │
+│ Backtesting to                │ 2026-06-23 00:00:00            │
+│ Trading Mode                  │ Cross Futures                  │
+│ Max open trades               │ 3                              │
+│                               │                                │
+│ Total/Daily Avg Trades        │ 30 / 1.0                       │
+│ Starting balance              │ 1000 USDT                      │
+│ Final balance                 │ 669.812 USDT                   │
+│ Absolute profit               │ -330.188 USDT                  │
+│ Total profit %                │ -33.02%                        │
+│ CAGR %                        │ -99.24%                        │
+│ Sortino                       │ -17.63                         │
+│ Sharpe                        │ -6.90                          │
+│ Calmar                        │ -63.68                         │
+│ SQN                           │ -1.95                          │
+│ Profit factor                 │ 0.47                           │
+│ Expectancy (Ratio)            │ -11.01 (-0.36)                 │
+│ Avg. daily profit             │ -11.006 USDT                   │
+│ Avg. stake amount             │ 175.801 USDT                   │
+│ Total trade volume            │ 52549.936 USDT                 │
+│                               │                                │
+│ Long / Short trades           │ 13 / 17                        │
+│ Long / Short profit %         │ -28.12% / -4.90%               │
+│ Long / Short profit USDT      │ -281.215 / -48.973             │
+│                               │                                │
+│ Best Pair                     │ SPACE/USDT:USDT 1.88%          │
+│ Worst Pair                    │ PLAY/USDT:USDT -11.48%         │
+│ Best trade                    │ PLAY/USDT:USDT 66.76%          │
+│ Worst trade                   │ PLAY/USDT:USDT -139.46%        │
+│ Best day                      │ 73.355 USDT                    │
+│ Worst day                     │ -59.15 USDT                    │
+│ Days win/draw/lose            │ 4 / 11 / 16                    │
+│ Min/Max/Avg. Duration Winners │ 0d 00:28 / 1d 00:24 / 0d 06:40 │
+│ Min/Max/Avg. Duration Losers  │ 0d 00:17 / 3d 13:00 / 0d 10:30 │
+│ Max Consecutive Wins / Loss   │ 3 / 9                          │
+│ Rejected Entry signals        │ 0                              │
+│ Entry/Exit Timeouts           │ 0 / 0                          │
+│                               │                                │
+│ Min balance                   │ 669.812 USDT                   │
+│ Max balance                   │ 978.608 USDT                   │
+│ Max % of account underwater   │ 33.02%                         │
+│ Absolute drawdown             │ 330.188 USDT (33.02%)          │
+│ Drawdown duration             │ 29 days 20:26:00               │
+│ Profit at drawdown start      │ 0 USDT                         │
+│ Profit at drawdown end        │ -330.188 USDT                  │
+│ Drawdown start                │ 2026-05-24 03:34:00            │
+│ Drawdown end                  │ 2026-06-23 00:00:00            │
+│ Market change                 │ -20.65%                        │
+└───────────────────────────────┴────────────────────────────────┘
+
+Backtested 2026-05-24 00:00:00 -> 2026-06-23 00:00:00 | Max open trades : 3
+                                                                          STRATEGY SUMMARY                                                                           
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                  Strategy ┃ Trades ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃             Drawdown ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+│ SMC_FVG_Context30m_NoExtraShort_Freqtrade │     30 │       -10.16 │        -330.188 │       -33.02 │      9:13:00 │   10     0    20  33.3 │ 330.188 USDT  33.02% │
+└───────────────────────────────────────────┴────────┴──────────────┴─────────────────┴──────────────┴──────────────┴────────────────────────┴──────────────────────┘
+
+2026-09-10 21:11:29,500 - freqtrade - INFO - freqtrade 2026.2-dev-78d8461
+2026-09-10 21:11:30,329 - freqtrade.configuration.load_config - INFO - Using config: config/config.futures.json ...
+2026-09-10 21:11:30,330 - freqtrade.configuration.configuration - INFO - Parameter --no-color detected ...
+2026-09-10 21:11:30,331 - freqtrade.loggers - INFO - Logfile configured
+2026-09-10 21:11:30,331 - freqtrade.loggers - INFO - Verbosity set to 0
+2026-09-10 21:11:30,332 - freqtrade.configuration.configuration - INFO - Using additional Strategy lookup path: .research/smc_fvg_pinbar/candidates
+2026-09-10 21:11:30,332 - freqtrade.configuration.configuration - INFO - Parameter --enable-protections detected, enabling Protections ...
+2026-09-10 21:11:30,332 - freqtrade.configuration.configuration - INFO - Using max_open_trades: 3 ...
+2026-09-10 21:11:30,332 - freqtrade.configuration.configuration - INFO - Parameter --timeframe-detail detected, using 1m for intra-candle backtesting ...
+2026-09-10 21:11:30,332 - freqtrade.configuration.configuration - INFO - Parameter --fee detected, setting fee to: 0.001 ...
+2026-09-10 21:11:30,333 - freqtrade.configuration.configuration - INFO - Parameter --timerange detected: 20260524-20260623 ...
+2026-09-10 21:11:30,333 - freqtrade.configuration.configuration - INFO - Using user-data directory: user_data ...
+2026-09-10 21:11:30,333 - freqtrade.configuration.configuration - INFO - Using data directory: user_data/data/snapshots/accepted_6pair_2026q3_wfo ...
+2026-09-10 21:11:30,333 - freqtrade.configuration.configuration - INFO - Using .research/smc_fvg_pinbar/runs/20260910T140757975541Z/fold-01 as backtest directory ...
+2026-09-10 21:11:30,334 - freqtrade.configuration.configuration - INFO - Parameter --export detected: trades ...
+2026-09-10 21:11:30,334 - freqtrade.configuration.configuration - INFO - Parameter --cache=none detected ...
+2026-09-10 21:11:30,334 - freqtrade.configuration.configuration - INFO - Filter trades by timerange: 20260524-20260623
+2026-09-10 21:11:30,334 - freqtrade.exchange.check_exchange - INFO - Checking exchange...
+2026-09-10 21:11:30,339 - freqtrade.exchange.check_exchange - INFO - Exchange "binance" is officially supported by the Freqtrade development team.
+2026-09-10 21:11:30,339 - freqtrade.configuration.configuration - INFO - Using pairlist from configuration.
+2026-09-10 21:11:30,340 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2026-09-10 21:11:30,341 - freqtrade.commands.optimize_commands - INFO - Starting freqtrade in Backtesting mode
+2026-09-10 21:11:30,341 - freqtrade.exchange.exchange - INFO - Instance is running with dry_run enabled
+2026-09-10 21:11:30,342 - freqtrade.exchange.exchange - INFO - Using CCXT 4.5.38
+2026-09-10 21:11:30,342 - freqtrade.exchange.exchange - INFO - Applying additional ccxt config: {'options': {'defaultType': 'swap'}}
+2026-09-10 21:11:30,346 - freqtrade.exchange.exchange - INFO - Applying additional ccxt config: {'options': {'defaultType': 'swap'}}
+2026-09-10 21:11:30,351 - freqtrade.exchange.exchange - INFO - Using Exchange "Binance"
+2026-09-10 21:11:31,647 - freqtrade.resolvers.exchange_resolver - INFO - Using resolved exchange 'Binance'...
+2026-09-10 21:11:31,648 - freqtrade.resolvers.iresolver - INFO - Using resolved strategy SMC_FVG_Context30m_NoExtraShort_Freqtrade from 
+'/home/datlt/workspace/freqtrade-auto-trading-research/.worktrees/dry-run-validation/.research/smc_fvg_pinbar/candidates/SMC_FVG_Context30m_NoExtraShort_Freqtrade.py'...
+2026-09-10 21:11:31,649 - freqtrade.strategy.hyper - INFO - Found no parameter file.
+2026-09-10 21:11:31,649 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'timeframe' with value from the configuration: 30m.
+2026-09-10 21:11:31,649 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_currency' with value from the configuration: USDT.
+2026-09-10 21:11:31,649 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_amount' with value from the configuration: unlimited.
+2026-09-10 21:11:31,650 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'max_open_trades' with value from the configuration: 3.
+2026-09-10 21:11:31,650 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using minimal_roi: {'0': 100.0}
+2026-09-10 21:11:31,650 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using timeframe: 30m
+2026-09-10 21:11:31,650 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stoploss: -0.99
+2026-09-10 21:11:31,650 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop: False
+2026-09-10 21:11:31,650 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop_positive_offset: 0.0
+2026-09-10 21:11:31,651 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_only_offset_is_reached: False
+2026-09-10 21:11:31,651 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_custom_stoploss: True
+2026-09-10 21:11:31,651 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using process_only_new_candles: True
+2026-09-10 21:11:31,651 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_types: {'entry': 'market', 'exit': 'market', 'stoploss': 'market', 'stoploss_on_exchange': False}
+2026-09-10 21:11:31,651 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_time_in_force: {'entry': 'GTC', 'exit': 'GTC'}
+2026-09-10 21:11:31,652 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_currency: USDT
+2026-09-10 21:11:31,652 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_amount: unlimited
+2026-09-10 21:11:31,652 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using startup_candle_count: 8
+2026-09-10 21:11:31,652 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_exit_signal: False
+2026-09-10 21:11:31,652 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_only: False
+2026-09-10 21:11:31,652 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_roi_if_entry_signal: False
+2026-09-10 21:11:31,652 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_offset: 0.0
+2026-09-10 21:11:31,653 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using disable_dataframe_checks: False
+2026-09-10 21:11:31,653 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_buying_expired_candle_after: 0
+2026-09-10 21:11:31,653 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using position_adjustment_enable: False
+2026-09-10 21:11:31,653 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_entry_position_adjustment: -1
+2026-09-10 21:11:31,653 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_open_trades: 3
+2026-09-10 21:11:31,654 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2026-09-10 21:11:31,657 - freqtrade.resolvers.iresolver - INFO - Using resolved pairlist StaticPairList from 
+'/home/datlt/workspace/freqtrade-auto-trading-research/.worktrees/dry-run-validation/.venv/lib/python3.11/site-packages/freqtrade/plugins/pairlist/StaticPairList.py'...
+2026-09-10 21:11:31,663 - freqtrade.optimize.backtesting - INFO - Using fee 0.1000% from config.
+2026-09-10 21:11:31,755 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-05-23 20:00:00 up to 2026-06-23 00:00:00 (30 days).
+2026-09-10 21:11:32,178 - freqtrade.optimize.backtesting - INFO - Dataload complete. Calculating indicators
+2026-09-10 21:11:32,179 - freqtrade.optimize.backtesting - INFO - Running backtesting for Strategy SMC_FVG_Context30m_NoExtraShort_Freqtrade
+2026-09-10 21:11:32,179 - freqtrade.data.dataprovider - INFO - Loading data for PLAY/USDT:USDT 1h from 2026-05-23 16:00:00 to 2026-06-23 00:00:00
+2026-09-10 21:11:32,740 - freqtrade.data.dataprovider - INFO - Loading data for BIO/USDT:USDT 1h from 2026-05-23 16:00:00 to 2026-06-23 00:00:00
+2026-09-10 21:11:33,324 - freqtrade.data.dataprovider - INFO - Loading data for SPACE/USDT:USDT 1h from 2026-05-23 16:00:00 to 2026-06-23 00:00:00
+2026-09-10 21:11:33,901 - freqtrade.data.dataprovider - INFO - Loading data for PENDLE/USDT:USDT 1h from 2026-05-23 16:00:00 to 2026-06-23 00:00:00
+2026-09-10 21:11:34,505 - freqtrade.data.dataprovider - INFO - Loading data for BR/USDT:USDT 1h from 2026-05-23 16:00:00 to 2026-06-23 00:00:00
+2026-09-10 21:11:35,047 - freqtrade.data.dataprovider - INFO - Loading data for YGG/USDT:USDT 1h from 2026-05-23 16:00:00 to 2026-06-23 00:00:00
+2026-09-10 21:11:35,592 - freqtrade.optimize.backtesting - INFO - Backtesting with data from 2026-05-24 00:00:00 up to 2026-06-23 00:00:00 (30 days).
+2026-09-10 21:11:35,593 - freqtrade.resolvers.iresolver - INFO - Using resolved protection CooldownPeriod from 
+'/home/datlt/workspace/freqtrade-auto-trading-research/.worktrees/dry-run-validation/.venv/lib/python3.11/site-packages/freqtrade/plugins/protections/cooldown_period.py'...
+2026-09-10 21:11:35,646 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000.0 USDT.
+2026-09-10 21:11:35,696 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000.0 USDT.
+2026-09-10 21:11:35,702 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 976.62030916 USDT.
+2026-09-10 21:11:35,728 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 976.62030916 USDT.
+2026-09-10 21:11:35,736 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 962.71157828 USDT.
+2026-09-10 21:11:35,788 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 962.71157828 USDT.
+2026-09-10 21:11:35,794 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 978.60766628 USDT.
+2026-09-10 21:11:36,330 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 978.60766628 USDT.
+2026-09-10 21:11:36,336 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 928.83708612 USDT.
+2026-09-10 21:11:36,550 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 928.8370861199999 USDT.
+2026-09-10 21:11:37,105 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 928.8370861200001 USDT.
+2026-09-10 21:11:37,144 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 882.10638365 USDT.
+2026-09-10 21:11:37,151 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 928.0371768800001 USDT.
+2026-09-10 21:11:37,292 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 928.0371768800001 USDT.
+2026-09-10 21:11:37,298 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 891.43783679 USDT.
+2026-09-10 21:11:37,341 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 891.4378367899999 USDT.
+2026-09-10 21:11:37,346 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 891.43783679 USDT.
+2026-09-10 21:11:37,406 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 891.43783679 USDT.
+2026-09-10 21:11:37,524 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 904.35310716 USDT.
+2026-09-10 21:11:37,586 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 878.10128541 USDT.
+2026-09-10 21:11:37,591 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 832.28821611 USDT.
+2026-09-10 21:11:37,774 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 832.28821611 USDT.
+2026-09-10 21:11:37,783 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 789.5800400200001 USDT.
+2026-09-10 21:11:37,794 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 789.5800400200001 USDT.
+2026-09-10 21:11:37,800 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 828.69003094 USDT.
+2026-09-10 21:11:37,871 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 828.69003094 USDT.
+2026-09-10 21:11:37,922 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 828.69003094 USDT.
+2026-09-10 21:11:38,133 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 787.42649006 USDT.
+2026-09-10 21:11:38,138 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 745.01515127 USDT.
+2026-09-10 21:11:38,562 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 745.01515127 USDT.
+2026-09-10 21:11:38,565 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 745.01515127 USDT.
+2026-09-10 21:11:38,630 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 781.84772183 USDT.
+2026-09-10 21:11:38,636 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 818.36966333 USDT.
+2026-09-10 21:11:38,679 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 818.3696633300001 USDT.
+2026-09-10 21:11:38,683 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 840.7932173300001 USDT.
+2026-09-10 21:11:38,711 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 840.7932173300001 USDT.
+2026-09-10 21:11:38,715 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 809.7761517700001 USDT.
+2026-09-10 21:11:38,727 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 809.7761517700001 USDT.
+2026-09-10 21:11:38,731 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 839.0384401900001 USDT.
+2026-09-10 21:11:38,786 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 839.0384401900001 USDT.
+2026-09-10 21:11:38,796 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 855.84105076 USDT.
+2026-09-10 21:11:38,947 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 855.84105076 USDT.
+2026-09-10 21:11:38,952 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 888.79174708 USDT.
+2026-09-10 21:11:38,998 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 888.79174708 USDT.
+2026-09-10 21:11:39,004 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 871.22991028 USDT.
+2026-09-10 21:11:39,011 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 871.22991028 USDT.
+2026-09-10 21:11:39,018 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 854.65528276 USDT.
+2026-09-10 21:11:39,087 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 854.65528276 USDT.
+2026-09-10 21:11:39,101 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 817.5274543099999 USDT.
+2026-09-10 21:11:39,162 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 817.5274543099999 USDT.
+2026-09-10 21:11:39,170 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 794.5549227500001 USDT.
+2026-09-10 21:11:39,184 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 794.5549227500001 USDT.
+2026-09-10 21:11:39,189 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 754.03033835 USDT.
+2026-09-10 21:11:39,379 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 754.03033835 USDT.
+2026-09-10 21:11:39,384 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 729.61200448 USDT.
+2026-09-10 21:11:39,854 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 729.61200448 USDT.
+2026-09-10 21:11:40,552 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 729.61200448 USDT.
+2026-09-10 21:11:41,030 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 696.9406709699999 USDT.
+2026-09-10 21:11:41,076 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 696.9406709699999 USDT.
+2026-09-10 21:11:41,551 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 680.84116548 USDT.
+2026-09-10 21:11:42,211 - freqtrade.misc - INFO - dumping json to ".research/smc_fvg_pinbar/runs/20260910T140757975541Z/fold-01/backtest-result-2026-09-10_21-11-42.meta.json"

@@ -1,0 +1,266 @@
+{
+  "config_sha256": "88dedf5fde0b142d35a656cb5b65fcb1b86f4a7c10174ef971b2dcdfa7beb29d",
+  "strategy_sha256": "537456831d4ecb3360de448967457d62ba2b4da36054882ca7485090711cad9f",
+  "snapshot_sha256": "d26347d6629aa7f01278bd6298cf2276446f51e93c6b04a3a6fe306094cdf752",
+  "policy_sha256": "2b6d250f8683d77308c44b647e1fa67d11cbb46b7cd9e2ad7121c3a57c4b5f04",
+  "strategy_commit": "f122ecbdc24bf2fc285245ab668807be94fb51b6",
+  "strategy": "SMC_FVG_1h_Baseline_Freqtrade",
+  "strategy_path": ".research/smc_fvg_pinbar/candidates",
+  "strategy_files": {
+    ".research/smc_fvg_pinbar/candidates/SMC_FVG_1h_Baseline_Freqtrade.py": "0365b3675bd5e1aafed9ecc4c94239bc7f44cea54682efb0bff5f8111b3706d4",
+    "src/strategies/SMC_FVG_Confirmation_Freqtrade.py": "af68c934e76c14598cb59b89c9ca4ae6cdfcc326ea5159f71eb07ad102666abe"
+  },
+  "accepted_pairs": [
+    "PLAY/USDT:USDT",
+    "BIO/USDT:USDT",
+    "SPACE/USDT:USDT",
+    "PENDLE/USDT:USDT",
+    "BR/USDT:USDT",
+    "YGG/USDT:USDT"
+  ],
+  "dry_run": true,
+  "checks": {
+    "lookahead": true,
+    "recursive": true,
+    "attribution": false
+  },
+  "correctness_evidence": {
+    "lookahead": {
+      "artifact": ".research/smc_fvg_pinbar/runs/20260910T145603235018Z/lookahead.csv",
+      "transcript": ".research/smc_fvg_pinbar/runs/20260910T145603235018Z/lookahead.txt",
+      "total_signals": 20,
+      "has_bias": false,
+      "biased_entry_signals": 0,
+      "biased_exit_signals": 0,
+      "biased_indicators": ""
+    },
+    "recursive": {
+      "transcript": ".research/smc_fvg_pinbar/runs/20260910T145603235018Z/recursive.txt",
+      "conclusive": true,
+      "lookahead_detected": false,
+      "recursive_variance_reported": false
+    }
+  },
+  "data_coverage": {
+    "PLAY/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/PLAY_USDT_USDT-1m-futures.feather",
+      "rows": 302400,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-22T00:00:00+00:00"
+    },
+    "PLAY/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/PLAY_USDT_USDT-30m-futures.feather",
+      "rows": 10080,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-22T00:00:00+00:00"
+    },
+    "PLAY/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/PLAY_USDT_USDT-1h-futures.feather",
+      "rows": 5509,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T13:00:00+00:00"
+    },
+    "BIO/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/BIO_USDT_USDT-1m-futures.feather",
+      "rows": 302400,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-22T00:00:00+00:00"
+    },
+    "BIO/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/BIO_USDT_USDT-30m-futures.feather",
+      "rows": 10080,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-22T00:00:00+00:00"
+    },
+    "BIO/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/BIO_USDT_USDT-1h-futures.feather",
+      "rows": 5509,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T13:00:00+00:00"
+    },
+    "SPACE/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/SPACE_USDT_USDT-1m-futures.feather",
+      "rows": 302400,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-22T00:00:00+00:00"
+    },
+    "SPACE/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/SPACE_USDT_USDT-30m-futures.feather",
+      "rows": 10080,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-22T00:00:00+00:00"
+    },
+    "SPACE/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/SPACE_USDT_USDT-1h-futures.feather",
+      "rows": 5509,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T13:00:00+00:00"
+    },
+    "PENDLE/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/PENDLE_USDT_USDT-1m-futures.feather",
+      "rows": 302400,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-22T00:00:00+00:00"
+    },
+    "PENDLE/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/PENDLE_USDT_USDT-30m-futures.feather",
+      "rows": 10080,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-22T00:00:00+00:00"
+    },
+    "PENDLE/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/PENDLE_USDT_USDT-1h-futures.feather",
+      "rows": 5509,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T13:00:00+00:00"
+    },
+    "BR/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/BR_USDT_USDT-1m-futures.feather",
+      "rows": 302400,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-22T00:00:00+00:00"
+    },
+    "BR/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/BR_USDT_USDT-30m-futures.feather",
+      "rows": 10080,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-22T00:00:00+00:00"
+    },
+    "BR/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/BR_USDT_USDT-1h-futures.feather",
+      "rows": 5509,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T13:00:00+00:00"
+    },
+    "YGG/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/YGG_USDT_USDT-1m-futures.feather",
+      "rows": 302400,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-22T00:00:00+00:00"
+    },
+    "YGG/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/YGG_USDT_USDT-30m-futures.feather",
+      "rows": 10080,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-22T00:00:00+00:00"
+    },
+    "YGG/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/accepted_6pair_2026q3_wfo/futures/YGG_USDT_USDT-1h-futures.feather",
+      "rows": 5509,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T13:00:00+00:00"
+    },
+    "common_interval": {
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-22T00:00:00+00:00"
+    }
+  },
+  "folds": [
+    {
+      "in_sample_start": "2026-01-24 00:00:00+00:00",
+      "in_sample_end": "2026-05-24 00:00:00+00:00",
+      "oos_start": "2026-05-24 00:00:00+00:00",
+      "oos_end": "2026-06-23 00:00:00+00:00"
+    },
+    {
+      "in_sample_start": "2026-01-24 00:00:00+00:00",
+      "in_sample_end": "2026-06-23 00:00:00+00:00",
+      "oos_start": "2026-06-23 00:00:00+00:00",
+      "oos_end": "2026-07-23 00:00:00+00:00"
+    },
+    {
+      "in_sample_start": "2026-01-24 00:00:00+00:00",
+      "in_sample_end": "2026-07-23 00:00:00+00:00",
+      "oos_start": "2026-07-23 00:00:00+00:00",
+      "oos_end": "2026-08-22 00:00:00+00:00"
+    }
+  ],
+  "fold_metrics": [
+    {
+      "trades": 84,
+      "net_profit": -0.21153703164440002,
+      "max_drawdown": 0.32872867712299614,
+      "raw_net_profit": -0.19354656770999995,
+      "stressed_profit_abs": -211.53703164440003
+    },
+    {
+      "trades": 57,
+      "net_profit": -0.37468350555519997,
+      "max_drawdown": 0.39195270747997846,
+      "raw_net_profit": -0.36401492829,
+      "stressed_profit_abs": -374.6835055552
+    },
+    {
+      "trades": 56,
+      "net_profit": -0.15030206449419997,
+      "max_drawdown": 0.23776368850847307,
+      "raw_net_profit": -0.13765451146000002,
+      "stressed_profit_abs": -150.30206449419998
+    }
+  ],
+  "backtest_artifacts": [
+    ".research/smc_fvg_pinbar/runs/20260910T145603235018Z/fold-01/backtest-result-2026-09-10_21-59-17.zip",
+    ".research/smc_fvg_pinbar/runs/20260910T145603235018Z/fold-02/backtest-result-2026-09-10_21-59-27.zip",
+    ".research/smc_fvg_pinbar/runs/20260910T145603235018Z/fold-03/backtest-result-2026-09-10_21-59-40.zip"
+  ],
+  "bootstrap_summary": {
+    "p95_max_drawdown": 1.196678876452049,
+    "p05_net_profit": -1.1635447856088006,
+    "p95_losing_streak": 7.0
+  },
+  "attribution": {
+    "by_pair": {
+      "BIO/USDT:USDT": -56.276760706,
+      "BR/USDT:USDT": -148.513103354,
+      "PENDLE/USDT:USDT": -189.54993856000002,
+      "PLAY/USDT:USDT": -220.08436317399998,
+      "SPACE/USDT:USDT": 128.5549952042,
+      "YGG/USDT:USDT": -250.653431104
+    },
+    "by_tag": {
+      "displacement": -117.12494910319998,
+      "pin_bar": -561.1854986186,
+      "trend_body": -58.212153971999996
+    },
+    "by_side": {
+      "long": -383.09205500459996,
+      "short": -353.4305466892
+    },
+    "single_source": true
+  },
+  "policy": {
+    "in_sample_days": 120,
+    "oos_days": 30,
+    "required_folds": 3,
+    "min_oos_trades": 100,
+    "max_drawdown": 0.15,
+    "stress_fee": 0.001,
+    "slippage_per_side": 0.0005,
+    "bootstrap_seed": 7,
+    "bootstrap_samples": 20000,
+    "bootstrap_block": "2W",
+    "accepted_pairs": [
+      "PLAY/USDT:USDT",
+      "BIO/USDT:USDT",
+      "SPACE/USDT:USDT",
+      "PENDLE/USDT:USDT",
+      "BR/USDT:USDT",
+      "YGG/USDT:USDT"
+    ]
+  },
+  "verdict": "FAIL",
+  "errors": [
+    "OOS drawdown exceeds policy",
+    "aggregate stressed OOS profit is negative",
+    "bootstrap p95 drawdown exceeds policy"
+  ],
+  "warnings": [
+    "OOS profit attribution has a single pair or entry-tag source"
+  ],
+  "reasons": [
+    "OOS drawdown exceeds policy",
+    "aggregate stressed OOS profit is negative",
+    "bootstrap p95 drawdown exceeds policy",
+    "OOS profit attribution has a single pair or entry-tag source"
+  ]
+}

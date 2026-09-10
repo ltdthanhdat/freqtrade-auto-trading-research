@@ -1,0 +1,24 @@
+{
+  "config_sha256": "da042dcba348ac2e5a24c46e3ab11342078a3952918fab774f2f34b5c3666956",
+  "strategy_sha256": "3938c440f9f62a0ca438155c2767aade48ffa580ed05465b56e46b2f394bae67",
+  "snapshot_sha256": "21739821fb2606dea26edfccdf3194add4bf4b096ebe53e5613204a172588191",
+  "policy_sha256": "35bf8b02ce26c09a723d645fdeed4addba83dbedbc1c3a057766d91097d23f47",
+  "strategy_commit": "17d733cca2df7b17385204258088772c322add07",
+  "strategy": "SMC_FVG_Context30m_Freqtrade",
+  "strategy_path": "src/strategies",
+  "strategy_files": {
+    "src/strategies/SMC_FVG_Confirmation_Freqtrade.py": "af68c934e76c14598cb59b89c9ca4ae6cdfcc326ea5159f71eb07ad102666abe",
+    "src/strategies/SMC_FVG_Context30m_Freqtrade.py": "1ebee396ec520fdad8438d69986d49036aff00cfa5ae6b624da62dcdfa6f5fb9"
+  },
+  "accepted_pairs": [
+    "BTC/USDT:USDT",
+    "PLAY/USDT:USDT",
+    "BIO/USDT:USDT",
+    "SPACE/USDT:USDT",
+    "PENDLE/USDT:USDT",
+    "BR/USDT:USDT",
+    "YGG/USDT:USDT",
+    "STG/USDT:USDT"
+  ],
+  "dry_run": true
+}

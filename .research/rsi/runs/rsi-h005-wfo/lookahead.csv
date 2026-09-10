@@ -1,0 +1,2 @@
+filename,strategy,has_bias,total_signals,biased_entry_signals,biased_exit_signals,biased_indicators
+RSI_Divergence30m_EMA50_Freqtrade.py,RSI_Divergence30m_EMA50_Freqtrade,False,20,0,0,

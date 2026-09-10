@@ -1,0 +1,23 @@
+{
+  "config_sha256": "88dedf5fde0b142d35a656cb5b65fcb1b86f4a7c10174ef971b2dcdfa7beb29d",
+  "strategy_sha256": "0b25f73cfee358341b2b0a7bbe15dce77efa4a09403df5afa666d3dce72f7910",
+  "snapshot_sha256": "d26347d6629aa7f01278bd6298cf2276446f51e93c6b04a3a6fe306094cdf752",
+  "policy_sha256": "2b6d250f8683d77308c44b647e1fa67d11cbb46b7cd9e2ad7121c3a57c4b5f04",
+  "strategy_commit": "17d733cca2df7b17385204258088772c322add07",
+  "strategy": "SMC_FVG_Context30m_ShortOnly_Freqtrade",
+  "strategy_path": ".research/smc_fvg_pinbar/candidates",
+  "strategy_files": {
+    ".research/smc_fvg_pinbar/candidates/SMC_FVG_Context30m_ShortOnly_Freqtrade.py": "e5f8ff570a6047af82b85dc2cfd5c6f4c49c9a325e3b23fe62ceb13c640f3e40",
+    "src/strategies/SMC_FVG_Confirmation_Freqtrade.py": "af68c934e76c14598cb59b89c9ca4ae6cdfcc326ea5159f71eb07ad102666abe",
+    "src/strategies/SMC_FVG_Context30m_Freqtrade.py": "1ebee396ec520fdad8438d69986d49036aff00cfa5ae6b624da62dcdfa6f5fb9"
+  },
+  "accepted_pairs": [
+    "PLAY/USDT:USDT",
+    "BIO/USDT:USDT",
+    "SPACE/USDT:USDT",
+    "PENDLE/USDT:USDT",
+    "BR/USDT:USDT",
+    "YGG/USDT:USDT"
+  ],
+  "dry_run": true
+}

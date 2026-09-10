@@ -1,0 +1,792 @@
+                                                                                Lookahead Analysis                                                                                
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+┃                                  filename ┃                               strategy ┃ has_bias ┃ total_signals ┃ biased_entry_signals ┃ biased_exit_signals ┃ biased_indicators ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+│ SMC_FVG_Context30m_ShortOnly_Freqtrade.py │ SMC_FVG_Context30m_ShortOnly_Freqtrade │       No │            20 │                    0 │                   0 │                   │
+└───────────────────────────────────────────┴────────────────────────────────────────┴──────────┴───────────────┴──────────────────────┴─────────────────────┴───────────────────┘
+
+2026-09-10 22:37:28,902 - freqtrade - INFO - freqtrade 2026.2-dev-17d733c
+2026-09-10 22:37:29,586 - freqtrade.configuration.load_config - INFO - Using config: config/config.futures.json ...
+2026-09-10 22:37:29,587 - freqtrade.configuration.configuration - INFO - Parameter --no-color detected ...
+2026-09-10 22:37:29,588 - freqtrade.loggers - INFO - Logfile configured
+2026-09-10 22:37:29,588 - freqtrade.loggers - INFO - Verbosity set to 0
+2026-09-10 22:37:29,589 - freqtrade.configuration.configuration - INFO - Using additional Strategy lookup path: .research/smc_fvg_pinbar/candidates
+2026-09-10 22:37:29,589 - freqtrade.configuration.configuration - INFO - Parameter --timeframe-detail detected, using 1m for intra-candle backtesting ...
+2026-09-10 22:37:29,589 - freqtrade.configuration.configuration - INFO - Parameter --timerange detected: 20260124-20260822 ...
+2026-09-10 22:37:29,589 - freqtrade.configuration.configuration - INFO - Using user-data directory: user_data ...
+2026-09-10 22:37:29,590 - freqtrade.configuration.configuration - INFO - Using data directory: user_data/data/snapshots/accepted_6pair_2026q3_wfo ...
+2026-09-10 22:37:29,590 - freqtrade.configuration.configuration - INFO - Parameter --export detected: none ...
+2026-09-10 22:37:29,590 - freqtrade.configuration.configuration - INFO - Saving lookahead analysis results into .research/smc_fvg_pinbar/runs/20260910T153728184658Z/lookahead.csv ...
+2026-09-10 22:37:29,590 - freqtrade.configuration.configuration - INFO - Filter trades by timerange: 20260124-20260822
+2026-09-10 22:37:29,590 - freqtrade.configuration.configuration - INFO - Path to store lookahead-analysis-results: .research/smc_fvg_pinbar/runs/20260910T153728184658Z/lookahead.csv
+2026-09-10 22:37:29,591 - freqtrade.exchange.check_exchange - INFO - Checking exchange...
+2026-09-10 22:37:29,595 - freqtrade.exchange.check_exchange - INFO - Exchange "binance" is officially supported by the Freqtrade development team.
+2026-09-10 22:37:29,596 - freqtrade.configuration.configuration - INFO - Using pairlist from configuration.
+2026-09-10 22:37:29,596 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2026-09-10 22:37:29,597 - freqtrade.optimize.analysis.lookahead_helpers - INFO - Forced order_types to market orders.
+2026-09-10 22:37:29,597 - freqtrade.optimize.analysis.lookahead_helpers - INFO - Forced max_open_trades to -1 (same amount as there are pairs)
+2026-09-10 22:37:29,598 - freqtrade.optimize.analysis.lookahead_helpers - INFO - Dry run wallet was not set to 1 billion, pushing it up there just to avoid false positives
+2026-09-10 22:37:29,598 - freqtrade.optimize.analysis.lookahead_helpers - INFO - fixing stake_amount to 10k
+2026-09-10 22:37:29,600 - freqtrade.optimize.analysis.lookahead_helpers - INFO - Bias test of SMC_FVG_Context30m_ShortOnly_Freqtrade.py started.
+2026-09-10 22:37:29,601 - freqtrade.exchange.exchange - INFO - Instance is running with dry_run enabled
+2026-09-10 22:37:29,602 - freqtrade.exchange.exchange - INFO - Using CCXT 4.5.38
+2026-09-10 22:37:29,602 - freqtrade.exchange.exchange - INFO - Applying additional ccxt config: {'options': {'defaultType': 'swap'}}
+2026-09-10 22:37:29,606 - freqtrade.exchange.exchange - INFO - Applying additional ccxt config: {'options': {'defaultType': 'swap'}}
+2026-09-10 22:37:29,610 - freqtrade.exchange.exchange - INFO - Using Exchange "Binance"
+2026-09-10 22:37:30,406 - freqtrade.resolvers.exchange_resolver - INFO - Using resolved exchange 'Binance'...
+2026-09-10 22:37:30,408 - freqtrade.resolvers.iresolver - INFO - Using resolved strategy SMC_FVG_Context30m_ShortOnly_Freqtrade from 
+'/home/datlt/workspace/freqtrade-auto-trading-research/.worktrees/dry-run-validation/.research/smc_fvg_pinbar/candidates/SMC_FVG_Context30m_ShortOnly_Freqtrade.py'...
+2026-09-10 22:37:30,408 - freqtrade.strategy.hyper - INFO - Found no parameter file.
+2026-09-10 22:37:30,408 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'timeframe' with value from the configuration: 30m.
+2026-09-10 22:37:30,408 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'order_types' with value from the configuration: {'entry': 'market', 'exit': 'market', 'stoploss': 'market', 
+'stoploss_on_exchange': False}.
+2026-09-10 22:37:30,409 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_currency' with value from the configuration: USDT.
+2026-09-10 22:37:30,409 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_amount' with value from the configuration: 10000.
+2026-09-10 22:37:30,409 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'max_open_trades' with value from the configuration: -1.
+2026-09-10 22:37:30,409 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using minimal_roi: {'0': 100.0}
+2026-09-10 22:37:30,409 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using timeframe: 30m
+2026-09-10 22:37:30,409 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stoploss: -0.99
+2026-09-10 22:37:30,410 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop: False
+2026-09-10 22:37:30,410 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop_positive_offset: 0.0
+2026-09-10 22:37:30,410 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_only_offset_is_reached: False
+2026-09-10 22:37:30,410 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_custom_stoploss: True
+2026-09-10 22:37:30,410 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using process_only_new_candles: True
+2026-09-10 22:37:30,410 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_types: {'entry': 'market', 'exit': 'market', 'stoploss': 'market', 'stoploss_on_exchange': False}
+2026-09-10 22:37:30,410 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_time_in_force: {'entry': 'GTC', 'exit': 'GTC'}
+2026-09-10 22:37:30,411 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_currency: USDT
+2026-09-10 22:37:30,411 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_amount: 10000
+2026-09-10 22:37:30,411 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using startup_candle_count: 8
+2026-09-10 22:37:30,411 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_exit_signal: False
+2026-09-10 22:37:30,411 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_only: False
+2026-09-10 22:37:30,411 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_roi_if_entry_signal: False
+2026-09-10 22:37:30,411 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_offset: 0.0
+2026-09-10 22:37:30,412 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using disable_dataframe_checks: False
+2026-09-10 22:37:30,412 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_buying_expired_candle_after: 0
+2026-09-10 22:37:30,412 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using position_adjustment_enable: False
+2026-09-10 22:37:30,412 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_entry_position_adjustment: -1
+2026-09-10 22:37:30,412 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_open_trades: -1
+2026-09-10 22:37:30,412 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2026-09-10 22:37:30,415 - freqtrade.resolvers.iresolver - INFO - Using resolved pairlist StaticPairList from 
+'/home/datlt/workspace/freqtrade-auto-trading-research/.worktrees/dry-run-validation/.venv/lib/python3.11/site-packages/freqtrade/plugins/pairlist/StaticPairList.py'...
+2026-09-10 22:37:30,421 - freqtrade.optimize.backtesting - INFO - Using fee 0.0500% - worst case fee from exchange (lowest tier).
+2026-09-10 22:37:30,442 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:37:30,443 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 30m, data ends at 2026-08-21 23:30:00
+2026-09-10 22:37:30,458 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BIO/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:37:30,459 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BIO/USDT:USDT, futures, 30m, data ends at 2026-08-21 23:30:00
+2026-09-10 22:37:30,475 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:37:30,475 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 30m, data ends at 2026-08-21 23:30:00
+2026-09-10 22:37:30,489 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PENDLE/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:37:30,489 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PENDLE/USDT:USDT, futures, 30m, data ends at 2026-08-21 23:30:00
+2026-09-10 22:37:30,503 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BR/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:37:30,503 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BR/USDT:USDT, futures, 30m, data ends at 2026-08-21 23:30:00
+2026-09-10 22:37:30,516 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:37:30,516 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 30m, data ends at 2026-08-21 23:30:00
+2026-09-10 22:37:30,524 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-08-21 23:30:00 (209 days).
+2026-09-10 22:37:30,524 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:37:30,543 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 1m, data ends at 2026-08-21 23:59:00
+2026-09-10 22:37:30,653 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BIO/USDT:USDT, futures, 1m, data ends at 2026-08-21 23:59:00
+2026-09-10 22:37:30,754 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 1m, data ends at 2026-08-21 23:59:00
+2026-09-10 22:37:30,857 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PENDLE/USDT:USDT, futures, 1m, data ends at 2026-08-21 23:59:00
+2026-09-10 22:37:30,960 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BR/USDT:USDT, futures, 1m, data ends at 2026-08-21 23:59:00
+2026-09-10 22:37:31,061 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 1m, data ends at 2026-08-21 23:59:00
+2026-09-10 22:37:31,523 - freqtrade.data.dataprovider - INFO - Loading data for PLAY/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-08-22 00:00:00
+2026-09-10 22:37:31,529 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:37:35,029 - freqtrade.data.dataprovider - INFO - Loading data for BIO/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-08-22 00:00:00
+2026-09-10 22:37:35,034 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BIO/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:37:38,635 - freqtrade.data.dataprovider - INFO - Loading data for SPACE/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-08-22 00:00:00
+2026-09-10 22:37:38,640 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:37:42,214 - freqtrade.data.dataprovider - INFO - Loading data for PENDLE/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-08-22 00:00:00
+2026-09-10 22:37:42,218 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PENDLE/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:37:45,794 - freqtrade.data.dataprovider - INFO - Loading data for BR/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-08-22 00:00:00
+2026-09-10 22:37:45,798 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BR/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:37:49,269 - freqtrade.data.dataprovider - INFO - Loading data for YGG/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-08-22 00:00:00
+2026-09-10 22:37:49,274 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:37:53,040 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:37:53,266 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:37:53,273 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:37:53,276 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:37:53,280 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000012988.4823781 USDT.
+2026-09-10 22:37:53,470 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000012988.4823781 USDT.
+2026-09-10 22:37:53,482 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000020169.8536562 USDT.
+2026-09-10 22:37:53,989 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000020169.8536562 USDT.
+2026-09-10 22:37:53,994 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000006884.0687777 USDT.
+2026-09-10 22:37:54,826 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000006884.0687777 USDT.
+2026-09-10 22:37:54,837 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000029427.6290069 USDT.
+2026-09-10 22:37:54,887 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000029427.6290069 USDT.
+2026-09-10 22:37:54,892 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000026049.7875749 USDT.
+2026-09-10 22:37:54,906 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000026049.7875749 USDT.
+2026-09-10 22:37:54,912 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000024298.1619197 USDT.
+2026-09-10 22:37:54,918 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000024298.1619197 USDT.
+2026-09-10 22:37:54,924 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000030011.767088 USDT.
+2026-09-10 22:37:54,994 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000030011.767088 USDT.
+2026-09-10 22:37:55,038 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000030011.767088 USDT.
+2026-09-10 22:37:55,055 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000030011.767088 USDT.
+2026-09-10 22:37:55,094 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000031770.1229903 USDT.
+2026-09-10 22:37:55,113 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000030730.3024812 USDT.
+2026-09-10 22:37:55,117 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000036299.5410599 USDT.
+2026-09-10 22:37:55,287 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000036299.5410599 USDT.
+2026-09-10 22:37:55,293 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000037317.979546 USDT.
+2026-09-10 22:37:55,375 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000037317.979546 USDT.
+2026-09-10 22:37:55,380 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000031533.504622 USDT.
+2026-09-10 22:37:55,425 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000031533.504622 USDT.
+2026-09-10 22:37:55,613 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000031533.504622 USDT.
+2026-09-10 22:37:55,731 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000030509.0198386 USDT.
+2026-09-10 22:37:55,739 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000015947.5144331 USDT.
+2026-09-10 22:37:55,887 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000015947.5144331 USDT.
+2026-09-10 22:37:55,900 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000017658.414705 USDT.
+2026-09-10 22:37:55,945 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000017658.414705 USDT.
+2026-09-10 22:37:55,952 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000032950.7647051 USDT.
+2026-09-10 22:37:55,998 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000032950.7647051 USDT.
+2026-09-10 22:37:56,007 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000042965.7547051 USDT.
+2026-09-10 22:37:56,020 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000042965.7547051 USDT.
+2026-09-10 22:37:56,028 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000041842.9576617 USDT.
+2026-09-10 22:37:56,071 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000041842.9576617 USDT.
+2026-09-10 22:37:56,080 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000040845.4509326 USDT.
+2026-09-10 22:37:56,107 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000040845.4509326 USDT.
+2026-09-10 22:37:56,117 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000039260.9420724 USDT.
+2026-09-10 22:37:56,133 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000039260.9420724 USDT.
+2026-09-10 22:37:56,138 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000035691.4244477 USDT.
+2026-09-10 22:37:56,142 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000035691.4244477 USDT.
+2026-09-10 22:37:56,146 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000041988.2744477 USDT.
+2026-09-10 22:37:56,192 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000041988.2744477 USDT.
+2026-09-10 22:37:56,200 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000054282.1244477 USDT.
+2026-09-10 22:37:56,206 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000054282.1244477 USDT.
+2026-09-10 22:37:56,212 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000052237.4212933 USDT.
+2026-09-10 22:37:56,224 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000052237.4212933 USDT.
+2026-09-10 22:37:56,233 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000053026.0849642 USDT.
+2026-09-10 22:37:56,275 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000053026.0849642 USDT.
+2026-09-10 22:37:56,280 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000056128.9244403 USDT.
+2026-09-10 22:37:56,293 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000056128.9244403 USDT.
+2026-09-10 22:37:56,299 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000044175.7760533 USDT.
+2026-09-10 22:37:56,304 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000044175.7760533 USDT.
+2026-09-10 22:37:56,457 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000044175.7760533 USDT.
+2026-09-10 22:37:56,529 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000061507.1060532 USDT.
+2026-09-10 22:37:56,548 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000062436.5407234 USDT.
+2026-09-10 22:37:59,627 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000062436.5407234 USDT.
+2026-09-10 22:37:59,636 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000066416.0133518 USDT.
+2026-09-10 22:37:59,641 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000066416.0133518 USDT.
+2026-09-10 22:38:00,266 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000066416.0133518 USDT.
+2026-09-10 22:38:00,308 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000070448.3522937 USDT.
+2026-09-10 22:38:00,313 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000076347.626642 USDT.
+2026-09-10 22:38:00,381 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000076347.626642 USDT.
+2026-09-10 22:38:00,389 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000077657.807244 USDT.
+2026-09-10 22:38:00,757 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000077657.807244 USDT.
+2026-09-10 22:38:00,927 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000077657.807244 USDT.
+2026-09-10 22:38:01,106 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000080824.5107441 USDT.
+2026-09-10 22:38:01,113 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000084823.290764 USDT.
+2026-09-10 22:38:01,138 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000084823.290764 USDT.
+2026-09-10 22:38:01,392 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000084823.290764 USDT.
+2026-09-10 22:38:01,644 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000095917.7407639 USDT.
+2026-09-10 22:38:02,158 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000095917.7407639 USDT.
+2026-09-10 22:38:02,400 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000100896.0373005 USDT.
+2026-09-10 22:38:02,405 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000107188.6368037 USDT.
+2026-09-10 22:38:02,417 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000107188.6368037 USDT.
+2026-09-10 22:38:02,422 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000111121.6059755 USDT.
+2026-09-10 22:38:02,478 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000111121.6059755 USDT.
+2026-09-10 22:38:02,492 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000113396.1812389 USDT.
+2026-09-10 22:38:02,516 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000113396.1812389 USDT.
+2026-09-10 22:38:02,525 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000122211.7712389 USDT.
+2026-09-10 22:38:02,623 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000122211.7712389 USDT.
+2026-09-10 22:38:02,631 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000125035.8172926 USDT.
+2026-09-10 22:38:02,682 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000125035.8172926 USDT.
+2026-09-10 22:38:02,700 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000116686.0220402 USDT.
+2026-09-10 22:38:02,788 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000116686.0220402 USDT.
+2026-09-10 22:38:02,799 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000116686.0220402 USDT.
+2026-09-10 22:38:02,809 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000117303.3984476 USDT.
+2026-09-10 22:38:03,005 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000117303.3984476 USDT.
+2026-09-10 22:38:03,142 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000118511.3126084 USDT.
+2026-09-10 22:38:03,146 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000134163.4565214 USDT.
+2026-09-10 22:38:03,286 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000134163.4565214 USDT.
+2026-09-10 22:38:03,295 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000136174.8918806 USDT.
+2026-09-10 22:38:03,383 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000136174.8918806 USDT.
+2026-09-10 22:38:03,526 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000136174.8918806 USDT.
+2026-09-10 22:38:03,765 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000137299.1329789 USDT.
+2026-09-10 22:38:03,772 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000238856.1266401 USDT.
+2026-09-10 22:38:03,785 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000238856.1266401 USDT.
+2026-09-10 22:38:03,790 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000240328.1440233 USDT.
+2026-09-10 22:38:04,295 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000240328.1440233 USDT.
+2026-09-10 22:38:04,303 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000323379.7741749 USDT.
+2026-09-10 22:38:04,311 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000323379.7741749 USDT.
+2026-09-10 22:38:04,315 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000334924.4053717 USDT.
+2026-09-10 22:38:04,504 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000334924.4053717 USDT.
+2026-09-10 22:38:04,509 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000312394.4680499 USDT.
+2026-09-10 22:38:04,536 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000312394.4680499 USDT.
+2026-09-10 22:38:04,541 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000318541.6799064 USDT.
+2026-09-10 22:38:04,601 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000318541.6799064 USDT.
+2026-09-10 22:38:04,610 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000306202.6072785 USDT.
+2026-09-10 22:38:04,776 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000306202.6072785 USDT.
+2026-09-10 22:38:04,782 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000314838.4236103 USDT.
+2026-09-10 22:38:04,812 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000314838.4236103 USDT.
+2026-09-10 22:38:04,816 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000313506.4505008 USDT.
+2026-09-10 22:38:04,836 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000313506.4505008 USDT.
+2026-09-10 22:38:04,844 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000306238.2523013 USDT.
+2026-09-10 22:38:04,938 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000306238.2523013 USDT.
+2026-09-10 22:38:04,944 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000280834.9421102 USDT.
+2026-09-10 22:38:05,051 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000280834.9421102 USDT.
+2026-09-10 22:38:05,056 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000317749.0599182 USDT.
+2026-09-10 22:38:05,106 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000317749.0599182 USDT.
+2026-09-10 22:38:05,123 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000319675.7798043 USDT.
+2026-09-10 22:38:05,137 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000319675.7798043 USDT.
+2026-09-10 22:38:05,151 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000340969.4732316 USDT.
+2026-09-10 22:38:05,208 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000340969.4732316 USDT.
+2026-09-10 22:38:05,213 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000343591.2874886 USDT.
+2026-09-10 22:38:05,579 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000343591.2874886 USDT.
+2026-09-10 22:38:05,706 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000343591.2874886 USDT.
+2026-09-10 22:38:05,827 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000348410.3791374 USDT.
+2026-09-10 22:38:05,832 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000347064.8650862 USDT.
+2026-09-10 22:38:05,863 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000347064.8650862 USDT.
+2026-09-10 22:38:05,870 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000349089.182801 USDT.
+2026-09-10 22:38:05,921 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000349089.182801 USDT.
+2026-09-10 22:38:05,924 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000349089.182801 USDT.
+2026-09-10 22:38:06,280 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000350505.9661859 USDT.
+2026-09-10 22:38:06,284 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000353055.0901463 USDT.
+2026-09-10 22:38:06,312 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000353055.0901463 USDT.
+2026-09-10 22:38:06,317 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000351821.3812273 USDT.
+2026-09-10 22:38:06,342 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000351821.3812273 USDT.
+2026-09-10 22:38:06,347 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000352263.5710818 USDT.
+2026-09-10 22:38:06,377 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000352263.5710818 USDT.
+2026-09-10 22:38:06,386 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000354067.3674524 USDT.
+2026-09-10 22:38:06,406 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000354067.3674524 USDT.
+2026-09-10 22:38:06,411 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000360476.0297583 USDT.
+2026-09-10 22:38:06,472 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000360476.0297583 USDT.
+2026-09-10 22:38:06,487 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000359413.7306383 USDT.
+2026-09-10 22:38:06,660 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000359413.7306383 USDT.
+2026-09-10 22:38:06,665 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000375495.4987317 USDT.
+2026-09-10 22:38:06,829 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000375495.4987317 USDT.
+2026-09-10 22:38:06,833 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000370728.3041221 USDT.
+2026-09-10 22:38:07,295 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000370728.3041221 USDT.
+2026-09-10 22:38:07,302 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000371783.8258972 USDT.
+2026-09-10 22:38:07,333 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000371783.8258972 USDT.
+2026-09-10 22:38:07,340 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000370470.8454714 USDT.
+2026-09-10 22:38:07,504 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000370470.8454714 USDT.
+2026-09-10 22:38:07,509 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000346990.8383096 USDT.
+2026-09-10 22:38:07,579 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000346990.8383096 USDT.
+2026-09-10 22:38:07,587 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000357016.4549937 USDT.
+2026-09-10 22:38:07,673 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000357016.4549937 USDT.
+2026-09-10 22:38:07,681 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000353927.8845216 USDT.
+2026-09-10 22:38:07,683 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000353927.8845216 USDT.
+2026-09-10 22:38:07,688 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000355514.1405969 USDT.
+2026-09-10 22:38:08,260 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000355514.1405969 USDT.
+2026-09-10 22:38:08,266 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000387438.6111465 USDT.
+2026-09-10 22:38:08,294 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000387438.6111465 USDT.
+2026-09-10 22:38:08,591 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000387438.6111465 USDT.
+2026-09-10 22:38:09,013 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000383581.8453847 USDT.
+2026-09-10 22:38:09,018 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000383581.8453847 USDT.
+2026-09-10 22:38:09,313 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000383581.8453847 USDT.
+2026-09-10 22:38:09,451 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000382442.5237554 USDT.
+2026-09-10 22:38:09,689 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000352059.6727606 USDT.
+2026-09-10 22:38:09,962 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000352059.6727606 USDT.
+2026-09-10 22:38:09,980 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000352059.6727606 USDT.
+2026-09-10 22:38:10,146 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000353782.4084419 USDT.
+2026-09-10 22:38:10,357 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000314472.7036808 USDT.
+2026-09-10 22:38:10,770 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000314472.7036808 USDT.
+2026-09-10 22:38:10,926 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000318042.3429682 USDT.
+2026-09-10 22:38:11,218 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000318042.3429682 USDT.
+2026-09-10 22:38:11,551 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000333260.1508579 USDT.
+2026-09-10 22:38:11,556 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000333260.1508579 USDT.
+2026-09-10 22:38:11,583 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000333260.1508579 USDT.
+2026-09-10 22:38:11,595 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000335644.1172184 USDT.
+2026-09-10 22:38:11,598 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000335644.1172184 USDT.
+2026-09-10 22:38:11,605 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000340359.3808073 USDT.
+2026-09-10 22:38:11,679 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000360879.2604848 USDT.
+2026-09-10 22:38:11,685 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000365833.5229144 USDT.
+2026-09-10 22:38:11,809 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000365833.5229144 USDT.
+2026-09-10 22:38:11,814 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000371913.9098802 USDT.
+2026-09-10 22:38:11,866 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000371913.9098802 USDT.
+2026-09-10 22:38:11,871 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000373021.6202478 USDT.
+2026-09-10 22:38:11,906 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000373021.6202478 USDT.
+2026-09-10 22:38:11,910 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000369421.9998397 USDT.
+2026-09-10 22:38:11,917 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000369421.9998397 USDT.
+2026-09-10 22:38:11,922 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000373073.9565879 USDT.
+2026-09-10 22:38:12,037 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000373073.9565879 USDT.
+2026-09-10 22:38:12,164 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000373073.9565879 USDT.
+2026-09-10 22:38:12,735 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000375097.8353323 USDT.
+2026-09-10 22:38:12,742 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000367468.121339 USDT.
+2026-09-10 22:38:12,926 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000367468.121339 USDT.
+2026-09-10 22:38:12,935 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000371359.0724101 USDT.
+2026-09-10 22:38:12,961 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000371359.0724101 USDT.
+2026-09-10 22:38:12,968 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000361408.7924101 USDT.
+2026-09-10 22:38:13,104 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000361408.7924101 USDT.
+2026-09-10 22:38:13,244 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000361408.7924101 USDT.
+2026-09-10 22:38:15,801 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000357638.5422518 USDT.
+2026-09-10 22:38:15,952 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000357638.5422518 USDT.
+2026-09-10 22:38:16,130 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000355792.4988523 USDT.
+2026-09-10 22:38:16,316 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000355792.4988523 USDT.
+2026-09-10 22:38:16,785 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000332289.359827 USDT.
+2026-09-10 22:38:16,817 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000332289.359827 USDT.
+2026-09-10 22:38:18,495 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000328955.6531533 USDT.
+2026-09-10 22:38:19,316 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000328955.6531533 USDT.
+2026-09-10 22:38:19,885 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000302574.1127516 USDT.
+2026-09-10 22:38:19,927 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000302574.1127516 USDT.
+2026-09-10 22:38:20,821 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000301691.1801461 USDT.
+2026-09-10 22:38:20,877 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000301691.1801461 USDT.
+2026-09-10 22:38:20,917 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000301691.1801461 USDT.
+2026-09-10 22:38:21,152 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000291197.5559825 USDT.
+2026-09-10 22:38:22,110 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000292320.2819986 USDT.
+2026-09-10 22:38:22,215 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000292320.2819986 USDT.
+2026-09-10 22:38:24,613 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000289382.3519944 USDT.
+2026-09-10 22:38:24,819 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000289382.3519944 USDT.
+2026-09-10 22:38:25,107 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000267465.159552 USDT.
+2026-09-10 22:38:25,136 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000267465.159552 USDT.
+2026-09-10 22:38:30,014 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000266942.302708 USDT.
+2026-09-10 22:38:30,430 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000266942.302708 USDT.
+2026-09-10 22:38:31,167 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000270227.0982286 USDT.
+2026-09-10 22:38:31,380 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000270227.0982286 USDT.
+2026-09-10 22:38:31,616 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000270227.0982286 USDT.
+2026-09-10 22:38:31,691 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000283021.1155099 USDT.
+2026-09-10 22:38:32,325 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000284457.1786191 USDT.
+2026-09-10 22:38:32,345 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000284457.1786191 USDT.
+2026-09-10 22:38:32,353 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000283714.6815608 USDT.
+2026-09-10 22:38:32,358 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000283714.6815608 USDT.
+2026-09-10 22:38:32,512 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000284361.6532131 USDT.
+2026-09-10 22:38:32,548 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000284361.6532131 USDT.
+2026-09-10 22:38:33,790 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000283603.2070514 USDT.
+2026-09-10 22:38:33,820 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000283603.2070514 USDT.
+2026-09-10 22:38:34,456 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000277442.5765027 USDT.
+2026-09-10 22:38:34,674 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000277442.5765027 USDT.
+2026-09-10 22:38:36,208 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000266681.3604952 USDT.
+2026-09-10 22:38:36,688 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000266681.3604952 USDT.
+2026-09-10 22:38:36,762 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000268260.6263973 USDT.
+2026-09-10 22:38:36,870 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000268260.6263973 USDT.
+2026-09-10 22:38:37,000 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000278727.0953449 USDT.
+2026-09-10 22:38:37,210 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000278727.0953449 USDT.
+2026-09-10 22:38:37,355 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000278727.0953449 USDT.
+2026-09-10 22:38:37,837 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000278062.4643 USDT.
+2026-09-10 22:38:40,423 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000293509.1386992 USDT.
+2026-09-10 22:38:40,512 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000293509.1386992 USDT.
+2026-09-10 22:38:40,525 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000283120.1775446 USDT.
+2026-09-10 22:38:40,900 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000283120.1775446 USDT.
+2026-09-10 22:38:41,121 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000283120.1775446 USDT.
+2026-09-10 22:38:41,246 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000275452.7940221 USDT.
+2026-09-10 22:38:44,588 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000278437.1025114 USDT.
+2026-09-10 22:38:44,724 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000278437.1025114 USDT.
+2026-09-10 22:38:46,428 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000287229.5938666 USDT.
+2026-09-10 22:38:46,548 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000287229.5938666 USDT.
+2026-09-10 22:38:46,839 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000293429.6567843 USDT.
+2026-09-10 22:38:47,402 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000293429.6567843 USDT.
+2026-09-10 22:38:48,132 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000283342.6857129 USDT.
+2026-09-10 22:38:48,825 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000283342.6857129 USDT.
+2026-09-10 22:38:49,154 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000283342.6857129 USDT.
+2026-09-10 22:38:49,197 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000294882.0727332 USDT.
+2026-09-10 22:38:52,426 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000305976.5227332 USDT.
+2026-09-10 22:38:52,721 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000305976.5227332 USDT.
+2026-09-10 22:38:53,515 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000304510.86913 USDT.
+2026-09-10 22:38:53,814 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000304510.86913 USDT.
+2026-09-10 22:38:55,753 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000310352.097055 USDT.
+2026-09-10 22:38:55,760 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000353154.7577087 USDT.
+2026-09-10 22:38:55,850 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000353154.7577087 USDT.
+2026-09-10 22:38:55,855 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000352590.0721095 USDT.
+2026-09-10 22:38:55,867 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000352590.0721095 USDT.
+2026-09-10 22:38:55,872 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000345852.0721095 USDT.
+2026-09-10 22:38:55,874 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000345852.0721095 USDT.
+2026-09-10 22:38:55,891 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000344511.0721095 USDT.
+2026-09-10 22:38:55,967 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000344511.0721095 USDT.
+2026-09-10 22:38:55,984 - freqtrade.loggers.set_log_levels - INFO - Reducing verbosity for bias tester.
+2026-09-10 22:38:55,984 - freqtrade.optimize.analysis.lookahead - INFO - Found 141 trades, calculating 20 trades.
+2026-09-10 22:38:56,003 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:56,011 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-01-27 22:30:00 (3 days).
+2026-09-10 22:38:56,012 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:38:56,065 - freqtrade.data.dataprovider - INFO - Loading data for SPACE/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-01-27 22:30:00
+2026-09-10 22:38:56,070 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:56,165 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:56,175 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:56,190 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:56,196 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-01-28 10:30:00 (4 days).
+2026-09-10 22:38:56,196 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:38:56,243 - freqtrade.data.dataprovider - INFO - Loading data for SPACE/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-01-28 10:30:00
+2026-09-10 22:38:56,247 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:56,345 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:56,546 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:56,576 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:56,582 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-01-29 15:30:00 (5 days).
+2026-09-10 22:38:56,582 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:38:56,629 - freqtrade.data.dataprovider - INFO - Loading data for YGG/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-01-29 15:30:00
+2026-09-10 22:38:56,633 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:56,752 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:56,755 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:56,771 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:56,776 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-01-29 15:30:00 (5 days).
+2026-09-10 22:38:56,777 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:38:56,824 - freqtrade.data.dataprovider - INFO - Loading data for YGG/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-01-29 15:33:00
+2026-09-10 22:38:56,828 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:56,947 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:56,950 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:56,953 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000003628.5173538 USDT.
+2026-09-10 22:38:56,955 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000003628.5173538 USDT.
+2026-09-10 22:38:56,983 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:56,988 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-01-29 16:00:00 (5 days).
+2026-09-10 22:38:56,989 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:38:57,040 - freqtrade.data.dataprovider - INFO - Loading data for YGG/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-01-29 16:00:00
+2026-09-10 22:38:57,045 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:57,164 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:57,167 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:57,170 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000003628.5173538 USDT.
+2026-09-10 22:38:57,180 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000003628.5173538 USDT.
+2026-09-10 22:38:57,195 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:57,201 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-01-30 02:00:00 (6 days).
+2026-09-10 22:38:57,202 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:38:57,248 - freqtrade.data.dataprovider - INFO - Loading data for YGG/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-01-30 02:12:00
+2026-09-10 22:38:57,252 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:57,377 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:57,380 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:57,383 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000003628.5173538 USDT.
+2026-09-10 22:38:57,553 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000003628.5173538 USDT.
+2026-09-10 22:38:57,608 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:57,614 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-02 17:30:00 (9 days).
+2026-09-10 22:38:57,615 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:38:57,661 - freqtrade.data.dataprovider - INFO - Loading data for SPACE/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-02 17:30:00
+2026-09-10 22:38:57,666 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:57,850 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:58,050 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:58,059 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:38:58,069 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:38:58,083 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:58,090 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-03 20:00:00 (10 days).
+2026-09-10 22:38:58,090 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:38:58,139 - freqtrade.data.dataprovider - INFO - Loading data for SPACE/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-03 20:04:00
+2026-09-10 22:38:58,144 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:58,347 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:58,549 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:58,557 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:38:59,013 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:38:59,043 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:59,049 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-04 01:30:00 (11 days).
+2026-09-10 22:38:59,050 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:38:59,097 - freqtrade.data.dataprovider - INFO - Loading data for SPACE/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-04 01:30:00
+2026-09-10 22:38:59,102 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:38:59,308 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:59,518 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:38:59,527 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:38:59,975 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:38:59,979 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999996074.1801459 USDT.
+2026-09-10 22:38:59,989 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999996074.1801459 USDT.
+2026-09-10 22:39:00,014 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:00,020 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-05 21:30:00 (12 days).
+2026-09-10 22:39:00,020 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:00,071 - freqtrade.data.dataprovider - INFO - Loading data for SPACE/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-05 21:41:00
+2026-09-10 22:39:00,075 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:00,312 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:00,515 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:00,523 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:39:00,991 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:39:00,995 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999996074.1801459 USDT.
+2026-09-10 22:39:01,742 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999996074.1801459 USDT.
+2026-09-10 22:39:01,772 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:01,778 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-08 21:00:00 (15 days).
+2026-09-10 22:39:01,778 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:01,829 - freqtrade.data.dataprovider - INFO - Loading data for SPACE/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-08 21:00:00
+2026-09-10 22:39:01,833 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:02,130 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:02,344 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:02,353 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:39:02,805 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:39:02,808 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999996074.1801459 USDT.
+2026-09-10 22:39:03,575 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999996074.1801459 USDT.
+2026-09-10 22:39:03,581 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000018617.740375 USDT.
+2026-09-10 22:39:03,591 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000018617.740375 USDT.
+2026-09-10 22:39:03,607 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:03,613 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-08 23:30:00 (15 days).
+2026-09-10 22:39:03,613 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:03,669 - freqtrade.data.dataprovider - INFO - Loading data for SPACE/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-08 23:35:00
+2026-09-10 22:39:03,675 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:03,964 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:04,168 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:04,178 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:39:04,635 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:39:04,638 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999996074.1801459 USDT.
+2026-09-10 22:39:05,398 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999996074.1801459 USDT.
+2026-09-10 22:39:05,404 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000018617.740375 USDT.
+2026-09-10 22:39:05,449 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000018617.740375 USDT.
+2026-09-10 22:39:05,493 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:05,499 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-09 14:30:00 (16 days).
+2026-09-10 22:39:05,499 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:05,550 - freqtrade.data.dataprovider - INFO - Loading data for YGG/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-09 14:30:00
+2026-09-10 22:39:05,555 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:05,855 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:05,858 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:05,861 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000003628.5173538 USDT.
+2026-09-10 22:39:06,036 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000003628.5173538 USDT.
+2026-09-10 22:39:06,051 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000010809.8886318 USDT.
+2026-09-10 22:39:06,061 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000010809.8886318 USDT.
+2026-09-10 22:39:06,076 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:06,082 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-09 15:00:00 (16 days).
+2026-09-10 22:39:06,082 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:06,135 - freqtrade.data.dataprovider - INFO - Loading data for YGG/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-09 15:10:00
+2026-09-10 22:39:06,139 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:06,439 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:06,442 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:06,445 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000003628.5173538 USDT.
+2026-09-10 22:39:06,619 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000003628.5173538 USDT.
+2026-09-10 22:39:06,634 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000010809.8886318 USDT.
+2026-09-10 22:39:06,647 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000010809.8886318 USDT.
+2026-09-10 22:39:06,679 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BIO/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:06,685 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-10 06:00:00 (17 days).
+2026-09-10 22:39:06,686 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:06,742 - freqtrade.data.dataprovider - INFO - Loading data for BIO/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-10 06:00:00
+2026-09-10 22:39:06,746 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BIO/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:07,070 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:07,076 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:07,090 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BIO/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:07,096 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-10 06:00:00 (17 days).
+2026-09-10 22:39:07,096 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:07,151 - freqtrade.data.dataprovider - INFO - Loading data for BIO/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-10 06:20:00
+2026-09-10 22:39:07,155 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BIO/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:07,490 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:07,496 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:07,529 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:07,535 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-11 03:30:00 (18 days).
+2026-09-10 22:39:07,536 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:07,588 - freqtrade.data.dataprovider - INFO - Loading data for YGG/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-11 03:30:00
+2026-09-10 22:39:07,592 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:07,924 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:07,926 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:07,929 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000003628.5173538 USDT.
+2026-09-10 22:39:08,120 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000003628.5173538 USDT.
+2026-09-10 22:39:08,134 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000010809.8886318 USDT.
+2026-09-10 22:39:08,146 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000010809.8886318 USDT.
+2026-09-10 22:39:08,151 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009058.2629768 USDT.
+2026-09-10 22:39:08,162 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009058.2629768 USDT.
+2026-09-10 22:39:08,178 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:08,184 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-11 04:30:00 (18 days).
+2026-09-10 22:39:08,184 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:08,240 - freqtrade.data.dataprovider - INFO - Loading data for YGG/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-11 04:53:00
+2026-09-10 22:39:08,244 - freqtrade.data.history.datahandlers.idatahandler - WARNING - YGG/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:08,572 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:08,575 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:08,578 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000003628.5173538 USDT.
+2026-09-10 22:39:08,752 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000003628.5173538 USDT.
+2026-09-10 22:39:08,766 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000010809.8886318 USDT.
+2026-09-10 22:39:08,778 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000010809.8886318 USDT.
+2026-09-10 22:39:08,783 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009058.2629768 USDT.
+2026-09-10 22:39:08,807 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009058.2629768 USDT.
+2026-09-10 22:39:08,839 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:08,845 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-11 04:30:00 (18 days).
+2026-09-10 22:39:08,846 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:08,896 - freqtrade.data.dataprovider - INFO - Loading data for PLAY/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-11 04:30:00
+2026-09-10 22:39:08,900 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:09,234 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:09,244 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:09,259 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:09,265 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-11 05:30:00 (18 days).
+2026-09-10 22:39:09,265 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:09,318 - freqtrade.data.dataprovider - INFO - Loading data for PLAY/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-11 05:53:00
+2026-09-10 22:39:09,322 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:09,662 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:09,685 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:09,718 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:09,724 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-11 00:30:00 (18 days).
+2026-09-10 22:39:09,724 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:09,776 - freqtrade.data.dataprovider - INFO - Loading data for SPACE/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-11 00:30:00
+2026-09-10 22:39:09,780 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:10,106 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:10,320 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:10,329 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:39:10,782 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:39:10,785 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999996074.1801459 USDT.
+2026-09-10 22:39:11,551 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999996074.1801459 USDT.
+2026-09-10 22:39:11,557 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000018617.740375 USDT.
+2026-09-10 22:39:11,602 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000018617.740375 USDT.
+2026-09-10 22:39:11,608 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000015239.8989431 USDT.
+2026-09-10 22:39:11,619 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000015239.8989431 USDT.
+2026-09-10 22:39:11,636 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:11,642 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-11 06:30:00 (18 days).
+2026-09-10 22:39:11,643 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:11,699 - freqtrade.data.dataprovider - INFO - Loading data for SPACE/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-11 06:44:00
+2026-09-10 22:39:11,704 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:12,035 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:12,240 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:12,249 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:39:12,713 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:39:12,717 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999996074.1801459 USDT.
+2026-09-10 22:39:13,498 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999996074.1801459 USDT.
+2026-09-10 22:39:13,505 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000018617.740375 USDT.
+2026-09-10 22:39:13,552 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000018617.740375 USDT.
+2026-09-10 22:39:13,558 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000015239.8989431 USDT.
+2026-09-10 22:39:13,673 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000015239.8989431 USDT.
+2026-09-10 22:39:13,705 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:13,712 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-11 08:30:00 (18 days).
+2026-09-10 22:39:13,712 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:13,765 - freqtrade.data.dataprovider - INFO - Loading data for PLAY/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-11 08:30:00
+2026-09-10 22:39:13,769 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:14,111 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:14,135 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:14,139 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999998960.1794909 USDT.
+2026-09-10 22:39:14,149 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999998960.1794909 USDT.
+2026-09-10 22:39:14,166 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:14,172 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-11 17:00:00 (18 days).
+2026-09-10 22:39:14,172 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:14,236 - freqtrade.data.dataprovider - INFO - Loading data for PLAY/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-11 17:19:00
+2026-09-10 22:39:14,240 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:14,583 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:14,607 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:14,611 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999998960.1794909 USDT.
+2026-09-10 22:39:14,762 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999998960.1794909 USDT.
+2026-09-10 22:39:14,795 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:14,801 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-12 12:30:00 (19 days).
+2026-09-10 22:39:14,802 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:14,853 - freqtrade.data.dataprovider - INFO - Loading data for SPACE/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-12 12:30:00
+2026-09-10 22:39:14,857 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:15,208 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:15,430 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:15,439 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:39:15,903 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:39:15,906 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999996074.1801459 USDT.
+2026-09-10 22:39:16,690 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999996074.1801459 USDT.
+2026-09-10 22:39:16,696 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000018617.740375 USDT.
+2026-09-10 22:39:16,742 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000018617.740375 USDT.
+2026-09-10 22:39:16,748 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000015239.8989431 USDT.
+2026-09-10 22:39:16,856 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000015239.8989431 USDT.
+2026-09-10 22:39:16,861 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000020809.1375217 USDT.
+2026-09-10 22:39:16,871 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000020809.1375217 USDT.
+2026-09-10 22:39:16,886 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:16,892 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-12 16:30:00 (19 days).
+2026-09-10 22:39:16,892 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:16,946 - freqtrade.data.dataprovider - INFO - Loading data for SPACE/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-12 16:31:00
+2026-09-10 22:39:16,951 - freqtrade.data.history.datahandlers.idatahandler - WARNING - SPACE/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:17,305 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:17,553 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:17,561 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:39:18,023 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000009359.9650244 USDT.
+2026-09-10 22:39:18,027 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999996074.1801459 USDT.
+2026-09-10 22:39:18,825 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999996074.1801459 USDT.
+2026-09-10 22:39:18,832 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000018617.740375 USDT.
+2026-09-10 22:39:18,878 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000018617.740375 USDT.
+2026-09-10 22:39:18,884 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000015239.8989431 USDT.
+2026-09-10 22:39:18,993 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000015239.8989431 USDT.
+2026-09-10 22:39:18,998 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000020809.1375217 USDT.
+2026-09-10 22:39:19,074 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000020809.1375217 USDT.
+2026-09-10 22:39:19,108 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BR/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:19,114 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-13 03:30:00 (20 days).
+2026-09-10 22:39:19,114 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:19,174 - freqtrade.data.dataprovider - INFO - Loading data for BR/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-13 03:30:00
+2026-09-10 22:39:19,179 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BR/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:19,578 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:19,589 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:19,604 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BR/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:19,610 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-13 08:00:00 (20 days).
+2026-09-10 22:39:19,611 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:19,666 - freqtrade.data.dataprovider - INFO - Loading data for BR/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-13 08:29:00
+2026-09-10 22:39:19,670 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BR/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:20,049 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:20,135 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:20,195 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BIO/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:20,202 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-13 01:30:00 (20 days).
+2026-09-10 22:39:20,202 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:20,266 - freqtrade.data.dataprovider - INFO - Loading data for BIO/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-13 01:30:00
+2026-09-10 22:39:20,273 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BIO/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:20,652 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:20,658 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:20,665 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000005713.6051683 USDT.
+2026-09-10 22:39:20,675 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000005713.6051683 USDT.
+2026-09-10 22:39:20,690 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BIO/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:20,697 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-13 14:00:00 (20 days).
+2026-09-10 22:39:20,697 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:20,753 - freqtrade.data.dataprovider - INFO - Loading data for BIO/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-13 14:00:00
+2026-09-10 22:39:20,758 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BIO/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:21,139 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:21,145 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:21,151 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000005713.6051683 USDT.
+2026-09-10 22:39:21,378 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000005713.6051683 USDT.
+2026-09-10 22:39:21,411 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BR/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:21,417 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-15 07:30:00 (22 days).
+2026-09-10 22:39:21,417 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:21,474 - freqtrade.data.dataprovider - INFO - Loading data for BR/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-15 07:30:00
+2026-09-10 22:39:21,479 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BR/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:21,894 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:21,979 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:21,984 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999998975.5152166 USDT.
+2026-09-10 22:39:21,995 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999998975.5152166 USDT.
+2026-09-10 22:39:22,011 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BR/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:22,018 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-15 14:00:00 (22 days).
+2026-09-10 22:39:22,019 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:22,082 - freqtrade.data.dataprovider - INFO - Loading data for BR/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-15 14:00:00
+2026-09-10 22:39:22,087 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BR/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:22,507 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:22,591 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:22,596 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999998975.5152166 USDT.
+2026-09-10 22:39:22,723 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999998975.5152166 USDT.
+2026-09-10 22:39:22,757 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BIO/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:22,763 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-19 16:00:00 (26 days).
+2026-09-10 22:39:22,764 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:22,821 - freqtrade.data.dataprovider - INFO - Loading data for BIO/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-19 16:00:00
+2026-09-10 22:39:22,825 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BIO/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:23,319 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:23,325 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:23,331 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000005713.6051683 USDT.
+2026-09-10 22:39:23,554 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000005713.6051683 USDT.
+2026-09-10 22:39:23,564 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999991152.0997629 USDT.
+2026-09-10 22:39:23,575 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999991152.0997629 USDT.
+2026-09-10 22:39:23,591 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BIO/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:23,597 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-19 18:00:00 (26 days).
+2026-09-10 22:39:23,597 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:23,659 - freqtrade.data.dataprovider - INFO - Loading data for BIO/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-19 18:22:00
+2026-09-10 22:39:23,664 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BIO/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:24,157 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:24,163 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:24,170 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000005713.6051683 USDT.
+2026-09-10 22:39:24,389 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000005713.6051683 USDT.
+2026-09-10 22:39:24,399 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999991152.0997629 USDT.
+2026-09-10 22:39:24,455 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999991152.0997629 USDT.
+2026-09-10 22:39:24,490 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PENDLE/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:24,496 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-20 11:30:00 (27 days).
+2026-09-10 22:39:24,496 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:24,554 - freqtrade.data.dataprovider - INFO - Loading data for PENDLE/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-20 11:30:00
+2026-09-10 22:39:24,559 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PENDLE/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:25,069 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:25,079 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:25,096 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PENDLE/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:25,102 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-20 13:30:00 (27 days).
+2026-09-10 22:39:25,103 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:25,170 - freqtrade.data.dataprovider - INFO - Loading data for PENDLE/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-20 13:54:00
+2026-09-10 22:39:25,175 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PENDLE/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:25,689 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:25,731 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:25,765 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:25,772 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-22 03:30:00 (29 days).
+2026-09-10 22:39:25,772 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:25,837 - freqtrade.data.dataprovider - INFO - Loading data for PLAY/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-22 03:30:00
+2026-09-10 22:39:25,843 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:26,362 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:26,386 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:26,390 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999998960.1794909 USDT.
+2026-09-10 22:39:26,541 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999998960.1794909 USDT.
+2026-09-10 22:39:26,556 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999999978.6179769 USDT.
+2026-09-10 22:39:26,567 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999999978.6179769 USDT.
+2026-09-10 22:39:26,582 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:26,589 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-22 04:00:00 (29 days).
+2026-09-10 22:39:26,589 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:26,653 - freqtrade.data.dataprovider - INFO - Loading data for PLAY/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-22 04:08:00
+2026-09-10 22:39:26,658 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:27,180 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:27,204 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:27,208 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999998960.1794909 USDT.
+2026-09-10 22:39:27,358 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999998960.1794909 USDT.
+2026-09-10 22:39:27,373 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999999978.6179769 USDT.
+2026-09-10 22:39:27,385 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999999978.6179769 USDT.
+2026-09-10 22:39:27,441 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BR/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:27,449 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-23 22:30:00 (30 days).
+2026-09-10 22:39:27,449 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:27,512 - freqtrade.data.dataprovider - INFO - Loading data for BR/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-23 22:30:00
+2026-09-10 22:39:27,516 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BR/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:28,071 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:28,155 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:28,161 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999998975.5152166 USDT.
+2026-09-10 22:39:28,277 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999998975.5152166 USDT.
+2026-09-10 22:39:28,289 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000686.4154885 USDT.
+2026-09-10 22:39:28,300 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000686.4154885 USDT.
+2026-09-10 22:39:28,316 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BR/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:28,322 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-02-24 00:30:00 (31 days).
+2026-09-10 22:39:28,322 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 22:39:28,380 - freqtrade.data.dataprovider - INFO - Loading data for BR/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-02-24 00:34:00
+2026-09-10 22:39:28,384 - freqtrade.data.history.datahandlers.idatahandler - WARNING - BR/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 22:39:28,938 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:29,023 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000000.0 USDT.
+2026-09-10 22:39:29,029 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999998975.5152166 USDT.
+2026-09-10 22:39:29,144 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 999998975.5152166 USDT.
+2026-09-10 22:39:29,156 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000686.4154885 USDT.
+2026-09-10 22:39:29,194 - freqtrade.leverage.liquidation_price - INFO - Updating liquidation price for all open trades. Collateral 1000000686.4154885 USDT.
+2026-09-10 22:39:29,217 - freqtrade.optimize.analysis.lookahead - INFO - Found targeted trade amount = 20 signals.
+2026-09-10 22:39:29,217 - freqtrade.loggers.set_log_levels - INFO - Restoring log verbosity.
+2026-09-10 22:39:29,218 - freqtrade.optimize.analysis.lookahead - INFO - SMC_FVG_Context30m_ShortOnly_Freqtrade: no bias detected
+2026-09-10 22:39:29,218 - freqtrade.optimize.analysis.lookahead_helpers - INFO - Checking look ahead bias via backtests of SMC_FVG_Context30m_ShortOnly_Freqtrade.py took 120 seconds.
+2026-09-10 22:39:29,221 - freqtrade.optimize.analysis.lookahead_helpers - INFO - saving .research/smc_fvg_pinbar/runs/20260910T153728184658Z/lookahead.csv

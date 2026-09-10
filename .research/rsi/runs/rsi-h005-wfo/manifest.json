@@ -1,0 +1,643 @@
+{
+  "config_sha256": "2d8cabeb5654baed4b33391e1a35e7af6bb5a5bbb0ffef8fb5804cf2186acccc",
+  "strategy_sha256": "462d8c13fd00cff19cfcf6d2fd30d6dda6c3e1b697ac8b8919fc7387f64d3840",
+  "snapshot_sha256": "57aaf8292a738141b327027fc0f44f443e94eb1dc494d63cf27ed024b67c561b",
+  "policy_sha256": "c5558701b48d67ff79d7012ee2885ba4a0bda956228af62706612b3894b87be9",
+  "strategy_commit": "c1e46c03f8c20f00a71c2bc993a34864d23e12e7",
+  "strategy": "RSI_Divergence30m_EMA50_Freqtrade",
+  "strategy_path": ".research/smc_fvg_pinbar/candidates",
+  "strategy_files": {
+    ".research/smc_fvg_pinbar/candidates/RSI_Divergence30m_EMA50_Freqtrade.py": "84e41d07ebb61149244f933386387473f3b50582c7d3782af97aee41ef5468f5",
+    ".research/smc_fvg_pinbar/candidates/RSI_Divergence30m_Freqtrade.py": "7a0cc30414bb842be5b43bfb6830f5524f2cab4a2c5e21916057b402b9400e7b",
+    "src/strategies/SMC_FVG_Confirmation_Freqtrade.py": "af68c934e76c14598cb59b89c9ca4ae6cdfcc326ea5159f71eb07ad102666abe"
+  },
+  "accepted_pairs": [
+    "BTC/USDT:USDT",
+    "ETH/USDT:USDT",
+    "SOL/USDT:USDT",
+    "BNB/USDT:USDT",
+    "XRP/USDT:USDT",
+    "DOGE/USDT:USDT",
+    "ADA/USDT:USDT",
+    "AVAX/USDT:USDT",
+    "LINK/USDT:USDT",
+    "LTC/USDT:USDT",
+    "DOT/USDT:USDT",
+    "UNI/USDT:USDT",
+    "AAVE/USDT:USDT",
+    "NEAR/USDT:USDT",
+    "ARB/USDT:USDT",
+    "OP/USDT:USDT",
+    "SUI/USDT:USDT",
+    "FIL/USDT:USDT",
+    "ETC/USDT:USDT",
+    "BCH/USDT:USDT",
+    "XLM/USDT:USDT",
+    "APT/USDT:USDT",
+    "WLD/USDT:USDT",
+    "TAO/USDT:USDT"
+  ],
+  "dry_run": true,
+  "checks": {
+    "lookahead": true,
+    "recursive": true,
+    "attribution": false
+  },
+  "correctness_evidence": {
+    "lookahead": {
+      "artifact": ".research/smc_fvg_pinbar/runs/rsi-h005-wfo/lookahead.csv",
+      "transcript": ".research/smc_fvg_pinbar/runs/rsi-h005-wfo/lookahead.txt",
+      "total_signals": 20,
+      "has_bias": false,
+      "biased_entry_signals": 0,
+      "biased_exit_signals": 0,
+      "biased_indicators": ""
+    },
+    "recursive": {
+      "transcript": ".research/smc_fvg_pinbar/runs/rsi-h005-wfo/recursive.txt",
+      "conclusive": true,
+      "lookahead_detected": false,
+      "recursive_variance_reported": true
+    }
+  },
+  "data_coverage": {
+    "BTC/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/BTC_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "BTC/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/BTC_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "BTC/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/BTC_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "ETH/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/ETH_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "ETH/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/ETH_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "ETH/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/ETH_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "SOL/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/SOL_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "SOL/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/SOL_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "SOL/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/SOL_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "BNB/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/BNB_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "BNB/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/BNB_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "BNB/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/BNB_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "XRP/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/XRP_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "XRP/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/XRP_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "XRP/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/XRP_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "DOGE/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/DOGE_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "DOGE/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/DOGE_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "DOGE/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/DOGE_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "ADA/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/ADA_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "ADA/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/ADA_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "ADA/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/ADA_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "AVAX/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/AVAX_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "AVAX/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/AVAX_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "AVAX/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/AVAX_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "LINK/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/LINK_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "LINK/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/LINK_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "LINK/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/LINK_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "LTC/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/LTC_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "LTC/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/LTC_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "LTC/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/LTC_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "DOT/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/DOT_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "DOT/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/DOT_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "DOT/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/DOT_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "UNI/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/UNI_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "UNI/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/UNI_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "UNI/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/UNI_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "AAVE/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/AAVE_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "AAVE/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/AAVE_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "AAVE/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/AAVE_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "NEAR/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/NEAR_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "NEAR/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/NEAR_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "NEAR/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/NEAR_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "ARB/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/ARB_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "ARB/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/ARB_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "ARB/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/ARB_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "OP/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/OP_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "OP/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/OP_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "OP/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/OP_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "SUI/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/SUI_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "SUI/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/SUI_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "SUI/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/SUI_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "FIL/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/FIL_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "FIL/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/FIL_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "FIL/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/FIL_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "ETC/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/ETC_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "ETC/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/ETC_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "ETC/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/ETC_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "BCH/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/BCH_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "BCH/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/BCH_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "BCH/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/BCH_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "XLM/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/XLM_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "XLM/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/XLM_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "XLM/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/XLM_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "APT/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/APT_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "APT/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/APT_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "APT/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/APT_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "WLD/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/WLD_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "WLD/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/WLD_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "WLD/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/WLD_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "TAO/USDT:USDT 1m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/TAO_USDT_USDT-1m-futures.feather",
+      "rows": 303840,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "TAO/USDT:USDT 30m": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/TAO_USDT_USDT-30m-futures.feather",
+      "rows": 10128,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    },
+    "TAO/USDT:USDT 1h": {
+      "path": "user_data/data/snapshots/rsi_divergence_universe_2026q3_wfo/futures/TAO_USDT_USDT-1h-futures.feather",
+      "rows": 5512,
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-09-10T16:00:00+00:00"
+    },
+    "common_interval": {
+      "start": "2026-01-24T00:00:00+00:00",
+      "end_exclusive": "2026-08-23T00:00:00+00:00"
+    }
+  },
+  "folds": [
+    {
+      "in_sample_start": "2026-01-24 00:00:00+00:00",
+      "in_sample_end": "2026-05-24 00:00:00+00:00",
+      "oos_start": "2026-05-24 00:00:00+00:00",
+      "oos_end": "2026-06-23 00:00:00+00:00"
+    },
+    {
+      "in_sample_start": "2026-01-24 00:00:00+00:00",
+      "in_sample_end": "2026-06-23 00:00:00+00:00",
+      "oos_start": "2026-06-23 00:00:00+00:00",
+      "oos_end": "2026-07-23 00:00:00+00:00"
+    },
+    {
+      "in_sample_start": "2026-01-24 00:00:00+00:00",
+      "in_sample_end": "2026-07-23 00:00:00+00:00",
+      "oos_start": "2026-07-23 00:00:00+00:00",
+      "oos_end": "2026-08-22 00:00:00+00:00"
+    }
+  ],
+  "fold_metrics": [
+    {
+      "trades": 39,
+      "net_profit": 0.519811626304,
+      "max_drawdown": 0.10365403862058253,
+      "raw_net_profit": 0.53106529879,
+      "stressed_profit_abs": 519.811626304
+    },
+    {
+      "trades": 49,
+      "net_profit": -0.29310779141759996,
+      "max_drawdown": 0.39827394842829655,
+      "raw_net_profit": -0.28256560304000006,
+      "stressed_profit_abs": -293.10779141759997
+    },
+    {
+      "trades": 38,
+      "net_profit": 0.12181522419940004,
+      "max_drawdown": 0.14629608501498437,
+      "raw_net_profit": 0.13167612988,
+      "stressed_profit_abs": 121.81522419940003
+    }
+  ],
+  "backtest_artifacts": [
+    ".research/smc_fvg_pinbar/runs/rsi-h005-wfo/fold-01/backtest-result-2026-09-10_23-30-28.zip",
+    ".research/smc_fvg_pinbar/runs/rsi-h005-wfo/fold-02/backtest-result-2026-09-10_23-30-53.zip",
+    ".research/smc_fvg_pinbar/runs/rsi-h005-wfo/fold-03/backtest-result-2026-09-10_23-31-20.zip"
+  ],
+  "bootstrap_summary": {
+    "p95_max_drawdown": 0.9293432585479676,
+    "p05_net_profit": -0.7099090772391998,
+    "p95_losing_streak": 19.0
+  },
+  "bootstrap_gate_eligible": true,
+  "attribution": {
+    "by_pair": {
+      "AAVE/USDT:USDT": 138.2057966,
+      "ADA/USDT:USDT": 55.954469089999996,
+      "APT/USDT:USDT": 18.790456654,
+      "ARB/USDT:USDT": -57.7369215482,
+      "AVAX/USDT:USDT": 60.67049929,
+      "BCH/USDT:USDT": 62.182556496000004,
+      "BNB/USDT:USDT": -14.481463040000001,
+      "BTC/USDT:USDT": -40.220582500000006,
+      "DOGE/USDT:USDT": -68.51567779000001,
+      "DOT/USDT:USDT": -67.18749012399999,
+      "ETC/USDT:USDT": -59.759593932,
+      "ETH/USDT:USDT": -76.88977918400002,
+      "FIL/USDT:USDT": -134.553013478,
+      "LINK/USDT:USDT": 164.134904804,
+      "LTC/USDT:USDT": 1.2802410559999942,
+      "NEAR/USDT:USDT": -39.628287320000005,
+      "OP/USDT:USDT": 27.772507667999996,
+      "SOL/USDT:USDT": -70.38332697999999,
+      "SUI/USDT:USDT": 117.619158496,
+      "TAO/USDT:USDT": -20.408824391999993,
+      "UNI/USDT:USDT": 157.62471585,
+      "WLD/USDT:USDT": 23.206426189999995,
+      "XLM/USDT:USDT": -2.775221655999987,
+      "XRP/USDT:USDT": 173.617508836
+    },
+    "by_tag": {
+      "rsi_regular_bearish": 369.5722828756,
+      "rsi_regular_bullish": -21.0532237898
+    },
+    "by_side": {
+      "long": -21.0532237898,
+      "short": 369.5722828756
+    },
+    "single_source": true
+  },
+  "policy": {
+    "in_sample_days": 120,
+    "oos_days": 30,
+    "required_folds": 3,
+    "min_oos_trades": 100,
+    "max_drawdown": 0.15,
+    "stress_fee": 0.001,
+    "slippage_per_side": 0.0005,
+    "bootstrap_seed": 7,
+    "bootstrap_samples": 20000,
+    "bootstrap_block": "2W",
+    "accepted_pairs": [
+      "BTC/USDT:USDT",
+      "ETH/USDT:USDT",
+      "SOL/USDT:USDT",
+      "BNB/USDT:USDT",
+      "XRP/USDT:USDT",
+      "DOGE/USDT:USDT",
+      "ADA/USDT:USDT",
+      "AVAX/USDT:USDT",
+      "LINK/USDT:USDT",
+      "LTC/USDT:USDT",
+      "DOT/USDT:USDT",
+      "UNI/USDT:USDT",
+      "AAVE/USDT:USDT",
+      "NEAR/USDT:USDT",
+      "ARB/USDT:USDT",
+      "OP/USDT:USDT",
+      "SUI/USDT:USDT",
+      "FIL/USDT:USDT",
+      "ETC/USDT:USDT",
+      "BCH/USDT:USDT",
+      "XLM/USDT:USDT",
+      "APT/USDT:USDT",
+      "WLD/USDT:USDT",
+      "TAO/USDT:USDT"
+    ]
+  },
+  "verdict": "FAIL",
+  "errors": [
+    "OOS drawdown exceeds policy",
+    "bootstrap p95 drawdown exceeds policy"
+  ],
+  "warnings": [
+    "OOS profit attribution has a single pair or entry-tag source"
+  ],
+  "reasons": [
+    "OOS drawdown exceeds policy",
+    "bootstrap p95 drawdown exceeds policy",
+    "OOS profit attribution has a single pair or entry-tag source"
+  ]
+}

@@ -1,0 +1,111 @@
+                             Recursive Analysis                              
+┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━┳━━━━━┳━━━━━┳━━━━━━┓
+┃         Indicators ┃ 8 (from strategy) ┃     199 ┃ 399 ┃ 499 ┃ 999 ┃ 1999 ┃
+┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━╇━━━━━╇━━━━━╇━━━━━━┩
+│           ema20_1h │            0.246% │ -0.000% │   - │   - │   - │    - │
+│     ema20_slope_1h │          -18.448% │  0.000% │   - │   - │   - │    - │
+│ has_bearish_fvg_1h │               NaN │     NaN │ NaN │ NaN │ NaN │    - │
+└────────────────────┴───────────────────┴─────────┴─────┴─────┴─────┴──────┘
+
+2026-09-10 21:18:38,582 - freqtrade - INFO - freqtrade 2026.2-dev-78d8461
+2026-09-10 21:18:39,418 - freqtrade.configuration.load_config - INFO - Using config: config/config.futures.json ...
+2026-09-10 21:18:39,419 - freqtrade.configuration.configuration - INFO - Parameter --no-color detected ...
+2026-09-10 21:18:39,420 - freqtrade.loggers - INFO - Logfile configured
+2026-09-10 21:18:39,420 - freqtrade.loggers - INFO - Verbosity set to 0
+2026-09-10 21:18:39,421 - freqtrade.configuration.configuration - INFO - Using additional Strategy lookup path: .research/smc_fvg_pinbar/candidates
+2026-09-10 21:18:39,421 - freqtrade.configuration.configuration - INFO - Parameter --timerange detected: 20260124-20260822 ...
+2026-09-10 21:18:39,421 - freqtrade.configuration.configuration - INFO - Using user-data directory: user_data ...
+2026-09-10 21:18:39,421 - freqtrade.configuration.configuration - INFO - Using data directory: user_data/data/snapshots/accepted_6pair_2026q3_wfo ...
+2026-09-10 21:18:39,422 - freqtrade.configuration.configuration - INFO - Filter trades by timerange: 20260124-20260822
+2026-09-10 21:18:39,422 - freqtrade.exchange.check_exchange - INFO - Checking exchange...
+2026-09-10 21:18:39,426 - freqtrade.exchange.check_exchange - INFO - Exchange "binance" is officially supported by the Freqtrade development team.
+2026-09-10 21:18:39,427 - freqtrade.configuration.configuration - INFO - Using pairlist from configuration.
+2026-09-10 21:18:39,427 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2026-09-10 21:18:39,431 - freqtrade.optimize.analysis.recursive_helpers - INFO - Recursive test of SMC_FVG_Context30m_TrendSideOnly_Freqtrade.py started.
+2026-09-10 21:18:39,433 - freqtrade.exchange.exchange - INFO - Instance is running with dry_run enabled
+2026-09-10 21:18:39,433 - freqtrade.exchange.exchange - INFO - Using CCXT 4.5.38
+2026-09-10 21:18:39,433 - freqtrade.exchange.exchange - INFO - Applying additional ccxt config: {'options': {'defaultType': 'swap'}}
+2026-09-10 21:18:39,438 - freqtrade.exchange.exchange - INFO - Applying additional ccxt config: {'options': {'defaultType': 'swap'}}
+2026-09-10 21:18:39,442 - freqtrade.exchange.exchange - INFO - Using Exchange "Binance"
+2026-09-10 21:18:40,280 - freqtrade.resolvers.exchange_resolver - INFO - Using resolved exchange 'Binance'...
+2026-09-10 21:18:40,283 - freqtrade.resolvers.iresolver - INFO - Using resolved strategy SMC_FVG_Context30m_TrendSideOnly_Freqtrade from 
+'/home/datlt/workspace/freqtrade-auto-trading-research/.worktrees/dry-run-validation/.research/smc_fvg_pinbar/candidates/SMC_FVG_Context30m_TrendSideOnly_Freqtrade.py'...
+2026-09-10 21:18:40,283 - freqtrade.strategy.hyper - INFO - Found no parameter file.
+2026-09-10 21:18:40,284 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'timeframe' with value from the configuration: 30m.
+2026-09-10 21:18:40,284 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_currency' with value from the configuration: USDT.
+2026-09-10 21:18:40,284 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_amount' with value from the configuration: unlimited.
+2026-09-10 21:18:40,284 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'max_open_trades' with value from the configuration: 3.
+2026-09-10 21:18:40,284 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using minimal_roi: {'0': 100.0}
+2026-09-10 21:18:40,284 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using timeframe: 30m
+2026-09-10 21:18:40,285 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stoploss: -0.99
+2026-09-10 21:18:40,285 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop: False
+2026-09-10 21:18:40,285 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop_positive_offset: 0.0
+2026-09-10 21:18:40,285 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_only_offset_is_reached: False
+2026-09-10 21:18:40,285 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_custom_stoploss: True
+2026-09-10 21:18:40,285 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using process_only_new_candles: True
+2026-09-10 21:18:40,286 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_types: {'entry': 'market', 'exit': 'market', 'stoploss': 'market', 'stoploss_on_exchange': False}
+2026-09-10 21:18:40,286 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_time_in_force: {'entry': 'GTC', 'exit': 'GTC'}
+2026-09-10 21:18:40,286 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_currency: USDT
+2026-09-10 21:18:40,286 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_amount: unlimited
+2026-09-10 21:18:40,286 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using startup_candle_count: 8
+2026-09-10 21:18:40,286 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_exit_signal: False
+2026-09-10 21:18:40,287 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_only: False
+2026-09-10 21:18:40,287 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_roi_if_entry_signal: False
+2026-09-10 21:18:40,287 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_offset: 0.0
+2026-09-10 21:18:40,287 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using disable_dataframe_checks: False
+2026-09-10 21:18:40,287 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_buying_expired_candle_after: 0
+2026-09-10 21:18:40,287 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using position_adjustment_enable: False
+2026-09-10 21:18:40,287 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_entry_position_adjustment: -1
+2026-09-10 21:18:40,288 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_open_trades: 3
+2026-09-10 21:18:40,288 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2026-09-10 21:18:40,290 - freqtrade.resolvers.iresolver - INFO - Using resolved pairlist StaticPairList from 
+'/home/datlt/workspace/freqtrade-auto-trading-research/.worktrees/dry-run-validation/.venv/lib/python3.11/site-packages/freqtrade/plugins/pairlist/StaticPairList.py'...
+2026-09-10 21:18:40,299 - freqtrade.optimize.backtesting - INFO - Using fee 0.0500% - worst case fee from exchange (lowest tier).
+2026-09-10 21:18:40,308 - freqtrade.optimize.analysis.recursive - INFO - Using pair PLAY/USDT:USDT only for recursive analysis. Replacing whitelist.
+2026-09-10 21:18:40,320 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 21:18:40,320 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 30m, data ends at 2026-08-21 23:30:00
+2026-09-10 21:18:40,334 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-08-21 23:30:00 (209 days).
+2026-09-10 21:18:40,335 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 21:18:40,409 - freqtrade.data.dataprovider - INFO - Loading data for PLAY/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-08-22 00:00:00
+2026-09-10 21:18:40,413 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 21:18:44,156 - freqtrade.loggers.set_log_levels - INFO - Reducing verbosity for bias tester.
+2026-09-10 21:18:44,157 - freqtrade.optimize.analysis.recursive - INFO - Calculating indicators to test lookahead on indicators.
+2026-09-10 21:18:44,177 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 30m, data starts at 2026-01-24 00:00:00
+2026-09-10 21:18:44,185 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-24 00:00:00 up to 2026-01-24 05:00:00 (0 days).
+2026-09-10 21:18:44,185 - freqtrade.configuration.timerange - WARNING - Moving start-date by 8 candles to account for startup time.
+2026-09-10 21:18:44,208 - freqtrade.data.dataprovider - INFO - Loading data for PLAY/USDT:USDT 1h from 2026-01-23 16:00:00 to 2026-01-24 05:00:00
+2026-09-10 21:18:44,213 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 1h, data starts at 2026-01-24 00:00:00
+2026-09-10 21:18:44,248 - freqtrade.optimize.analysis.recursive - INFO - Calculating indicators using startup candle of 8.
+2026-09-10 21:18:44,269 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 30m, data ends at 2026-08-21 23:30:00
+2026-09-10 21:18:44,276 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-08-21 19:30:00 up to 2026-08-21 23:30:00 (0 days).
+2026-09-10 21:18:44,296 - freqtrade.data.dataprovider - INFO - Loading data for PLAY/USDT:USDT 1h from 2026-08-21 15:30:00 to 2026-08-22 00:00:00
+2026-09-10 21:18:44,319 - freqtrade.optimize.analysis.recursive - INFO - Calculating indicators using startup candle of 199.
+2026-09-10 21:18:44,334 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 30m, data ends at 2026-08-21 23:30:00
+2026-09-10 21:18:44,340 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-08-17 20:00:00 up to 2026-08-21 23:30:00 (4 days).
+2026-09-10 21:18:44,361 - freqtrade.data.dataprovider - INFO - Loading data for PLAY/USDT:USDT 1h from 2026-08-13 16:30:00 to 2026-08-22 00:00:00
+2026-09-10 21:18:44,486 - freqtrade.optimize.analysis.recursive - INFO - Calculating indicators using startup candle of 399.
+2026-09-10 21:18:44,502 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 30m, data ends at 2026-08-21 23:30:00
+2026-09-10 21:18:44,508 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-08-13 16:00:00 up to 2026-08-21 23:30:00 (8 days).
+2026-09-10 21:18:44,538 - freqtrade.data.dataprovider - INFO - Loading data for PLAY/USDT:USDT 1h from 2026-08-05 08:30:00 to 2026-08-22 00:00:00
+2026-09-10 21:18:44,764 - freqtrade.optimize.analysis.recursive - INFO - Calculating indicators using startup candle of 499.
+2026-09-10 21:18:44,781 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 30m, data ends at 2026-08-21 23:30:00
+2026-09-10 21:18:44,789 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-08-11 14:00:00 up to 2026-08-21 23:30:00 (10 days).
+2026-09-10 21:18:44,812 - freqtrade.data.dataprovider - INFO - Loading data for PLAY/USDT:USDT 1h from 2026-08-01 04:30:00 to 2026-08-22 00:00:00
+2026-09-10 21:18:45,074 - freqtrade.optimize.analysis.recursive - INFO - Calculating indicators using startup candle of 999.
+2026-09-10 21:18:45,093 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 30m, data ends at 2026-08-21 23:30:00
+2026-09-10 21:18:45,100 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-08-01 04:00:00 up to 2026-08-21 23:30:00 (20 days).
+2026-09-10 21:18:45,129 - freqtrade.data.dataprovider - INFO - Loading data for PLAY/USDT:USDT 1h from 2026-07-11 08:30:00 to 2026-08-22 00:00:00
+2026-09-10 21:18:45,678 - freqtrade.optimize.analysis.recursive - INFO - Calculating indicators using startup candle of 1999.
+2026-09-10 21:18:45,692 - freqtrade.exchange.exchange - WARNING - Using 2 calls to get OHLCV. This can result in slower operations for the bot. Please check if you really need 1999 candles for your 
+strategy.
+2026-09-10 21:18:45,703 - freqtrade.data.history.datahandlers.idatahandler - WARNING - PLAY/USDT:USDT, futures, 30m, data ends at 2026-08-21 23:30:00
+2026-09-10 21:18:45,709 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-07-11 08:00:00 up to 2026-08-21 23:30:00 (41 days).
+2026-09-10 21:18:45,741 - freqtrade.data.dataprovider - INFO - Loading data for PLAY/USDT:USDT 1h from 2026-05-30 16:30:00 to 2026-08-22 00:00:00
+2026-09-10 21:18:46,787 - freqtrade.loggers.set_log_levels - INFO - Restoring log verbosity.
+2026-09-10 21:18:46,788 - freqtrade.optimize.analysis.recursive - INFO - Start checking for recursive bias
+2026-09-10 21:18:46,793 - freqtrade.optimize.analysis.recursive - INFO - No variance on indicator(s) found due to recursive formula.
+2026-09-10 21:18:46,794 - freqtrade.optimize.analysis.recursive - INFO - Start checking for lookahead bias on indicators only
+2026-09-10 21:18:46,795 - freqtrade.optimize.analysis.recursive - INFO - Check indicators at 2026-01-24T05:00:00
+2026-09-10 21:18:46,796 - freqtrade.optimize.analysis.recursive - INFO - No lookahead bias on indicators found.
+2026-09-10 21:18:46,796 - freqtrade.optimize.analysis.recursive_helpers - INFO - Checking recursive and indicator-only lookahead bias of indicators of SMC_FVG_Context30m_TrendSideOnly_Freqtrade.py 
+took 7 seconds.

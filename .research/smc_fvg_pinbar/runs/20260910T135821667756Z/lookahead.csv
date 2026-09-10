@@ -1,0 +1,2 @@
+filename,strategy,has_bias,total_signals,biased_entry_signals,biased_exit_signals,biased_indicators
+SMC_FVG_Context30m_Freqtrade.py,SMC_FVG_Context30m_Freqtrade,False,20,0,0,

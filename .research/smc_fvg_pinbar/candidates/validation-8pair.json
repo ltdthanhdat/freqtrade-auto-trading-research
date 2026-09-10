@@ -1,0 +1,22 @@
+{
+  "accepted_basket": [
+    "BTC/USDT:USDT",
+    "PLAY/USDT:USDT",
+    "BIO/USDT:USDT",
+    "SPACE/USDT:USDT",
+    "PENDLE/USDT:USDT",
+    "BR/USDT:USDT",
+    "YGG/USDT:USDT",
+    "STG/USDT:USDT"
+  ],
+  "in_sample_days": 120,
+  "oos_days": 30,
+  "required_folds": 3,
+  "min_oos_trades": 100,
+  "max_drawdown": 0.15,
+  "stress_fee": 0.001,
+  "slippage_per_side": 0.0005,
+  "bootstrap_seed": 7,
+  "bootstrap_samples": 20000,
+  "bootstrap_block": "2W"
+}
