@@ -48,6 +48,7 @@ strategy edit.
 | H017 | keep evidence / block dry-run | rolling current-window diagnostic fails |
 | H018 | discard | half-R target improves win-rate but remains negative OOS |
 | H019 | discard | no cooldown worsens OOS and still misses trade minimum |
+| H020 | discard | symmetric displacement branch generated no new signals |
 
 ## Rules
 

@@ -107,3 +107,8 @@
 - `2026-09-10` | discard | H019 | run: `2026-09-10_candidate_screening.md`
 - removing the one-candle cooldown left `99` trades and worsened stressed OOS returns, especially the first fold (`-33.41%`, DD `33.41%`)
 - impact: retain the cooldown protection; missing trade count is not the primary failure cause
+
+## D020 - Discard symmetric displacement candidate
+- `2026-09-10` | discard | H020 | run: `2026-09-10_candidate_screening.md`
+- adding the bullish 30m displacement counterpart generated no new signals; all fixed-WFO metrics matched D011
+- impact: do not promote the branch; signal scarcity/asymmetry is not the root cause

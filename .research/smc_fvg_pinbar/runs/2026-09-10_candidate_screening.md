@@ -49,6 +49,14 @@
 - interpretation: removing cooldown did not recover the missing trade budget and materially worsened fold one; correctness checks still passed
 - keep_or_discard: discard H019; retain the one-candle cooldown in the baseline
 
+## H020 - add a symmetric bullish 30m displacement branch
+
+- verify: real validation on the frozen WFO snapshot, manifest `.research/smc_fvg_pinbar/runs/20260910T145045357349Z/manifest.json`
+- changed scope: candidate entry branch only; existing entry/stop/ROI, protection, basket, fee/slippage, and policy unchanged
+- result: `FAIL`; metrics are identical to the frozen baseline (`43 / 27 / 25` trades, stressed returns `-31.66% / -14.80% / -7.64%`, drawdowns `31.66% / 19.28% / 14.17%`)
+- interpretation: the added branch generated no additional signal in this sample; correctness checks remained clean
+- keep_or_discard: discard H020; the missing edge is not explained by asymmetric displacement coverage
+
 ## Conclusion
 
 The frozen strategy is not eligible for dry-run. Three small entry-filter hypotheses were discarded, and the rolling diagnostic reproduces negative OOS behavior without a correctness failure. Further parameter or basket tuning would be post-hoc selection against the failed window; require a separately specified strategy thesis before another candidate.
