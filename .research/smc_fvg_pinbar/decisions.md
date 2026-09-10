@@ -152,3 +152,8 @@
 - `2026-09-10` | keep | validation runner | tests: `46 passed`
 - every non-empty OOS export now receives a block-bootstrap summary; p95 drawdown remains a gate only when the policy has all required folds and at least `min_oos_trades`
 - impact: small-sample candidates expose adverse Monte Carlo evidence without weakening the fail-closed PASS gate
+
+## D029 - Reconfirm fixed WFO failure after runner update
+- `2026-09-10` | keep evidence / block dry-run | H013 rerun | manifest: `20260910T154811581578Z`
+- correctness remains clean, but all three stressed folds are negative, p95 bootstrap DD is `92.42%`, p05 bootstrap profit is `-86.04%`, and attribution lacks two positive sources
+- impact: the Monte Carlo reporting change adds evidence only; it does not change the frozen FAIL verdict or admit dry-run

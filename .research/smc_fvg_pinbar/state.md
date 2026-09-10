@@ -51,7 +51,8 @@ Last updated: 2026-09-10
 - window: `2026-01-24 -> 2026-08-22`
 - correctness: lookahead passed (`20` signals, no bias); recursive analysis conclusive
 - OOS: `95` trades across three folds, stressed returns `-31.66% / -14.80% / -7.64%`, drawdown `31.66% / 19.28% / 14.17%`
-- verdict: `FAIL`; retained at `.research/smc_fvg_pinbar/runs/20260910T135821667756Z/manifest.json`
+- verdict: `FAIL`; rerun after the validation-runner change is retained at `.research/smc_fvg_pinbar/runs/20260910T154811581578Z/manifest.json`
+- rerun evidence: `95` trades, stressed returns `-31.66% / -14.80% / -7.64%`, p95 bootstrap DD `92.42%`, p05 bootstrap profit `-86.04%`, `bootstrap_gate_eligible=false`; attribution also fails the two-positive-source check
 - action: no dry-run; no threshold or basket tuning in the same loop
 
 ### Supplementary screening (2026-09-10)
@@ -68,7 +69,7 @@ Last updated: 2026-09-10
 - H026 BTC 1h EMA50 regime filter failed the first fold (`-7.25%` stressed, `20.41%` DD)
 - H027 no-displacement entry family failed the first fold (`-15.78%` stressed, `18.20%` DD)
 - H017 rolling current-window diagnostic (`2026-02-12 -> 2026-09-10`) also failed: `78` OOS trades, stressed returns `-21.97% / -7.66% / -6.74%`, drawdowns `23.28% / 17.58% / 10.83%`
-- supplementary bootstrap below the policy trade minimum is also adverse: rolling p95 DD `68.55%` / p05 profit `-66.10%`; fixed WFO p95 DD `92.42%` / p05 profit `-86.04%`
+- supplementary bootstrap below the policy trade minimum is also adverse: rolling p95 DD `68.55%` / p05 profit `-66.10%`; fixed WFO p95 DD `92.42%` / p05 profit `-86.04%` (now persisted automatically)
 - lookahead and recursive checks passed; therefore the block is a robustness/performance finding, not a detected lookahead defect
 - `make validate-pass` rejected the H017 manifest as expected; no dry-run process was started
 - validation runner now persists block-bootstrap diagnostics below the trade minimum while keeping the p95 DD gate disabled until the sample is eligible (`bootstrap_gate_eligible`)

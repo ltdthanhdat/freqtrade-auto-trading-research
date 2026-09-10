@@ -121,9 +121,14 @@
 
 ## Conclusion
 
-The frozen strategy is not eligible for dry-run. Three small entry-filter hypotheses were discarded, and the rolling diagnostic reproduces negative OOS behavior without a correctness failure. Further parameter or basket tuning would be post-hoc selection against the failed window; require a separately specified strategy thesis before another candidate.
+The frozen strategy is not eligible for dry-run. The additional basket, side,
+regime, and entry-family hypotheses were discarded, and the rolling diagnostic
+reproduces negative OOS behavior without a correctness failure. Further
+parameter or basket tuning would be post-hoc selection against the failed
+window; require a separately specified strategy thesis before another
+candidate.
 
 The same supplementary bootstrap on the fixed WFO export gives p95 max drawdown
-`92.42%` and p05 net profit `-86.04%` (95 trades). These are diagnostic-only
-because both samples miss the policy trade minimum, but they reinforce rather
-than weaken the fail-closed decision.
+`92.42%` and p05 net profit `-86.04%` (95 trades). The rerun manifest now stores
+this diagnostic automatically with `bootstrap_gate_eligible=false`; it
+reinforces rather than weakens the fail-closed decision.
