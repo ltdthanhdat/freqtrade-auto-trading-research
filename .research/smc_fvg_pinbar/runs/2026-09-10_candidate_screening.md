@@ -28,9 +28,15 @@
 - data: all six pairs have chronological `1m/30m/1h` coverage from `2026-02-12`, common end `2026-09-10T14:00Z`
 - correctness: lookahead passed (`20` signals, no bias); recursive analysis conclusive with no lookahead
 - result: `FAIL`; folds `27 / 30 / 21` trades, stressed returns `-21.97% / -7.66% / -6.74%`, drawdowns `23.28% / 17.58% / 10.83%`; aggregate `78` trades, below the required `100`; attribution has no two profitable pair/tag sources
+- supplementary bootstrap (not eligible as a gate because the sample is below `100` trades): p95 max drawdown `68.55%`, p05 net profit `-66.10%`, p95 losing streak `6` trades
 - gate check: `make validate-pass VALIDATION_MANIFEST=.research/smc_fvg_pinbar/runs/20260910T142336334271Z/manifest.json` rejected the manifest (`validation verdict is not PASS`)
 - keep_or_discard: keep as supplementary failure evidence; it does not override the fixed WFO failure
 
 ## Conclusion
 
 The frozen strategy is not eligible for dry-run. Three small entry-filter hypotheses were discarded, and the rolling diagnostic reproduces negative OOS behavior without a correctness failure. Further parameter or basket tuning would be post-hoc selection against the failed window; require a separately specified strategy thesis before another candidate.
+
+The same supplementary bootstrap on the fixed WFO export gives p95 max drawdown
+`92.42%` and p05 net profit `-86.04%` (95 trades). These are diagnostic-only
+because both samples miss the policy trade minimum, but they reinforce rather
+than weaken the fail-closed decision.
