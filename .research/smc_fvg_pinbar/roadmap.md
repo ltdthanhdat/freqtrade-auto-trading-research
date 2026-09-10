@@ -49,6 +49,7 @@ strategy edit.
 | H018 | discard | half-R target improves win-rate but remains negative OOS |
 | H019 | discard | no cooldown worsens OOS and still misses trade minimum |
 | H020 | discard | symmetric displacement branch generated no new signals |
+| H021 | discard | pure 1h FVG baseline worsens OOS despite more trades |
 
 ## Rules
 

@@ -57,6 +57,14 @@
 - interpretation: the added branch generated no additional signal in this sample; correctness checks remained clean
 - keep_or_discard: discard H020; the missing edge is not explained by asymmetric displacement coverage
 
+## H021 - pure 1h FVG baseline without the 30m hybrid layer
+
+- verify: real validation on the frozen WFO snapshot, manifest `.research/smc_fvg_pinbar/runs/20260910T145603235018Z/manifest.json`
+- changed scope: execution architecture only; pure 1h confirmation with the same callback/risk/protection, basket, fee/slippage, and policy
+- result: `FAIL`; folds `84 / 57 / 56` trades, stressed returns `-21.15% / -37.47% / -15.03%`, drawdowns `32.87% / 39.20% / 23.78%`; bootstrap p95 drawdown also exceeded policy
+- interpretation: more trades did not recover expectancy; losses are present on both sides and across tags, while lookahead/recursive checks remain clean
+- keep_or_discard: discard H021; the FVG confirmation model itself needs a new thesis before another validation attempt
+
 ## Conclusion
 
 The frozen strategy is not eligible for dry-run. Three small entry-filter hypotheses were discarded, and the rolling diagnostic reproduces negative OOS behavior without a correctness failure. Further parameter or basket tuning would be post-hoc selection against the failed window; require a separately specified strategy thesis before another candidate.

@@ -60,6 +60,7 @@ Last updated: 2026-09-10
 - H018 half-R exit candidate improved win-rate but still failed all performance gates; it was not promoted
 - H019 no-cooldown candidate worsened OOS returns; retain the one-candle protection
 - H020 symmetric displacement candidate produced no new signals and matched baseline; no entry branch was promoted
+- H021 pure 1h FVG baseline was materially worse despite more trades; the underlying FVG model is not OOS-robust
 - H017 rolling current-window diagnostic (`2026-02-12 -> 2026-09-10`) also failed: `78` OOS trades, stressed returns `-21.97% / -7.66% / -6.74%`, drawdowns `23.28% / 17.58% / 10.83%`
 - supplementary bootstrap below the policy trade minimum is also adverse: rolling p95 DD `68.55%` / p05 profit `-66.10%`; fixed WFO p95 DD `92.42%` / p05 profit `-86.04%`
 - lookahead and recursive checks passed; therefore the block is a robustness/performance finding, not a detected lookahead defect

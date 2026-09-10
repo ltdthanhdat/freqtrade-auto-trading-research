@@ -112,3 +112,8 @@
 - `2026-09-10` | discard | H020 | run: `2026-09-10_candidate_screening.md`
 - adding the bullish 30m displacement counterpart generated no new signals; all fixed-WFO metrics matched D011
 - impact: do not promote the branch; signal scarcity/asymmetry is not the root cause
+
+## D021 - Discard pure 1h FVG baseline
+- `2026-09-10` | discard | H021 | run: `2026-09-10_candidate_screening.md`
+- pure 1h execution produced more trades but materially worse OOS returns/DD and failed bootstrap p95 DD
+- impact: do not replace the hybrid with the old FVG baseline; a new entry/model thesis is required
