@@ -90,6 +90,18 @@ def test_short_only_filter_clears_long_entry_state() -> None:
     assert filtered.loc[1, "short_stop"] == 110
 
 
+def test_rsi_candidate_uses_independent_futures_base_not_smc_base() -> None:
+    from RSI_Divergence30m_Freqtrade import RSI_Divergence30m_Freqtrade
+    from src.strategies.FuturesRiskBase_Freqtrade import FuturesRiskBase_Freqtrade
+    from src.strategies.SMC_FVG_Confirmation_Freqtrade import (
+        SMC_FVG_Confirmation_Freqtrade,
+    )
+
+    assert issubclass(RSI_Divergence30m_Freqtrade, FuturesRiskBase_Freqtrade)
+    assert issubclass(SMC_FVG_Confirmation_Freqtrade, FuturesRiskBase_Freqtrade)
+    assert not issubclass(RSI_Divergence30m_Freqtrade, SMC_FVG_Confirmation_Freqtrade)
+
+
 def test_four_hour_bear_filter_keeps_only_short_events_below_ema50() -> None:
     from RSI_Divergence1h_EMA50Short_4hRegime_Freqtrade import (
         _apply_4h_bear_filter,

@@ -3,8 +3,8 @@ from __future__ import annotations
 import pandas as pd
 from pandas import DataFrame
 
-from src.strategies.SMC_FVG_Confirmation_Freqtrade import (
-    SMC_FVG_Confirmation_Freqtrade,
+from src.strategies.FuturesRiskBase_Freqtrade import (
+    FuturesRiskBase_Freqtrade,
 )
 
 
@@ -112,7 +112,7 @@ def _regular_divergence_events(
     return events
 
 
-class RSI_Divergence30m_Freqtrade(SMC_FVG_Confirmation_Freqtrade):
+class RSI_Divergence30m_Freqtrade(FuturesRiskBase_Freqtrade):
     """H-RSI-01: regular RSI(14) divergence on confirmed 30m pivots.
 
     This first candidate intentionally has no trend, volume, or oscillator
