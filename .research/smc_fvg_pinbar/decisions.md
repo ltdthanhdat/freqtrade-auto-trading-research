@@ -117,3 +117,8 @@
 - `2026-09-10` | discard | H021 | run: `2026-09-10_candidate_screening.md`
 - pure 1h execution produced more trades but materially worse OOS returns/DD and failed bootstrap p95 DD
 - impact: do not replace the hybrid with the old FVG baseline; a new entry/model thesis is required
+
+## D022 - Discard breakout-retest candidate
+- `2026-09-10` | discard | H022 | run: `2026-09-10_candidate_screening.md`
+- first OOS fold smoke already lost `63.70%` under stress with `73.35%` drawdown; full lookahead was stopped after excessive repeated-signal runtime
+- impact: keep the frozen FVG baseline blocked; do not parameter-sweep this model

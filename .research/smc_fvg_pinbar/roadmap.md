@@ -50,6 +50,7 @@ strategy edit.
 | H019 | discard | no cooldown worsens OOS and still misses trade minimum |
 | H020 | discard | symmetric displacement branch generated no new signals |
 | H021 | discard | pure 1h FVG baseline worsens OOS despite more trades |
+| H022 | discard | breakout-retest fails first OOS fold smoke with extreme drawdown |
 
 ## Rules
 

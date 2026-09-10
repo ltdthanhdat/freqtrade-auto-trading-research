@@ -65,6 +65,14 @@
 - interpretation: more trades did not recover expectancy; losses are present on both sides and across tags, while lookahead/recursive checks remain clean
 - keep_or_discard: discard H021; the FVG confirmation model itself needs a new thesis before another validation attempt
 
+## H022 - breakout-retest entry model
+
+- verify: comparable first OOS fold smoke backtest, artifact `.research/smc_fvg_pinbar/runs/h022-smoke-trades/backtest-result-2026-09-10_22-25-20.zip`; the full gate was intentionally not completed after the smoke failure and excessive lookahead runtime
+- changed scope: new entry model only; 1h 20-bar structure breakout, max six 1h breakout age, 30m one-shot retest, ATR14 stop; risk callback/protection/basket/policy unchanged
+- result: `FAIL` on the first fold alone; `246` trades, stressed net `-63.70%`, stressed max drawdown `73.35%`, win rate `46.34%`; raw Freqtrade result was `-59.18%` and `70.56%` drawdown
+- runtime note: repeated retest signals made the full lookahead command exceed 21 minutes before it was stopped; this is a candidate performance/design failure, not a baseline runner failure
+- keep_or_discard: discard H022; do not promote the breakout-retest model or tune its lookback/age/ATR parameters from this failed fold
+
 ## Conclusion
 
 The frozen strategy is not eligible for dry-run. Three small entry-filter hypotheses were discarded, and the rolling diagnostic reproduces negative OOS behavior without a correctness failure. Further parameter or basket tuning would be post-hoc selection against the failed window; require a separately specified strategy thesis before another candidate.
