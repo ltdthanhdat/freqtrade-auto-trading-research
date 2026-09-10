@@ -13,6 +13,7 @@ it to the production SMC implementation.
 2. Implement causal regular and hidden divergence candidates.
 3. Screen 30m, 1h, EMA50, short-only, and 4h-regime variants.
 4. Preserve smoke, WFO, correctness, stress, and bootstrap evidence.
+5. Normalize the research chain into separate `hypotheses/` and `experiments/` records.
 
 ## Current boundary
 

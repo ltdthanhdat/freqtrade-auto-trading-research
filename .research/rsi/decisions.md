@@ -1,5 +1,18 @@
 # RSI divergence research decisions
 
+## Research chain index
+
+| Hypothesis | Experiment | Evidence |
+|---|---|---|
+| [`H-RSI-00`](hypotheses/H-RSI-00_immutable_universe.md) | [`E-RSI-00`](experiments/E-RSI-00_immutable_universe.md) | [screening § H-RSI-00](runs/2026-09-10_rsi_divergence_screening.md#h-rsi-00--universe-audit) |
+| [`H-RSI-01`](hypotheses/H-RSI-01_regular_divergence_30m.md) | [`E-RSI-01`](experiments/E-RSI-01_regular_divergence_30m.md) | [screening § H-RSI-01](runs/2026-09-10_rsi_divergence_screening.md#h-rsi-01--regular-rsi-divergence) |
+| [`H-RSI-02`](hypotheses/H-RSI-02_ema50_direction_filter.md) | [`E-RSI-02`](experiments/E-RSI-02_ema50_direction_filter.md) | [screening § H-RSI-02](runs/2026-09-10_rsi_divergence_screening.md#h-rsi-02--1h-ema50-direction-filter) |
+| [`H-RSI-03`](hypotheses/H-RSI-03_hidden_divergence_30m.md) | [`E-RSI-03`](experiments/E-RSI-03_hidden_divergence_30m.md) | [screening § H-RSI-03](runs/2026-09-10_rsi_divergence_screening.md#h-rsi-03--hidden-rsi-divergence) |
+| [`H-RSI-04`](hypotheses/H-RSI-04_regular_divergence_1h.md) | [`E-RSI-04`](experiments/E-RSI-04_regular_divergence_1h.md) | [screening § H-RSI-04](runs/2026-09-10_rsi_divergence_screening.md#h-rsi-04--regular-divergence-on-1h) |
+| [`H-RSI-05`](hypotheses/H-RSI-05_ema50_1h.md) | [`E-RSI-05`](experiments/E-RSI-05_ema50_1h.md) | [`rsi-h005-wfo/`](runs/rsi-h005-wfo/) |
+| [`H-RSI-06`](hypotheses/H-RSI-06_short_only.md) | [`E-RSI-06`](experiments/E-RSI-06_short_only.md) | [`rsi-h006-wfo/`](runs/rsi-h006-wfo/) |
+| [`H-RSI-07`](hypotheses/H-RSI-07_4h_regime_filter.md) | [`E-RSI-07`](experiments/E-RSI-07_4h_regime_filter.md) | [`rsi-h007-smoke/`](runs/rsi-h007-smoke/) |
+
 ## H-RSI-01 — Discard standalone regular divergence
 
 - 30m regular RSI divergence lost `72.21%` over `235` trades with `73.89%`

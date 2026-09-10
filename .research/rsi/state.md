@@ -10,6 +10,7 @@ Last updated: 2026-09-11
 - local risk base: `.research/rsi/candidates/FuturesRiskBase_Freqtrade.py`
 - universe: fixed 24-pair liquidity/coverage-filtered snapshot
 - deployment: none; RSI is not admitted to the dry-run gate
+- research chain: `H-RSI-00..07` → `E-RSI-00..07` → linked run evidence
 
 ## Screening evidence
 

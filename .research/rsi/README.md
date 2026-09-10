@@ -8,10 +8,16 @@ gate.
 ## Layout
 
 - `candidates/` — RSI strategy variants, local base, configs, and universe
+- `hypotheses/` — one falsifiable research question per H-RSI record
+- `experiments/` — one bounded test record per hypothesis, with linked evidence
 - `runs/` — screening notes and immutable backtest/WFO artifacts
 - `state.md` — current research truth
 - `decisions.md` — keep/discard decisions
 - `roadmap.md` — next research boundary
+
+The research chain is explicit and stays separate from production code:
+
+`hypotheses/` → `experiments/` → `runs/` → `decisions.md` → `state.md`
 
 Run a candidate explicitly with the local strategy path:
 
