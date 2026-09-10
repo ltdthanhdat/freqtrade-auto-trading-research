@@ -13,6 +13,11 @@
 | [`H-RSI-06`](hypotheses/H-RSI-06_short_only.md) | [`E-RSI-06`](experiments/E-RSI-06_short_only.md) | [`rsi-h006-wfo/`](runs/rsi-h006-wfo/) |
 | [`H-RSI-07`](hypotheses/H-RSI-07_4h_regime_filter.md) | [`E-RSI-07`](experiments/E-RSI-07_4h_regime_filter.md) | [`rsi-h007-smoke/`](runs/rsi-h007-smoke/) |
 
+## H-RSI-00 — Keep immutable research universe
+
+- The 24-pair basket was selected with point-in-time liquidity and coverage filters before strategy returns were observed.
+- Keep it as the fixed RSI screening basket; the production six-pair basket remains unchanged.
+
 ## H-RSI-01 — Discard standalone regular divergence
 
 - 30m regular RSI divergence lost `72.21%` over `235` trades with `73.89%`
