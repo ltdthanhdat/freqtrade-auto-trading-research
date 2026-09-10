@@ -216,6 +216,33 @@ def test_runner_persists_real_bootstrap_stress_and_attribution_summary(tmp_path)
     )
 
 
+def test_runner_persists_diagnostic_bootstrap_below_trade_gate(tmp_path):
+    args = make_args(tmp_path)
+    policy_values = json.loads(args.policy.read_text())
+    policy_values["min_oos_trades"] = 100
+    args.policy.write_text(json.dumps(policy_values) + "\n")
+    args.approved_identity = asdict(
+        collect_identity(
+            args.config,
+            args.strategy_file,
+            args.datadir,
+            args.policy,
+            args.strategy,
+            args.strategy_path,
+        )
+    )
+
+    result = run_validation(args, executor=FakeExecutor(profit_abs=-20.0))
+    manifest = json.loads(result.manifest_path.read_text())
+
+    assert result.verdict == "FAIL"
+    assert manifest["bootstrap_summary"] is not None
+    assert manifest["bootstrap_gate_eligible"] is False
+    assert manifest["bootstrap_summary"]["p95_max_drawdown"] > 0.15
+    assert "requires 100 aggregate OOS trades, found 12" in result.reasons
+    assert "bootstrap p95 drawdown exceeds policy" not in result.reasons
+
+
 def test_runner_uses_frozen_analysis_and_supported_fold_artifact_contract(tmp_path):
     executor = FakeExecutor()
     result = run_validation(make_args(tmp_path), executor=executor)

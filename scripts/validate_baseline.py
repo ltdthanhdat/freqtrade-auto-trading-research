@@ -661,7 +661,13 @@ def _write_result(
     fold_metrics = fold_metrics or []
     errors = errors or []
     warnings = warnings or []
-    p95_dd = bootstrap.p95_max_drawdown if bootstrap else None
+    bootstrap_gate_eligible = bool(
+        policy
+        and bootstrap
+        and len(fold_metrics) >= policy.required_folds
+        and sum(metric.trades for metric in fold_metrics) >= policy.min_oos_trades
+    )
+    p95_dd = bootstrap.p95_max_drawdown if bootstrap_gate_eligible and bootstrap else None
     if errors or policy is None:
         verdict = "FAIL"
     else:
@@ -683,6 +689,7 @@ def _write_result(
         "fold_metrics": [asdict(metric) for metric in fold_metrics],
         "backtest_artifacts": backtest_artifacts or [],
         "bootstrap_summary": asdict(bootstrap) if bootstrap else None,
+        "bootstrap_gate_eligible": bootstrap_gate_eligible,
         "attribution": attribution or {},
         "policy": asdict(policy) if policy else None,
         "verdict": verdict,
@@ -795,7 +802,11 @@ def run_validation(args: argparse.Namespace, executor: Executor = subprocess.run
             warnings.append("OOS profit attribution has a single pair or entry-tag source")
 
         bootstrap: BootstrapSummary | None = None
-        if total_trades >= policy.min_oos_trades and len(metrics) >= policy.required_folds:
+        bootstrap_eligible = (
+            total_trades >= policy.min_oos_trades
+            and len(metrics) >= policy.required_folds
+        )
+        if not trades.empty:
             try:
                 bootstrap = bootstrap_equity_paths(trades, policy)
             except Exception as error:
@@ -804,7 +815,7 @@ def run_validation(args: argparse.Namespace, executor: Executor = subprocess.run
             errors.append("OOS drawdown exceeds policy")
         if metrics and sum(metric.net_profit for metric in metrics) < 0:
             errors.append("aggregate stressed OOS profit is negative")
-        if bootstrap and bootstrap.p95_max_drawdown > policy.max_drawdown:
+        if bootstrap_eligible and bootstrap and bootstrap.p95_max_drawdown > policy.max_drawdown:
             errors.append("bootstrap p95 drawdown exceeds policy")
 
         return _write_result(

@@ -52,6 +52,15 @@ strategy edit.
 | H021 | discard | pure 1h FVG baseline worsens OOS despite more trades |
 | H022 | discard | breakout-retest fails first OOS fold smoke with extreme drawdown |
 | H023 | discard | Bollinger pullback is under-sampled and negative OOS |
+| H024 | discard | eight-pair basket expansion fails first OOS fold catastrophically |
+| H025 | discard | short-only smoke improvement fails full WFO and trade-count gate |
+| H026 | discard | BTC 1h EMA50 regime filter fails first OOS fold |
+| H027 | discard | removing displacement confirmations fails first OOS fold |
+
+The validation runner now records block-bootstrap diagnostics below the trade
+minimum while keeping those diagnostics out of the PASS gate until the sample
+is eligible. This improves evidence visibility but does not change the current
+dry-run block.
 
 ## Rules
 

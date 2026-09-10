@@ -82,6 +82,43 @@
 - correctness: lookahead passed (`20` signals, no bias); recursive analysis conclusive
 - keep_or_discard: discard H023; the alternative model is under-sampled and negative OOS, so it cannot replace the frozen baseline
 
+## H024 - exploratory basket expansion with currently available markets
+
+- verify: first OOS fold smoke artifact `.research/smc_fvg_pinbar/runs/h024-smoke-trades/backtest-result-2026-09-10_22-36-20.zip`
+- changed scope: basket only; retain the frozen `SMC_FVG_Context30m_Freqtrade` entry/exit/risk logic and unchanged 3-fold policy
+- data note: `D/USDT:USDT` was requested from Binance but Freqtrade reported `No pairs available`; the exploratory snapshot therefore contains eight valid pairs (`BTC`, `STG`, and the accepted six), not D
+- result: `57` trades on the first fold, raw profit `-29.47%`, stressed profit `-30.55%`, stressed drawdown `30.55%`; every entry tag and both sides were negative
+- keep_or_discard: discard H024; basket expansion is catastrophic on the first fold and does not justify a full WFO run
+
+## H025 - short-only side selection
+
+- verify: smoke artifact `.research/smc_fvg_pinbar/runs/h025-smoke-trades/backtest-result-2026-09-10_22-37-05.zip`, then full validation manifest `.research/smc_fvg_pinbar/runs/20260910T153728184658Z/manifest.json`
+- changed scope: side filter only; disable all long entries while preserving short signals, stops, ROI, cooldown, basket, fee/slippage, and policy
+- smoke: `31` trades, raw `+0.92%`, stressed `+0.19%`, drawdown `15.61%`
+- full result: correctness passed, but folds `31 / 20 / 11` had stressed returns `+0.19% / -8.97% / +4.92%`, drawdowns `15.61% / 12.34% / 3.47%`, and only `62` aggregate trades; aggregate stressed profit remained negative
+- attribution: short-only attribution was not single-source, but displacement remained negative and the second OOS fold invalidated the apparent smoke improvement
+- keep_or_discard: discard H025; side selection does not produce a robust replacement
+
+## H026 - broad BTC 1h regime alignment
+
+- verify: first OOS fold smoke artifact `.research/smc_fvg_pinbar/runs/h026-smoke-trades/backtest-result-2026-09-10_22-41-30.zip`
+- changed scope: add a fixed BTC/USDT 1h EMA50 regime filter; allow longs only above BTC EMA50 and shorts only below it; all existing pair logic and risk handling unchanged
+- result: `31` trades, raw `-6.60%`, stressed `-7.25%`, stressed drawdown `20.41%`; long side remained strongly negative
+- keep_or_discard: discard H026; broad regime gating fails the first-fold smoke
+
+## H027 - remove displacement confirmations
+
+- verify: first OOS fold smoke artifact `.research/smc_fvg_pinbar/runs/h027-smoke-trades/backtest-result-2026-09-10_22-42-23.zip`
+- changed scope: entry-tag family only; retain pin-bar and trend-body confirmations, remove displacement entries on both sides; stops, ROI, cooldown, basket, and policy unchanged
+- result: `19` trades, raw `-15.38%`, stressed `-15.78%`, stressed drawdown `18.20%`; long side and pin-bar attribution remained negative
+- keep_or_discard: discard H027; removing one signal family does not restore first-fold robustness
+
+## Validation runner improvement - diagnostic bootstrap below the trade gate
+
+- changed scope: validation reporting only; the runner now computes and persists `bootstrap_summary` for every non-empty OOS export, even below `min_oos_trades`
+- safety rule: bootstrap p95 drawdown is used as a PASS/FAIL gate only when all required folds and the policy minimum trade count are present; manifests expose `bootstrap_gate_eligible` explicitly
+- verification: `tests/test_validate_baseline.py::test_runner_persists_diagnostic_bootstrap_below_trade_gate` plus the full suite (`46 passed`)
+
 ## Conclusion
 
 The frozen strategy is not eligible for dry-run. Three small entry-filter hypotheses were discarded, and the rolling diagnostic reproduces negative OOS behavior without a correctness failure. Further parameter or basket tuning would be post-hoc selection against the failed window; require a separately specified strategy thesis before another candidate.

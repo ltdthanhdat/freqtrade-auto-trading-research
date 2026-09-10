@@ -127,3 +127,28 @@
 - `2026-09-10` | discard | H023 | run: `2026-09-10_candidate_screening.md`
 - alternative Bollinger pullback entry passed correctness but produced only `37` OOS trades and negative stressed profit with two DD breaches
 - impact: do not replace the baseline; no dry-run admission or parameter sweep
+
+## D024 - Discard exploratory eight-pair basket
+- `2026-09-10` | discard | H024 | run: `2026-09-10_candidate_screening.md`
+- BTC/STG plus the accepted six-pair basket lost `30.55%` under stress with `30.55%` drawdown on the first OOS fold; Binance has no current D market
+- impact: keep the accepted six-pair basket frozen; do not re-add pruned pairs from demo config
+
+## D025 - Discard short-only candidate
+- `2026-09-10` | discard | H025 | run: `2026-09-10_candidate_screening.md`
+- removing all long entries made the first fold slightly positive but full WFO failed in fold two, remained below `100` trades, and had negative aggregate stressed profit
+- impact: retain both-side baseline logic as an evidence snapshot only; no dry-run admission
+
+## D026 - Discard BTC-regime filter
+- `2026-09-10` | discard | H026 | run: `2026-09-10_candidate_screening.md`
+- BTC 1h EMA50 alignment still lost `7.25%` under stress with `20.41%` drawdown on the first fold
+- impact: no global-regime filter promotion
+
+## D027 - Discard no-displacement candidate
+- `2026-09-10` | discard | H027 | run: `2026-09-10_candidate_screening.md`
+- removing displacement confirmations lost `15.78%` under stress with `18.20%` drawdown on the first fold
+- impact: no signal-family pruning or parameter sweep from this failed sample
+
+## D028 - Persist Monte Carlo diagnostics below the trade gate
+- `2026-09-10` | keep | validation runner | tests: `46 passed`
+- every non-empty OOS export now receives a block-bootstrap summary; p95 drawdown remains a gate only when the policy has all required folds and at least `min_oos_trades`
+- impact: small-sample candidates expose adverse Monte Carlo evidence without weakening the fail-closed PASS gate

@@ -63,10 +63,15 @@ Last updated: 2026-09-10
 - H021 pure 1h FVG baseline was materially worse despite more trades; the underlying FVG model is not OOS-robust
 - H022 breakout-retest candidate failed the first OOS fold smoke (`-63.70%`, DD `73.35%`) and was not promoted
 - H023 Bollinger pullback passed correctness but failed OOS robustness (`37` trades, negative stressed aggregate); it was not promoted
+- H024 exploratory eight-pair basket failed the first fold (`57` trades, stressed `-30.55%`, DD `30.55%`); `D/USDT:USDT` is unavailable on Binance
+- H025 short-only passed the first-fold smoke but failed full WFO (`62` trades; stressed `+0.19% / -8.97% / +4.92%`; aggregate negative)
+- H026 BTC 1h EMA50 regime filter failed the first fold (`-7.25%` stressed, `20.41%` DD)
+- H027 no-displacement entry family failed the first fold (`-15.78%` stressed, `18.20%` DD)
 - H017 rolling current-window diagnostic (`2026-02-12 -> 2026-09-10`) also failed: `78` OOS trades, stressed returns `-21.97% / -7.66% / -6.74%`, drawdowns `23.28% / 17.58% / 10.83%`
 - supplementary bootstrap below the policy trade minimum is also adverse: rolling p95 DD `68.55%` / p05 profit `-66.10%`; fixed WFO p95 DD `92.42%` / p05 profit `-86.04%`
 - lookahead and recursive checks passed; therefore the block is a robustness/performance finding, not a detected lookahead defect
 - `make validate-pass` rejected the H017 manifest as expected; no dry-run process was started
+- validation runner now persists block-bootstrap diagnostics below the trade minimum while keeping the p95 DD gate disabled until the sample is eligible (`bootstrap_gate_eligible`)
 
 ## Known issue: demo/live basket drift
 

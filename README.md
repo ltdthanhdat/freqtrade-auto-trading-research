@@ -184,6 +184,12 @@ accepted basket and `dry_run: true`, and rejects any mismatch before it runs
 Freqtrade. The named snapshots currently have retained `WARN`/`FAIL`
 validation manifests only; none has reached `PASS`, so dry-run remains blocked.
 
+Each non-empty OOS validation also stores a block-bootstrap Monte Carlo summary
+in `manifest.json`, including samples below `min_oos_trades`. The field
+`bootstrap_gate_eligible` makes the boundary explicit: p95 drawdown can block a
+`PASS` only after all required folds and the minimum trade count are present;
+diagnostic summaries never weaken the fail-closed gate.
+
 Monitor closed demo or live trades against a retained baseline export:
 
 ```bash
