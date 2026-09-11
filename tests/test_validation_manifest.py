@@ -115,6 +115,8 @@ def test_active_validation_paths_use_sqlite_artifacts_not_legacy_research():
     assert "APPROVED_IDENTITY ?= config/approved-baseline-identity.json" in makefile
     assert "RESEARCH_RUNS_DIR ?= user_data/research-artifacts/validation" in makefile
     assert "--runs-dir $(RESEARCH_RUNS_DIR)" in makefile
+    assert "research-cycle: research-data" in makefile
+    assert "scripts.prepare_research_data" in makefile
     assert ".research/smc_fvg_pinbar/runs" not in makefile
     assert "config/approved-baseline-identity.json" in readme
     assert "user_data/research-artifacts/validation" in readme

@@ -28,3 +28,9 @@ test("runtime tool documents its supported operations", () => {
     /valid operations: start_or_resume_cycle, load_context, collect_sources, record_source_assessment, propose_hypothesis, write_candidate, start_validation, record_interpretation, finalize_cycle/,
   );
 });
+
+test("research command carries the prepared snapshot into the cycle", () => {
+  assert.match(source, /RESEARCH_DATASET/);
+  assert.match(source, /RESEARCH_TIMERANGE/);
+  assert.match(source, /data preflight completed successfully/);
+});

@@ -16,9 +16,12 @@ records explicit review decisions.
 ## Automated research cycle
 
 Run `make research-cycle`, then enter `/research-cycle` in the opened Pi session.
-The project extension pins `openai-codex/gpt-5.6-luna` with maximum thinking and
-drives one bounded, resumable cycle through the typed Python runtime. It stops
-for review after validation; it never starts a trading process. State is in
+The target first seeds and verifies a separate six-pair snapshot with enough
+history for the frozen OOS-fold policy. Override `RESEARCH_DATASET` or
+`RESEARCH_TIMERANGE` when intentionally changing the data window. The project
+extension pins `openai-codex/gpt-5.6-luna` with maximum thinking and drives one
+bounded, resumable cycle through the typed Python runtime. It stops for review
+after validation; it never starts a trading process. State is in
 `user_data/research.sqlite`, and candidates/reports are under
 `user_data/research-artifacts/<cycle-id>/`.
 
@@ -126,6 +129,7 @@ Make targets:
 - `make seed DAYS=90`
 - `make seed-range TIMERANGE=20260218-20260518`
 - `make seed-snapshot DATASET=recent_selected DAYS=30`
+- `make research-data RESEARCH_DATASET=accepted_6pair_2026q3_full RESEARCH_TIMERANGE=20260123-20260911`
 - `make list-data`
 - `make list-snapshot DATASET=recent_selected`
 - `make backtest TIMERANGE=20260218-20260518`

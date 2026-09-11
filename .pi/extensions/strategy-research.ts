@@ -40,6 +40,13 @@ function updateStatus(ctx: ExtensionContext, response: RuntimeResponse): void {
   ctx.ui.setStatus("strategy-research", `${cycle.id} · ${cycle.stage}`);
 }
 
+function researchDataContext(): string {
+  const dataset = process.env.RESEARCH_DATASET ?? "accepted_6pair_2026q3_full";
+  const timerange = process.env.RESEARCH_TIMERANGE ?? "20260123-20260911";
+  const relative = dataset.startsWith("snapshots/") ? dataset : `snapshots/${dataset}`;
+  return `The data preflight completed successfully. Use datadir user_data/data/${relative} and frozen timerange ${timerange}.`;
+}
+
 export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "strategy_research_runtime",
@@ -71,7 +78,7 @@ export default function (pi: ExtensionAPI) {
       updateStatus(ctx, response);
       pi.setActiveTools(["strategy_research_runtime"]);
       pi.sendUserMessage(
-        "Run exactly one bounded research cycle through strategy_research_runtime. Load context, collect sources, assess provenance, propose at most three hypotheses, write and validate one candidate, record interpretation, finalize, then stop.",
+        `Run exactly one bounded research cycle through strategy_research_runtime. ${researchDataContext()} Load context, collect sources, assess provenance, propose at most three hypotheses, write and validate one candidate, record interpretation, finalize, then stop. Use only the documented runtime operations; do not start trading, alter the parent strategy/config/policy, or tune after a failed validation.`,
       );
     },
   });

@@ -15,13 +15,15 @@ APPROVED_IDENTITY ?= config/approved-baseline-identity.json
 RESEARCH_RUNS_DIR ?= user_data/research-artifacts/validation
 VALIDATION_MANIFEST ?=
 VALIDATION_POLICY ?= config/validation.baseline.json
+RESEARCH_DATASET ?= accepted_6pair_2026q3_full
+RESEARCH_TIMERANGE ?= 20260123-20260911
 BASELINE ?= user_data/backtest_results/baseline.zip
 DB ?= user_data/tradesv3.demo.sqlite
 
 PAIR     ?= BTC/USDT:USDT
 SNAPSHOT_DATADIR := user_data/data/snapshots/$(DATASET)
 
-.PHONY: help install seed seed-range seed-snapshot list-data list-snapshot backtest backtest-snapshot validate-snapshot validate-pass monitor-decay plot plot-df dry-run demo live compose-demo compose-live list-strategies research-cycle research-dashboard clean clean-backtest-results
+.PHONY: help install seed seed-range seed-snapshot research-data list-data list-snapshot backtest backtest-snapshot validate-snapshot validate-pass monitor-decay plot plot-df dry-run demo live compose-demo compose-live list-strategies research-cycle research-dashboard clean clean-backtest-results
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -37,6 +39,9 @@ seed-range: install ## Seed active data with TIMERANGE=<start-end>
 
 seed-snapshot: install ## Seed snapshot data with DATASET=<name> DAYS=<n>
 	$(PYTHON) -m scripts.seed_freqtrade_data --config $(CONFIG) --dataset snapshots/$(DATASET) --preset smc-basket --days $(DAYS)
+
+research-data: ## Seed and verify the snapshot used by research-cycle
+	$(PYTHON) -m scripts.prepare_research_data --config $(CONFIG) --policy $(VALIDATION_POLICY) --dataset $(RESEARCH_DATASET) --timerange $(RESEARCH_TIMERANGE)
 
 # List downloaded data
 list-data: ## List downloaded market data
@@ -59,8 +64,8 @@ validate-pass: ## Require VALIDATION_MANIFEST with verdict PASS
 	@test -n "$(VALIDATION_MANIFEST)" || { echo "VALIDATION_MANIFEST is required" >&2; exit 1; }
 	@$(PYTHON) -m scripts.validate_manifest --manifest "$(VALIDATION_MANIFEST)" --config "$(CONFIG)" --policy "$(VALIDATION_POLICY)" --strategy "$(STRATEGY)" --strategy-path "$(SPATH)"
 
-research-cycle: ## Start or resume one bounded Pi research cycle
-	pi --approve --model openai-codex/gpt-5.6-luna --thinking max --no-builtin-tools
+research-cycle: research-data ## Start or resume one bounded Pi research cycle
+	RESEARCH_DATASET=$(RESEARCH_DATASET) RESEARCH_TIMERANGE=$(RESEARCH_TIMERANGE) pi --approve --model openai-codex/gpt-5.6-luna --thinking max --no-builtin-tools
 
 research-dashboard: ## Open the local research dashboard server
 	$(PYTHON) -m research_runtime.dashboard --db user_data/research.sqlite --artifacts user_data/research-artifacts --port 7400

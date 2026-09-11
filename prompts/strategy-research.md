@@ -3,7 +3,9 @@
 Use only the `strategy_research_runtime` tool for this cycle. Do not use shell,
 SQL, arbitrary file writes, or automated TradingView acquisition.
 
-1. Call `start_or_resume_cycle`, then `load_context`.
+1. The `research-data` preflight has already seeded and checked the snapshot.
+   Use its reported datadir and timerange; do not silently switch datasets.
+   Call `start_or_resume_cycle`, then `load_context`.
 2. Collect a bounded set of sources from the supported providers. Keep source
    provenance, retrieval time, and contradictions; do not retry a provider more
    than the runtime allows.
