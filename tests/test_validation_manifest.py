@@ -29,6 +29,7 @@ def _setup(tmp_path: Path, *, verdict="PASS", dry_run=True):
                 "in_sample_days": 1,
                 "oos_days": 1,
                 "required_folds": 3,
+                "min_positive_oos_folds": 2,
                 "min_oos_trades": 6,
                 "max_drawdown": 0.15,
                 "stress_fee": 0.001,

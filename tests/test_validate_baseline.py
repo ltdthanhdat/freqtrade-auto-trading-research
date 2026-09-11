@@ -22,6 +22,7 @@ def _write_policy(path: Path, pairs: tuple[str, ...] = PAIRS) -> None:
                 "in_sample_days": 1,
                 "oos_days": 1,
                 "required_folds": 3,
+                "min_positive_oos_folds": 2,
                 "min_oos_trades": 6,
                 "max_drawdown": 0.15,
                 "stress_fee": 0.001,
@@ -93,6 +94,7 @@ class FakeExecutor:
         self,
         *,
         profit_abs=10.0,
+        fold_profit_abs=None,
         one_source=False,
         lookahead="pass",
         recursive="pass",
@@ -102,6 +104,7 @@ class FakeExecutor:
     ):
         self.commands: list[list[str]] = []
         self.profit_abs = profit_abs
+        self.fold_profit_abs = fold_profit_abs
         self.one_source = one_source
         self.lookahead = lookahead
         self.recursive = recursive
@@ -140,8 +143,14 @@ class FakeExecutor:
             directory = Path(command[command.index("--backtest-directory") + 1])
             if self.artifact != "missing":
                 timerange = command[command.index("--timerange") + 1]
+                fold_index = sum(item[3] == "backtesting" for item in self.commands) - 1
+                profit_abs = (
+                    self.fold_profit_abs[fold_index]
+                    if self.fold_profit_abs is not None
+                    else self.profit_abs
+                )
                 trades = _trades(
-                    timerange, profit_abs=self.profit_abs, one_source=self.one_source
+                    timerange, profit_abs=profit_abs, one_source=self.one_source
                 )
                 if self.empty_trades:
                     trades = []
@@ -377,6 +386,15 @@ def test_cost_stress_controls_oos_profitability_and_verdict(tmp_path):
     assert manifest["fold_metrics"][0]["raw_net_profit"] > 0
     assert manifest["fold_metrics"][0]["net_profit"] < 0
     assert "aggregate stressed OOS profit is negative" in result.reasons
+
+
+def test_runner_explains_insufficient_positive_stressed_folds(tmp_path):
+    result = run_validation(
+        make_args(tmp_path), executor=FakeExecutor(fold_profit_abs=[100.0, -1.0, -1.0])
+    )
+
+    assert result.verdict == "FAIL"
+    assert "requires at least 2 positive stressed OOS folds, found 1" in result.reasons
 
 
 def test_single_pair_or_tag_source_cannot_pass(tmp_path):

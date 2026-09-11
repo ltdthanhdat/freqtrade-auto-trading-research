@@ -24,6 +24,7 @@ def test_policy_loads_frozen_values():
     assert loaded.in_sample_days == 120
     assert loaded.oos_days == 30
     assert loaded.required_folds == 3
+    assert loaded.min_positive_oos_folds == 2
     assert loaded.min_oos_trades == 100
     assert loaded.max_drawdown == 0.15
     assert loaded.stress_fee == 0.001
@@ -90,6 +91,30 @@ def test_verdict_fails_on_drawdown_breach(policy):
 def test_verdict_passes_when_all_frozen_gates_pass(policy):
     folds = [FoldMetrics(100, 0.02, 0.15) for _ in range(3)]
     assert evaluate_verdict(Checks(True, True, True), folds, 0.15, policy) == "PASS"
+
+
+def test_verdict_requires_two_positive_stressed_folds(policy):
+    folds = [
+        FoldMetrics(34, 0.03, 0.08),
+        FoldMetrics(33, -0.01, 0.09),
+        FoldMetrics(33, 0.00, 0.07),
+    ]
+    assert evaluate_verdict(Checks(True, True, True), folds, 0.10, policy) == "FAIL"
+
+
+def test_zero_aggregate_stressed_profit_fails(policy):
+    folds = [
+        FoldMetrics(34, 0.01, 0.08),
+        FoldMetrics(33, -0.01, 0.08),
+        FoldMetrics(33, 0.0, 0.08),
+    ]
+    assert evaluate_verdict(Checks(True, True, True), folds, 0.10, policy) == "FAIL"
+
+
+@pytest.mark.parametrize("value", [0, 4, True])
+def test_policy_rejects_invalid_positive_fold_threshold(value):
+    with pytest.raises(ValueError, match="min_positive_oos_folds"):
+        ValidationPolicy(120, 30, 3, 100, 0.15, 0.001, 0.0005, 7, 20_000, "2W", min_positive_oos_folds=value)
 
 
 def test_verdict_warns_when_evidence_is_insufficient(policy):

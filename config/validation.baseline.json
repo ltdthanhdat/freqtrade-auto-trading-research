@@ -10,6 +10,7 @@
   "in_sample_days": 120,
   "oos_days": 30,
   "required_folds": 3,
+  "min_positive_oos_folds": 2,
   "min_oos_trades": 100,
   "max_drawdown": 0.15,
   "stress_fee": 0.001,

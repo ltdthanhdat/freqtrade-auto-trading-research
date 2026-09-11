@@ -675,6 +675,20 @@ def _write_result(
         if verdict == "PASS" and warnings:
             verdict = "WARN"
     reasons = list(dict.fromkeys([*errors, *warnings]))
+    if policy and fold_metrics:
+        aggregate_profit = sum(metric.net_profit for metric in fold_metrics)
+        if (
+            bootstrap_gate_eligible
+            and aggregate_profit == 0
+            and "aggregate stressed OOS profit must be positive" not in reasons
+        ):
+            reasons.append("aggregate stressed OOS profit must be positive")
+        if bootstrap_gate_eligible:
+            positive_folds = sum(metric.net_profit > 0 for metric in fold_metrics)
+            if positive_folds < policy.min_positive_oos_folds:
+                reasons.append(
+                    f"requires at least {policy.min_positive_oos_folds} positive stressed OOS folds, found {positive_folds}"
+                )
     if verdict == "FAIL" and not reasons:
         reasons.append("validation evidence is invalid or incomplete")
 

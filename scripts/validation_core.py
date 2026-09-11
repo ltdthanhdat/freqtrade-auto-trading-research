@@ -24,12 +24,19 @@ class ValidationPolicy:
     bootstrap_samples: int
     bootstrap_block: str
     accepted_pairs: tuple[str, ...] = ()
+    min_positive_oos_folds: int = 2
 
     def __post_init__(self):
         for name in ("in_sample_days", "oos_days", "required_folds", "min_oos_trades", "bootstrap_samples"):
             value = getattr(self, name)
             if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
                 raise ValueError(f"invalid policy {name}")
+        if (
+            not isinstance(self.min_positive_oos_folds, int)
+            or isinstance(self.min_positive_oos_folds, bool)
+            or not 1 <= self.min_positive_oos_folds <= self.required_folds
+        ):
+            raise ValueError("invalid policy min_positive_oos_folds")
         for name in ("max_drawdown", "stress_fee", "slippage_per_side"):
             value = getattr(self, name)
             if not math.isfinite(value) or not 0 <= value < 1:
@@ -53,6 +60,7 @@ class ValidationPolicy:
             bootstrap_samples=values["bootstrap_samples"],
             bootstrap_block=values["bootstrap_block"],
             accepted_pairs=tuple(basket),
+            min_positive_oos_folds=values.get("min_positive_oos_folds", 2),
         )
 
 
@@ -264,6 +272,10 @@ def evaluate_verdict(
         return "FAIL"
     if len(folds) < policy.required_folds or sum(fold.trades for fold in folds) < policy.min_oos_trades:
         return "WARN"
+    if folds and sum(fold.net_profit for fold in folds) == 0:
+        return "FAIL"
+    if sum(fold.net_profit > 0 for fold in folds) < policy.min_positive_oos_folds:
+        return "FAIL"
     if p95_dd is None:
         return "FAIL"
     if not checks.attribution:
