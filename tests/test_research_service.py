@@ -204,9 +204,9 @@ def test_write_candidate_requires_explicit_full_text_or_independent_evidence(tmp
 def test_start_validation_records_run_and_is_idempotent(tmp_path):
     service, cycle_id, source_id = make_service(tmp_path)
     hypothesis = service.propose_hypothesis(proposal(cycle_id, source_id))["hypothesis"]
-    service.write_candidate(
+    hypothesis = service.write_candidate(
         {"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"], "strategy_name": "CandidateA", "source": "class CandidateA: pass\n"}
-    )
+    )["hypothesis"]
     calls = []
     service.validator = lambda experiment: calls.append(experiment) or {
         "verdict": "PASS",
@@ -215,6 +215,7 @@ def test_start_validation_records_run_and_is_idempotent(tmp_path):
     }
     result = service.start_validation({"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"]})
     replay = service.start_validation({"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"]})
+    assert calls[0]["candidate_path"] == hypothesis["candidate_path"]
     assert result["state"] == HypothesisState.NEEDS_REVIEW
     assert replay["state"] == HypothesisState.NEEDS_REVIEW
     assert len(calls) == 1

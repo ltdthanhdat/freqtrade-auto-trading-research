@@ -296,7 +296,15 @@ class ResearchService:
             raise ValueError(f"hypothesis is not ready for validation: {hypothesis['state']}")
 
         try:
-            result = self.validator(existing) if self.validator is not None else validate_candidate(existing, artifact_root=self.artifact_root)
+            validation_experiment = {
+                **existing,
+                "candidate_path": hypothesis["candidate_path"],
+            }
+            result = (
+                self.validator(validation_experiment)
+                if self.validator is not None
+                else validate_candidate(validation_experiment, artifact_root=self.artifact_root)
+            )
         except Exception as exc:  # pragma: no cover - validator boundary is tested through the wrapper
             result = ResearchVerdict(
                 verdict="RETRYABLE", state="RETRYABLE", metrics={}, artifacts={},
