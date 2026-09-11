@@ -6,12 +6,12 @@ Crypto trading bot built on Freqtrade.
 
 - strategy: `src/strategies/SMC_FVG_Context30m_Freqtrade.py`
 - config: `config/config.futures.json`
-- research: `.research/smc_fvg_pinbar/README.md`
+- research state: `user_data/research.sqlite`
+- local dashboard: `make research-dashboard`
 
-Research trees are intentionally separated:
-
-- `.research/smc_fvg_pinbar/` — the SMC production research chain and dry-run gate
-- `.research/rsi/` — RSI-divergence candidates and evidence only; it is not a production strategy path
+New research state is stored in SQLite. Raw reports and validation outputs live
+under `user_data/research-artifacts/`; the dashboard is loopback-only and only
+records explicit review decisions.
 
 ## Default strategy
 
@@ -28,24 +28,15 @@ In short: `1h` determines bias, `30m` executes earlier. This is the current defa
 
 ```mermaid
 flowchart TD
-    A[Read current state] --> B[State 1 hypothesis]
-    B --> C[Write experiment]
-    C --> D{Validation}
-
-    D --> E[Seed data]
-    E --> F[Single-pair backtest]
-    F --> G[Basket backtest]
-    G --> H[Dry-run]
-
-    H --> I[Log run]
-    I --> J{Keep / Discard?}
-
-    J -- keep --> K[Update state.md]
-    K --> L[New objective?]
-    L -- yes --> B
-    L -- no --> M[Use snapshot for dry-run / live]
-
-    J -- discard --> L
+    A[Load SQLite context] --> B[Collect bounded sources]
+    B --> C[Score up to 3 hypotheses]
+    C --> D[Write one candidate]
+    D --> E[Correctness + smoke]
+    E --> F[WFO + stress + bootstrap]
+    F --> G{Validation verdict}
+    G --> H[NEEDS_REVIEW / INCONCLUSIVE / REJECTED]
+    H --> I[Dashboard review]
+    I --> J[Explicit dry-run eligibility]
 
     style A fill:#1a1a2e,color:#e0e0e0
     style B fill:#16213e,color:#e0e0e0
@@ -90,14 +81,14 @@ make validate-snapshot DATASET=accepted_6pair_2026q3 \
 Start dry-run only with the `PASS` manifest from validation:
 
 ```bash
-make dry-run VALIDATION_MANIFEST=.research/smc_fvg_pinbar/runs/<run-id>/manifest.json
+make dry-run VALIDATION_MANIFEST=user_data/research-artifacts/validation/<run-id>/manifest.json
 ```
 
 A `WARN`, `FAIL`, missing manifest, changed config/policy/strategy dependency,
 basket mismatch, or config without `dry_run: true` blocks dry-run before
 Freqtrade starts.
 `WARN` and `FAIL` retain their manifest and Freqtrade exports in
-`.research/smc_fvg_pinbar/runs/`; create a new hypothesis instead of changing
+`user_data/research-artifacts/validation/`; create a new hypothesis instead of changing
 thresholds in the same loop.
 
 Compose option:
@@ -131,11 +122,13 @@ Make targets:
 - `make backtest TIMERANGE=20260218-20260518`
 - `make backtest-snapshot DATASET=recent_selected TIMERANGE=20260218-20260518`
 - `make validate-snapshot DATASET=accepted_6pair_2026q3`
-- `make validate-pass VALIDATION_MANIFEST=.research/smc_fvg_pinbar/runs/<run-id>/manifest.json`
+- `make validate-pass VALIDATION_MANIFEST=user_data/research-artifacts/validation/<run-id>/manifest.json`
 - `make monitor-decay BASELINE=user_data/backtest_results/baseline.zip DB=user_data/tradesv3.demo.sqlite`
 - `make plot`
 - `make plot-df PAIR=BTC/USDT:USDT`
-- `make dry-run VALIDATION_MANIFEST=.research/smc_fvg_pinbar/runs/<run-id>/manifest.json`
+- `make dry-run VALIDATION_MANIFEST=user_data/research-artifacts/validation/<run-id>/manifest.json`
+- `make research-cycle`
+- `make research-dashboard`
 - `make demo`
 - `make live`
 
@@ -166,12 +159,12 @@ itself requires the frozen policy's OOS folds:
 ```bash
 make validate-snapshot DATASET=accepted_6pair_2026q3 \
   VALIDATION_START=2025-10-19 VALIDATION_END=2026-05-17 \
-  APPROVED_IDENTITY=.research/smc_fvg_pinbar/approved-baseline-identity.json
+  APPROVED_IDENTITY=config/approved-baseline-identity.json
 ```
 
 The command uses `config/config.futures.json`, the named snapshot datadir,
 `config/validation.baseline.json`, `SMC_FVG_Context30m_Freqtrade`,
-`src/strategies`, and `.research/smc_fvg_pinbar/runs/`. Only a `PASS` verdict
+`src/strategies`, and `user_data/research-artifacts/validation/`. Only a `PASS` verdict
 allows `make dry-run`. `WARN` and `FAIL` keep the validation artifacts and
 block dry-run; record a new hypothesis before rerunning, without changing
 thresholds in that loop. Named snapshots have been validated with retained
@@ -180,7 +173,7 @@ thresholds in that loop. Named snapshots have been validated with retained
 Pass the resulting manifest explicitly when starting dry-run:
 
 ```bash
-make dry-run VALIDATION_MANIFEST=.research/smc_fvg_pinbar/runs/<run-id>/manifest.json
+make dry-run VALIDATION_MANIFEST=user_data/research-artifacts/validation/<run-id>/manifest.json
 ```
 
 `make dry-run` re-hashes the effective config, policy, strategy and its local

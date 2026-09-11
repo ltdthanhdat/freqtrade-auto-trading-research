@@ -11,7 +11,8 @@ TIMEFRAMES ?= 30m,1h,1m
 DATASET  ?= recent_selected
 VALIDATION_START ?= 2025-10-19
 VALIDATION_END ?= 2026-05-17
-APPROVED_IDENTITY ?= .research/smc_fvg_pinbar/approved-baseline-identity.json
+APPROVED_IDENTITY ?= config/approved-baseline-identity.json
+RESEARCH_RUNS_DIR ?= user_data/research-artifacts/validation
 VALIDATION_MANIFEST ?=
 VALIDATION_POLICY ?= config/validation.baseline.json
 BASELINE ?= user_data/backtest_results/baseline.zip
@@ -52,7 +53,7 @@ backtest-snapshot: install ## Run backtest on snapshot data with DATASET=<name> 
 	$(FREQ) backtesting --config $(CONFIG) --datadir $(SNAPSHOT_DATADIR) --strategy $(STRATEGY) --strategy-path $(SPATH) --timeframe-detail 1m $(if $(TIMERANGE),--timerange $(TIMERANGE),)
 
 validate-snapshot: install ## Validate snapshot gate with DATASET=<name>
-	$(PYTHON) -m scripts.validate_baseline --config $(CONFIG) --datadir $(SNAPSHOT_DATADIR) --policy $(VALIDATION_POLICY) --strategy $(STRATEGY) --strategy-path $(SPATH) --strategy-file $(SPATH)/$(STRATEGY).py --start $(VALIDATION_START) --end $(VALIDATION_END) --runs-dir .research/smc_fvg_pinbar/runs --approved-identity $(APPROVED_IDENTITY)
+	$(PYTHON) -m scripts.validate_baseline --config $(CONFIG) --datadir $(SNAPSHOT_DATADIR) --policy $(VALIDATION_POLICY) --strategy $(STRATEGY) --strategy-path $(SPATH) --strategy-file $(SPATH)/$(STRATEGY).py --start $(VALIDATION_START) --end $(VALIDATION_END) --runs-dir $(RESEARCH_RUNS_DIR) --approved-identity $(APPROVED_IDENTITY)
 
 validate-pass: ## Require VALIDATION_MANIFEST with verdict PASS
 	@test -n "$(VALIDATION_MANIFEST)" || { echo "VALIDATION_MANIFEST is required" >&2; exit 1; }

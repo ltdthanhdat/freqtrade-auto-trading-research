@@ -8,9 +8,9 @@ import pandas as pd
 
 CANDIDATE_DIR = (
     Path(__file__).resolve().parents[1]
-    / ".research"
-    / "rsi"
-    / "candidates"
+    / "tests"
+    / "fixtures"
+    / "rsi_candidates"
 )
 sys.path.insert(0, str(CANDIDATE_DIR))
 
