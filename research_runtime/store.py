@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import sqlite3
 import uuid
 from contextlib import contextmanager
@@ -499,6 +500,96 @@ class ResearchStore:
     def get_source(self, source_id: str) -> dict[str, Any] | None:
         with self.connect() as connection:
             return _row(connection.execute("SELECT * FROM sources WHERE id = ?", (source_id,)).fetchone())
+
+    def update_source_metadata(self, source_id: str, patch: dict[str, Any]) -> None:
+        with self.connect() as connection:
+            row = connection.execute("SELECT metadata_json FROM sources WHERE id = ?", (source_id,)).fetchone()
+            if row is None:
+                raise ValueError(f"unknown source: {source_id}")
+            try:
+                metadata = json.loads(row["metadata_json"])
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"invalid stored source metadata: {source_id}") from exc
+            if not isinstance(metadata, dict):
+                raise ValueError(f"invalid stored source metadata: {source_id}")
+            metadata.update(patch)
+            connection.execute(
+                "UPDATE sources SET metadata_json = ? WHERE id = ?",
+                (canonical_json(metadata), source_id),
+            )
+
+    def find_hypothesis_by_mechanism(self, cycle_id: str, mechanism: str) -> dict[str, Any] | None:
+        normalized = " ".join(mechanism.casefold().split())
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM hypotheses WHERE cycle_id = ? ORDER BY created_at ASC, id ASC", (cycle_id,)
+            )
+            for row in rows:
+                if " ".join(row["mechanism"].casefold().split()) == normalized:
+                    return dict(row)
+        return None
+
+    def append_cycle_event(
+        self,
+        cycle_id: str,
+        *,
+        to_state: CycleStatus | str,
+        actor: str,
+        reason: str,
+        payload: dict[str, Any] | None = None,
+        now: datetime | str | None = None,
+    ) -> int:
+        if not actor or not actor.strip():
+            raise ValueError("actor is required")
+        if not reason or not reason.strip():
+            raise ValueError("reason is required")
+        timestamp = _timestamp(now)
+        with self.connect() as connection:
+            cycle = connection.execute("SELECT status FROM cycles WHERE id = ?", (cycle_id,)).fetchone()
+            if cycle is None:
+                raise ValueError(f"unknown cycle: {cycle_id}")
+            self._append_event(
+                connection,
+                entity_type="cycle",
+                entity_id=cycle_id,
+                from_state=cycle["status"],
+                to_state=to_state,
+                actor=actor.strip(),
+                reason=reason.strip(),
+                cycle_id=cycle_id,
+                payload=payload or {},
+                created_at=timestamp,
+            )
+            return int(connection.execute("SELECT last_insert_rowid()").fetchone()[0])
+
+    def set_cycle_status(
+        self, cycle_id: str, status: CycleStatus | str, reason: str, now: datetime | str | None = None
+    ) -> dict[str, Any]:
+        target = CycleStatus(status)
+        timestamp = _timestamp(now)
+        with self.connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            cycle = connection.execute("SELECT * FROM cycles WHERE id = ?", (cycle_id,)).fetchone()
+            if cycle is None:
+                raise ValueError(f"unknown cycle: {cycle_id}")
+            if not reason or not reason.strip():
+                raise ValueError("reason is required")
+            self._append_event(
+                connection,
+                entity_type="cycle",
+                entity_id=cycle_id,
+                from_state=cycle["status"],
+                to_state=target,
+                actor="runtime",
+                reason=reason.strip(),
+                cycle_id=cycle_id,
+                created_at=timestamp,
+            )
+            connection.execute(
+                "UPDATE cycles SET status = ?, lease_until = NULL, updated_at = ? WHERE id = ?",
+                (target, timestamp, cycle_id),
+            )
+            return dict(connection.execute("SELECT * FROM cycles WHERE id = ?", (cycle_id,)).fetchone())
 
     def list_hypotheses(self, cycle_id: str | None = None) -> list[dict[str, Any]]:
         with self.connect() as connection:
