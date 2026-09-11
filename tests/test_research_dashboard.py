@@ -239,6 +239,8 @@ def test_http_review_rejects_content_size_action_and_routes(seeded_store, tmp_pa
     try:
         status, _, _ = request(origin, "POST", "/api/hypotheses/H-READY/review", {"action": "hold", "reason": "x"}, good_headers)
         assert status == 400
+        status, _, _ = request(origin, "POST", "/api/hypotheses/H-READY/review", ["approve"], good_headers)
+        assert status == 400
         status, _, _ = request(origin, "POST", "/api/hypotheses/H-TESTING/review", {"action": "approve", "reason": "x"}, good_headers)
         assert status == 409
         status, _, _ = request(origin, "POST", "/api/hypotheses/H-READY/review", {"action": "approve", "reason": "x"}, {"Origin": origin, "Content-Type": "text/plain"})

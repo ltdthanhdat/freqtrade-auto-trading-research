@@ -144,6 +144,8 @@ class DashboardReadModel:
         return [item for item in self.hypotheses() if item["state"] == HypothesisState.NEEDS_REVIEW]
 
     def record_review(self, hypothesis_id: str, action: str, reason: str) -> dict[str, Any]:
+        if not isinstance(action, str):
+            raise ValueError("review action is required")
         target = REVIEW_TARGETS.get(action)
         if target is None:
             raise ValueError(f"unknown review action: {action}")
@@ -378,6 +380,8 @@ class _DashboardHandler(BaseHTTPRequestHandler):
                 return
             try:
                 body = json.loads(self.rfile.read(length))
+                if not isinstance(body, dict):
+                    raise ValueError("request body must be a JSON object")
                 action, reason = body["action"], body["reason"]
                 hypothesis_id = urlsplit(self.path).path.split("/")[3]
                 result = self.model.record_review(hypothesis_id, action, reason)
