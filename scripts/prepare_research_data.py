@@ -101,7 +101,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--config", type=Path, default=Path("config/config.futures.json"))
     parser.add_argument("--policy", type=Path, default=Path("config/validation.baseline.json"))
     parser.add_argument("--dataset", default="accepted_6pair_2026q3_full")
-    parser.add_argument("--timerange", default="20260123-20260911")
+    parser.add_argument("--timerange", default="20260124-20260911")
     return parser.parse_args()
 
 

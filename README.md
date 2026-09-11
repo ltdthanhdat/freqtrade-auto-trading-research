@@ -129,7 +129,7 @@ Make targets:
 - `make seed DAYS=90`
 - `make seed-range TIMERANGE=20260218-20260518`
 - `make seed-snapshot DATASET=recent_selected DAYS=30`
-- `make research-data RESEARCH_DATASET=accepted_6pair_2026q3_full RESEARCH_TIMERANGE=20260123-20260911`
+- `make research-data RESEARCH_DATASET=accepted_6pair_2026q3_full RESEARCH_TIMERANGE=20260124-20260911`
 - `make list-data`
 - `make list-snapshot DATASET=recent_selected`
 - `make backtest TIMERANGE=20260218-20260518`

@@ -16,7 +16,7 @@ RESEARCH_RUNS_DIR ?= user_data/research-artifacts/validation
 VALIDATION_MANIFEST ?=
 VALIDATION_POLICY ?= config/validation.baseline.json
 RESEARCH_DATASET ?= accepted_6pair_2026q3_full
-RESEARCH_TIMERANGE ?= 20260123-20260911
+RESEARCH_TIMERANGE ?= 20260124-20260911
 BASELINE ?= user_data/backtest_results/baseline.zip
 DB ?= user_data/tradesv3.demo.sqlite
 

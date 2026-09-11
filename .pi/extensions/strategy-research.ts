@@ -42,7 +42,7 @@ function updateStatus(ctx: ExtensionContext, response: RuntimeResponse): void {
 
 function researchDataContext(): string {
   const dataset = process.env.RESEARCH_DATASET ?? "accepted_6pair_2026q3_full";
-  const timerange = process.env.RESEARCH_TIMERANGE ?? "20260123-20260911";
+  const timerange = process.env.RESEARCH_TIMERANGE ?? "20260124-20260911";
   const relative = dataset.startsWith("snapshots/") ? dataset : `snapshots/${dataset}`;
   return `The data preflight completed successfully. Use datadir user_data/data/${relative} and frozen timerange ${timerange}.`;
 }
