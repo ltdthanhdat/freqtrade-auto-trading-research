@@ -238,6 +238,22 @@ def test_identity_bound_cycle_requires_structured_support_and_contradiction(tmp_
         service.propose_hypothesis(proposal(cycle_id, source_id))
 
 
+def test_identity_bound_assessment_rejects_free_text(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite")
+    cycle_id = store.start_or_resume_cycle(
+        {"now": "2026-09-11T08:00:00Z", "dataset": "accepted", "requested_timerange": "20260101-20260901", "search_cohort": "cohort"}
+    )["cycle"]["id"]
+    source_id = store.insert_source(
+        cycle_id,
+        {"provider": "openalex", "canonical_url": "https://example.test/source", "title": "source", "excerpt": "e", "retrieved_at": "2026-09-11T08:00:00Z", "fingerprint": "free-text-source", "metadata": {}},
+    )["id"]
+    service = ResearchService(store, tmp_path / "artifacts")
+    with pytest.raises(ValueError, match="structured source assessment"):
+        service.record_source_assessment(
+            {"cycle_id": cycle_id, "source_id": source_id, "assessment": "relevant evidence"}
+        )
+
+
 def test_start_validation_records_run_and_is_idempotent(tmp_path):
     service, cycle_id, source_id = make_service(tmp_path)
     hypothesis = service.propose_hypothesis(proposal(cycle_id, source_id))["hypothesis"]

@@ -21,6 +21,7 @@ RESEARCH_DATASET ?= accepted_6pair_2026q3_full
 RESEARCH_TIMERANGE ?= 20260124-20260911
 MAX_CYCLES ?= 1
 RESEARCH_TIMEOUT ?= 300
+RESEARCH_MODEL ?= openai-codex/gpt-5.6-luna
 BASELINE ?= user_data/backtest_results/baseline.zip
 DB ?= user_data/tradesv3.demo.sqlite
 
@@ -72,7 +73,7 @@ research-cycle: research-data ## Start or resume one bounded Pi research cycle
 	RESEARCH_DATASET=$(RESEARCH_DATASET) RESEARCH_TIMERANGE=$(RESEARCH_TIMERANGE) pi --approve --model openai-codex/gpt-5.6-luna --thinking max --no-builtin-tools
 
 research-loop: research-data ## Run a bounded supervisor that resumes interrupted research cycles
-	$(PYTHON) -m scripts.research_loop --db "$(RESEARCH_DB)" --dataset "$(RESEARCH_DATASET)" --timerange "$(RESEARCH_TIMERANGE)" --max-cycles "$(MAX_CYCLES)" --cycle-timeout "$(RESEARCH_TIMEOUT)"
+	RESEARCH_MODEL=$(RESEARCH_MODEL) $(PYTHON) -m scripts.research_loop --db "$(RESEARCH_DB)" --dataset "$(RESEARCH_DATASET)" --timerange "$(RESEARCH_TIMERANGE)" --max-cycles "$(MAX_CYCLES)" --cycle-timeout "$(RESEARCH_TIMEOUT)"
 
 research-dashboard: ## Open the local research dashboard server
 	$(PYTHON) -m research_runtime.dashboard --db user_data/research.sqlite --artifacts user_data/research-artifacts --port 7400

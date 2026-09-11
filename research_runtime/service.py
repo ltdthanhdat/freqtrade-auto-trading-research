@@ -199,6 +199,11 @@ class ResearchService:
         if source is None or source["cycle_id"] != payload["cycle_id"]:
             raise ValueError(f"unknown source: {source_id}")
         assessment = payload["assessment"]
+        cycle = self.store.get_cycle(payload["cycle_id"])
+        if cycle is not None and cycle.get("search_cohort") and not isinstance(assessment, dict):
+            raise ValueError(
+                "structured source assessment required: relevance, asset, timeframe, mechanism"
+            )
         if isinstance(assessment, dict):
             missing = [key for key in ("relevance", "asset", "timeframe", "mechanism") if not assessment.get(key)]
             if missing:

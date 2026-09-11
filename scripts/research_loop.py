@@ -32,6 +32,7 @@ def run_research_loop(
         raise ValueError("cycle_timeout must be between 30 and 3600 seconds")
     store = store_factory(db_path)
     env = {**os.environ, "RESEARCH_DATASET": dataset, "RESEARCH_TIMERANGE": timerange}
+    model = env.get("RESEARCH_MODEL", "openai-codex/gpt-5.6-luna")
     policy_path = Path("config/validation.baseline.json")
     policy_sha256 = hashlib.sha256(policy_path.read_bytes()).hexdigest() if policy_path.is_file() else None
     started = 0
@@ -51,9 +52,12 @@ def run_research_loop(
                 [
                     "pi",
                     "-p",
+                    "--no-extensions",
+                    "--extension",
+                    ".pi/extensions/strategy-research.ts",
                     "--approve",
                     "--model",
-                    "openai-codex/gpt-5.6-luna",
+                    model,
                     "--thinking",
                     "max",
                     "--no-builtin-tools",
@@ -86,7 +90,18 @@ def run_research_loop(
             stopped_reason = "command_failed"
             break
         if getattr(result, "returncode", 1) != 0 and status == "RUNNING":
-            store.set_cycle_status(cycles[0]["id"], "INCOMPLETE", "Pi exited before finalizing cycle")
+            output = "\n".join(
+                value
+                for value in (
+                    getattr(result, "stdout", ""),
+                    getattr(result, "stderr", ""),
+                )
+                if value
+            ).strip()
+            detail = output[-500:] if output else "no output"
+            store.set_cycle_status(
+                cycles[0]["id"], "INCOMPLETE", f"Pi exited before finalizing cycle: {detail}"
+            )
             stopped_reason = "command_failed"
             break
     return {"cycles_started": started, "stopped_reason": stopped_reason}

@@ -39,3 +39,9 @@ test("research command avoids the rate-limited provider", () => {
   assert.match(source, /openalex, arxiv, and crossref/);
   assert.match(source, /do not use semantic_scholar/);
 });
+
+test("research command requires structured source assessments", () => {
+  assert.match(source, /assessment.*relevance.*asset.*timeframe.*mechanism/);
+  assert.match(source, /full_text_available/);
+  assert.match(source, /assessment:\s*\{\s*relevance/);
+});
