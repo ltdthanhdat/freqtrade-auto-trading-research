@@ -332,135 +332,95 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
     }
+    [data-view] { display: none; }
+    [data-view].active { display: block; }
+    .state-panel { border: 1px solid var(--border); background: var(--bg-surface); padding: 22px; color: var(--text-muted); }
+    .state-panel[hidden] { display: none; }
+    .nav-link { cursor: pointer; }
+    .review-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .review-actions button { border: 1px solid var(--border); background: var(--bg-hover); color: var(--text); padding: 8px 12px; cursor: pointer; }
+    .review-actions button:hover { border-color: var(--active); }
+    textarea { width: 100%; min-height: 90px; resize: vertical; border: 1px solid var(--border); background: var(--bg-default); color: var(--text); padding: 10px; }
+    .muted { color: var(--text-faint); }
+    .tag { display: inline-block; border: 1px solid var(--border); padding: 2px 6px; color: var(--text-muted); font: 10px var(--mono); }
   </style>
 </head>
 <body>
   <div class="shell">
-    <aside data-od-id="sidebar">
+    <aside>
       <div class="brand"><span class="brand-mark">SR</span> STRATEGY LAB</div>
       <nav aria-label="Research sections">
-        <a class="active" href="#overview" aria-current="page"><span class="nav-icon">01</span>Overview</a>
-        <a href="#sources"><span class="nav-icon">02</span>Sources</a>
-        <a href="#hypotheses"><span class="nav-icon">03</span>Hypotheses</a>
-        <a href="#experiments"><span class="nav-icon">04</span>Experiments</a>
-        <a href="#review"><span class="nav-icon">05</span>Review queue</a>
+        <a class="active nav-link" href="#overview" data-view-target="overview" aria-current="page"><span class="nav-icon">01</span>Overview</a>
+        <a class="nav-link" href="#sources" data-view-target="sources"><span class="nav-icon">02</span>Sources</a>
+        <a class="nav-link" href="#hypotheses" data-view-target="hypotheses"><span class="nav-icon">03</span>Hypotheses</a>
+        <a class="nav-link" href="#experiments" data-view-target="experiments"><span class="nav-icon">04</span>Experiments</a>
+        <a class="nav-link" href="#review" data-view-target="review"><span class="nav-icon">05</span>Review queue</a>
       </nav>
-      <div class="sidebar-meta">LOCAL · 127.0.0.1<br>RESEARCH DB · CONNECTED</div>
+      <div class="sidebar-meta">LOCAL · 127.0.0.1<br>RESEARCH DB · READ-MOSTLY</div>
     </aside>
 
     <div class="workspace">
-      <header data-od-id="topbar">
-        <div class="breadcrumb">Strategy Lab / <strong>Overview</strong></div>
-        <div class="header-status"><span class="sample">Sample data</span><span class="clock">2026-09-11 15:42 ICT</span></div>
+      <header>
+        <div class="breadcrumb">Strategy Lab / <strong id="breadcrumb">Overview</strong></div>
+        <div class="header-status"><span class="tag" id="dbStatus">CONNECTING</span><span class="clock" id="clock"></span></div>
       </header>
 
-      <main id="overview">
-        <div class="page-title" data-od-id="page-title">
-          <div><h1>Research overview</h1><p class="subtitle">Evidence, robustness and review readiness in one place.</p></div>
-          <div class="cycle-id">CYCLE<br>RC-20260911-0042</div>
-        </div>
+      <main>
+        <div class="state-panel" id="loading" role="status">Loading research state…</div>
+        <div class="state-panel" id="error" role="alert" hidden></div>
 
-        <section class="cycle-strip" aria-label="Current research cycle" data-od-id="cycle-status">
-          <div><div class="eyebrow">Current cycle</div><div class="cycle-name">VALIDATING</div></div>
-          <div class="progress" aria-label="Cycle 58 percent complete"><span></span></div>
-          <span class="status running">Running</span>
+        <section data-view="overview" id="overview" class="active" aria-labelledby="overview-title">
+          <div class="page-title"><div><h1 id="overview-title" tabindex="-1">Research overview</h1><p class="subtitle">Evidence, robustness and review readiness in one place.</p></div><div class="cycle-id" id="cycleId">CYCLE<br>—</div></div>
+          <div class="cycle-strip" aria-label="Current research cycle"><div><div class="eyebrow">Current cycle</div><div class="cycle-name" id="cycleStage">—</div></div><div class="progress"><span id="cycleProgress"></span></div><span class="status running" id="cycleStatus">—</span></div>
+          <div class="kpis" aria-label="Pipeline summary" id="kpis"></div>
+          <div class="layout"><div><section class="panel"><div class="panel-head"><h2>Recent activity</h2><span class="panel-note">append-only</span></div><ol class="activity" id="activity"></ol></section><section class="panel"><div class="panel-head"><h2>OOS equity and drawdown</h2><span class="panel-note">from persisted runs</span></div><div class="chart-wrap"><div id="equityChart" role="img" aria-labelledby="chart-title chart-desc"><h3 id="chart-title">Out-of-sample robustness</h3><p id="chart-desc" class="muted">A chart appears when a validation run persists equity points.</p></div></div></section></div><div><section class="panel"><div class="panel-head"><h2>Review readiness</h2><span class="status review" id="reviewStatus">—</span></div><div class="blocker" id="reviewSummary"></div></section><section class="panel"><div class="panel-head"><h2>Pipeline limits</h2><span class="panel-note">hard budgets</span></div><div class="blocker" id="budgetSummary"></div></section></div></div>
         </section>
 
-        <section class="kpis" aria-label="Pipeline summary" data-od-id="kpi-grid">
-          <div class="kpi"><div class="eyebrow">Sources retained</div><div class="value">128</div><div class="detail">23 added this cycle</div></div>
-          <div class="kpi"><div class="eyebrow">Hypotheses</div><div class="value">14</div><div class="detail">3 queued · 8 rejected</div></div>
-          <div class="kpi"><div class="eyebrow">Candidate under test</div><div class="value">1</div><div class="detail">cycle limit reached</div></div>
-          <div class="kpi"><div class="eyebrow">Review queue</div><div class="value">2</div><div class="detail">human action required</div></div>
-        </section>
+        <section data-view="sources" id="sources" aria-labelledby="sources-title"><div class="page-title"><div><h1 id="sources-title" tabindex="-1">Sources</h1><p class="subtitle">Canonical provenance, retrieval time, license and assessment.</p></div></div><div class="panel table-scroll"><table><caption class="muted">Retained research sources</caption><thead><tr><th>Provider</th><th>Title</th><th>Canonical URL / DOI</th><th>Retrieved</th><th>Quality</th></tr></thead><tbody id="sourcesTable"></tbody></table></div></section>
 
-        <div class="layout">
-          <div>
-            <section class="panel" data-od-id="pipeline">
-              <div class="panel-head"><h2>Research pipeline</h2><span class="panel-note">1 candidate / cycle</span></div>
-              <div class="pipeline">
-                <div class="stage done"><div class="stage-dot"></div><div class="stage-label">Collect</div><div class="stage-value">100 / 100</div></div>
-                <div class="stage done"><div class="stage-dot"></div><div class="stage-label">Score</div><div class="stage-value">14 ranked</div></div>
-                <div class="stage done"><div class="stage-dot"></div><div class="stage-label">Implement</div><div class="stage-value">hash frozen</div></div>
-                <div class="stage current"><div class="stage-dot"></div><div class="stage-label">Validate</div><div class="stage-value">WFO fold 3</div></div>
-                <div class="stage"><div class="stage-dot"></div><div class="stage-label">Review</div><div class="stage-value">pending</div></div>
-              </div>
-            </section>
+        <section data-view="hypotheses" id="hypotheses" aria-labelledby="hypotheses-title"><div class="page-title"><div><h1 id="hypotheses-title" tabindex="-1">Hypotheses</h1><p class="subtitle">One mechanism per hypothesis, ranked by frozen score.</p></div></div><div class="panel table-scroll"><table><caption class="muted">Hypothesis ranking and evidence</caption><thead><tr><th>Mechanism</th><th>Scope</th><th>Score</th><th>Data</th><th>State</th><th>Evidence</th></tr></thead><tbody id="hypothesesTable"></tbody></table></div></section>
 
-            <section class="panel" id="hypotheses" data-od-id="best-candidate">
-              <div class="panel-head"><h2>Candidate under test</h2><span class="panel-note">vs frozen parent</span></div>
-              <div class="candidate">
-                <div class="candidate-top">
-                  <div><div class="eyebrow">H-RSI-008 · 1h execution</div><div class="candidate-name">RSI divergence + volatility regime</div><p class="candidate-thesis">Test whether divergence only retains edge when realized volatility is below its rolling regime threshold.</p></div>
-                  <span class="status review">Provisional</span>
-                </div>
-                <div class="metric-row">
-                  <div class="metric"><div class="metric-label">OOS net</div><div class="metric-value positive">+8.4%</div></div>
-                  <div class="metric"><div class="metric-label">Stressed OOS</div><div class="metric-value positive">+5.1%</div></div>
-                  <div class="metric"><div class="metric-label">Max drawdown</div><div class="metric-value">9.2%</div></div>
-                  <div class="metric"><div class="metric-label">Positive folds</div><div class="metric-value warning">2 / 3</div></div>
-                </div>
-              </div>
-            </section>
+        <section data-view="experiments" id="experiments" aria-labelledby="experiments-title"><div class="page-title"><div><h1 id="experiments-title" tabindex="-1">Experiments</h1><p class="subtitle">Immutable parent identity, folds, stress and bootstrap artifacts.</p></div></div><div class="panel table-scroll"><table><caption class="muted">Validation experiments</caption><thead><tr><th>Experiment</th><th>Strategy</th><th>Window</th><th>Status</th><th>Runs</th><th>Artifacts</th></tr></thead><tbody id="experimentsTable"></tbody></table></div><div class="panel table-scroll"><table><caption class="muted">Persisted fold metrics</caption><thead><tr><th>Experiment</th><th>Fold</th><th>OOS window</th><th>Trades</th><th>Stressed profit</th><th>Drawdown</th><th>Gate</th></tr></thead><tbody id="foldTable"></tbody></table></div></section>
 
-            <section class="panel" data-od-id="robustness-chart">
-              <div class="panel-head"><h2>OOS equity and drawdown</h2><span class="panel-note">stressed · sample</span></div>
-              <div class="chart-wrap">
-                <div class="chart-legend"><span class="legend-line">Equity index</span><span class="legend-dd">Drawdown</span></div>
-                <svg viewBox="0 0 720 180" role="img" aria-labelledby="chart-title chart-desc">
-                  <title id="chart-title">Sample out-of-sample equity and drawdown</title>
-                  <desc id="chart-desc">Equity trends upward with two drawdown periods and ends above its starting point.</desc>
-                  <line class="grid-line" x1="40" y1="20" x2="700" y2="20"/><line class="grid-line" x1="40" y1="70" x2="700" y2="70"/><line class="grid-line" x1="40" y1="120" x2="700" y2="120"/><line class="grid-line" x1="40" y1="160" x2="700" y2="160"/>
-                  <text class="axis-text" x="4" y="24">110</text><text class="axis-text" x="4" y="74">105</text><text class="axis-text" x="4" y="124">100</text><text class="axis-text" x="4" y="164">95</text>
-                  <polyline class="equity-line" points="40,120 90,105 140,112 190,86 240,92 290,72 340,80 390,58 440,67 490,44 540,54 590,38 640,47 700,30"/>
-                  <polyline class="dd-line" points="40,150 90,146 140,154 190,147 240,158 290,148 340,157 390,150 440,160 490,149 540,156 590,151 640,159 700,153"/>
-                  <text class="axis-text" x="40" y="177">FOLD 1</text><text class="axis-text" x="335" y="177">FOLD 2</text><text class="axis-text" x="635" y="177">FOLD 3</text>
-                </svg>
-              </div>
-            </section>
-
-            <section class="panel" id="experiments" data-od-id="fold-table">
-              <div class="panel-head"><h2>Walk-forward folds</h2><span class="panel-note">gate: 2 / 3 positive</span></div>
-              <div class="table-scroll">
-                <table>
-                  <thead><tr><th>Fold</th><th>OOS window</th><th style="text-align:right">Trades</th><th style="text-align:right">Stressed</th><th style="text-align:right">Drawdown</th><th>Gate</th></tr></thead>
-                  <tbody>
-                    <tr><td>01</td><td>2026-04 → 2026-05</td><td class="num">43</td><td class="num">+3.8%</td><td class="num">6.1%</td><td><span class="status pass">Pass</span></td></tr>
-                    <tr><td>02</td><td>2026-05 → 2026-06</td><td class="num">36</td><td class="num">−1.2%</td><td class="num">9.2%</td><td><span class="status review">Watch</span></td></tr>
-                    <tr><td>03</td><td>2026-06 → 2026-07</td><td class="num">39</td><td class="num">+2.5%</td><td class="num">5.7%</td><td><span class="status pass">Pass</span></td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </div>
-
-          <div>
-            <section class="panel" id="review" data-od-id="review-readiness">
-              <div class="panel-head"><h2>Review readiness</h2><span class="status review">Blocked</span></div>
-              <div class="blocker"><strong>MONTE CARLO RUNNING</strong><p>Bootstrap p95 drawdown must remain at or below the fixed 15% policy before review opens.</p></div>
-            </section>
-
-            <section class="panel" data-od-id="activity-feed">
-              <div class="panel-head"><h2>Recent activity</h2><span class="panel-note">append-only</span></div>
-              <ol class="activity">
-                <li><span class="event-dot cyan"></span><div><div class="event-title">WFO fold 3 started</div><div class="event-sub">RUN-WFO-03 · identity verified</div></div><time class="event-time">15:40</time></li>
-                <li><span class="event-dot green"></span><div><div class="event-title">WFO fold 2 recorded</div><div class="event-sub">36 trades · DD 9.2%</div></div><time class="event-time">15:37</time></li>
-                <li><span class="event-dot green"></span><div><div class="event-title">Correctness checks passed</div><div class="event-sub">lookahead · recursive · load</div></div><time class="event-time">15:28</time></li>
-                <li><span class="event-dot amber"></span><div><div class="event-title">Candidate frozen</div><div class="event-sub">sha256: 8c03…71ae</div></div><time class="event-time">15:21</time></li>
-                <li><span class="event-dot"></span><div><div class="event-title">Hypothesis selected</div><div class="event-sub">score 82 / 100 · rank 1</div></div><time class="event-time">15:18</time></li>
-              </ol>
-            </section>
-
-            <section class="panel" id="sources" data-od-id="evidence-summary">
-              <div class="panel-head"><h2>Evidence summary</h2><span class="panel-note">7 linked sources</span></div>
-              <div class="blocker"><strong style="color:var(--success)">4 SUPPORTING</strong><p>Two papers provide explicit rules; two independent implementations agree on divergence confirmation.</p></div>
-              <div class="blocker" style="border-top:1px solid var(--border-subtle)"><strong style="color:var(--danger)">3 CONTRADICTING</strong><p>Edge weakens in high-volatility regimes and may be sensitive to pivot confirmation delay.</p></div>
-            </section>
-          </div>
-        </div>
-
-        <div class="footer-note">PROTOTYPE · SAMPLE DATA · NO DRY-RUN OR LIVE CONTROLS</div>
+        <section data-view="review" id="review" aria-labelledby="review-title"><div class="page-title"><div><h1 id="review-title" tabindex="-1">Review queue</h1><p class="subtitle">Explicit human decision after all automated evidence is persisted.</p></div></div><div class="layout"><div class="panel"><div class="panel-head"><h2>Eligible hypotheses</h2><span class="panel-note" id="reviewCount">0 pending</span></div><div class="candidate" id="reviewQueue"></div></div><div class="panel"><div class="panel-head"><h2>Decision note</h2><span class="panel-note">required</span></div><div class="blocker"><label for="reviewReason">Reason</label><textarea id="reviewReason" placeholder="Summarize the evidence reviewed…"></textarea><div class="review-actions"><button type="button" data-review-action="approve">Approve eligibility</button><button type="button" data-review-action="reject">Reject candidate</button></div><p class="muted" id="reviewMessage" aria-live="polite"></p></div></div></div></section>
       </main>
     </div>
   </div>
+  <script src="/assets/plotly.min.js" defer></script>
+  <script>
+    (() => {
+      const state = { overview: null, sources: [], hypotheses: [], experiments: [], review: [], selectedReviewId: null };
+      const labels = { overview: "Overview", sources: "Sources", hypotheses: "Hypotheses", experiments: "Experiments", review: "Review queue" };
+      const display = (value) => value === null || value === undefined || value === "" ? "—" : String(value);
+      const node = (tag, value, className) => { const element = document.createElement(tag); if (className) element.className = className; if (value !== undefined) element.textContent = display(value); return element; };
+      const clear = (element) => element.replaceChildren();
+      const tableCell = (row, value, className) => { const cell = node("td", value, className); row.append(cell); return cell; };
+      const emptyRow = (target, columns, message) => { const row = node("tr"); const cell = node("td", message, "muted"); cell.colSpan = columns; row.append(cell); target.replaceChildren(row); };
+      const stateClass = (value) => value === "NEEDS_REVIEW" || value === "INCONCLUSIVE" ? "review" : value === "REJECTED" || value === "RETRYABLE" ? "fail" : value === "PASS" || value === "APPROVED_FOR_DRY_RUN" ? "pass" : "running";
+      const safeURL = (value) => { try { const url = new URL(value, location.origin); return ["http:", "https:"].includes(url.protocol) ? url.href : null; } catch (_) { return null; } };
+      async function get(path) { const response = await fetch(path, { headers: { Accept: "application/json" } }); if (!response.ok) throw new Error(`${response.status} ${response.statusText}`); return response.json(); }
+      function activate(view, moveFocus = true) { if (!labels[view]) view = "overview"; document.querySelectorAll("[data-view]").forEach((element) => element.classList.toggle("active", element.dataset.view === view)); document.querySelectorAll("[data-view-target]").forEach((element) => { const active = element.dataset.viewTarget === view; element.classList.toggle("active", active); if (active) element.setAttribute("aria-current", "page"); else element.removeAttribute("aria-current"); }); document.getElementById("breadcrumb").textContent = labels[view]; history.replaceState(null, "", `#${view}`); if (moveFocus) document.getElementById(`${view}-title`)?.focus({ preventScroll: true }); }
+      function renderOverview() {
+        const overview = state.overview || {}; const cycle = overview.current_cycle; const counts = overview.counts || {};
+        const cycleId = document.getElementById("cycleId"); cycleId.replaceChildren(node("span", "CYCLE"), document.createElement("br"), node("span", cycle?.id));
+        document.getElementById("cycleStage").textContent = cycle?.stage || "NO ACTIVE CYCLE";
+        const cycleStatus = document.getElementById("cycleStatus"); cycleStatus.textContent = cycle?.status || "EMPTY"; cycleStatus.className = `status ${stateClass(cycle?.status)}`;
+        document.getElementById("cycleProgress").style.width = cycle ? `${Math.min(100, Math.round((counts.review + counts.testing + counts.queued) * 33))}%` : "0%";
+        const kpis = document.getElementById("kpis"); clear(kpis); [["Sources retained", counts.sources || 0, "current cycle"], ["Hypotheses", counts.hypotheses || 0, `${counts.queued || 0} queued`], ["Candidate validations", cycle?.candidate_count || 0, "cycle limit: 1"], ["Review queue", counts.review || 0, "human action required"]].forEach(([title, value, detail]) => { const item = node("div", undefined, "kpi"); item.append(node("div", title, "eyebrow"), node("div", value, "value"), node("div", detail, "detail")); kpis.append(item); });
+        const activity = document.getElementById("activity"); clear(activity); (overview.events || []).forEach((event) => { const item = node("li"); const dot = node("span", undefined, `event-dot ${event.to_state === "NEEDS_REVIEW" ? "amber" : event.to_state === "RUNNING" ? "cyan" : "green"}`); const copy = node("div"); copy.append(node("div", event.reason, "event-title"), node("div", `${display(event.from_state)} → ${display(event.to_state)}`, "event-sub")); item.append(dot, copy, node("time", event.created_at, "event-time")); activity.append(item); }); if (!activity.children.length) activity.append(node("li", "No state events recorded.", "muted"));
+        document.getElementById("reviewStatus").textContent = `${counts.review || 0} pending`; const summary = document.getElementById("reviewSummary"); clear(summary); summary.append(node("strong", counts.review ? `${counts.review} hypothesis${counts.review === 1 ? "" : "es"} need review` : "Review queue is empty", counts.review ? undefined : "muted"), node("p", counts.review ? "Inspect the evidence and persisted validation artifacts before deciding." : "Nothing is eligible for a human decision yet."));
+        const budget = document.getElementById("budgetSummary"); clear(budget); budget.append(node("p", `Sources ${display(cycle?.source_count || 0)} / 100 · hypotheses ${display(cycle?.hypothesis_count || 0)} / 3 · candidates ${display(cycle?.candidate_count || 0)} / 1`));
+      }
+      function renderSources() { const target = document.getElementById("sourcesTable"); clear(target); state.sources.forEach((source) => { const row = node("tr"); tableCell(row, source.provider); tableCell(row, source.title); const linkCell = node("td"); const url = safeURL(source.canonical_url); if (url) { const link = node("a", source.doi || source.canonical_url); link.href = url; link.rel = "noreferrer"; linkCell.append(link); } else linkCell.textContent = "—"; row.append(linkCell); tableCell(row, source.retrieved_at); tableCell(row, source.metadata?.assessment || (source.metadata?.falsifier_only ? "falsifier only" : "unassessed")); target.append(row); }); if (!target.children.length) emptyRow(target, 5, "No retained sources."); }
+      function renderHypotheses() { const target = document.getElementById("hypothesesTable"); clear(target); state.hypotheses.forEach((hypothesis) => { const row = node("tr"); const mechanism = node("td"); mechanism.append(node("strong", hypothesis.mechanism), node("div", hypothesis.thesis, "event-sub")); row.append(mechanism); tableCell(row, hypothesis.market_scope); tableCell(row, `${display(hypothesis.total_score)} / 100`, "num"); tableCell(row, (hypothesis.required_data || []).join(", ")); const stateCell = node("td"); stateCell.append(node("span", hypothesis.state, `status ${stateClass(hypothesis.state)}`)); row.append(stateCell); tableCell(row, `${(hypothesis.supporting_sources || []).length} support · ${(hypothesis.contradicting_sources || []).length} contradict`); target.append(row); }); if (!target.children.length) emptyRow(target, 6, "No hypotheses recorded."); }
+      function renderExperiments() { const target = document.getElementById("experimentsTable"); clear(target); state.experiments.forEach((experiment) => { const row = node("tr"); tableCell(row, experiment.id); tableCell(row, experiment.strategy_name); tableCell(row, `${display(experiment.start_at)} → ${display(experiment.end_at)}`); tableCell(row, experiment.status); tableCell(row, (experiment.runs || []).length, "num"); const artifacts = node("td"); (experiment.runs || []).flatMap((run) => run.artifact_manifest?.artifacts || []).forEach((artifact) => { const link = node("a", artifact.path); link.href = artifact.url; link.rel = "noreferrer"; artifacts.append(link, document.createElement("br")); }); if (!artifacts.children.length) artifacts.textContent = "—"; row.append(artifacts); target.append(row); }); if (!target.children.length) emptyRow(target, 6, "No experiments recorded."); renderFolds(); }
+      function renderFolds() { const target = document.getElementById("foldTable"); clear(target); state.experiments.forEach((experiment) => (experiment.runs || []).forEach((run) => { const folds = run.metrics?.fold_metrics || run.metrics?.folds || []; folds.forEach((fold, index) => { const row = node("tr"); tableCell(row, experiment.id); tableCell(row, fold.fold ?? fold.fold_id ?? index + 1); tableCell(row, `${display(fold.oos_start || fold.start)} → ${display(fold.oos_end || fold.end)}`); tableCell(row, fold.trades, "num"); tableCell(row, fold.stressed_profit ?? fold.net_profit, "num"); tableCell(row, fold.max_drawdown ?? fold.drawdown, "num"); tableCell(row, fold.gate || (fold.passed === true ? "PASS" : fold.passed === false ? "FAIL" : "—")); target.append(row); }); })); if (!target.children.length) emptyRow(target, 7, "No fold metrics recorded."); }
+      function renderChart() { const chart = document.getElementById("equityChart"); clear(chart); const title = node("h3", "Out-of-sample robustness"); title.id = "chart-title"; const desc = node("p", "A chart appears when a validation run persists equity points.", "muted"); desc.id = "chart-desc"; chart.append(title, desc); const run = state.experiments.flatMap((experiment) => experiment.runs || []).find((candidate) => Array.isArray(candidate.metrics?.equity_points || candidate.metrics?.equity_curve || candidate.metrics?.equity)); const points = run?.metrics?.equity_points || run?.metrics?.equity_curve || run?.metrics?.equity; if (!Array.isArray(points) || !points.length || typeof window.Plotly === "undefined") return; const equity = []; const drawdown = []; points.forEach((point, index) => { const value = Array.isArray(point) ? point[1] : point?.equity ?? point?.value; const dd = Array.isArray(point) ? point[2] : point?.drawdown; if (value !== undefined) { equity.push(value); drawdown.push(dd ?? null); } }); if (!equity.length) return; desc.textContent = `${equity.length} persisted equity points; drawdown values are shown alongside the fold metrics.`; const plot = node("div"); plot.setAttribute("aria-hidden", "true"); chart.append(plot); window.Plotly.newPlot(plot, [{ y: equity, mode: "lines", name: "Equity" }, { y: drawdown, mode: "lines", name: "Drawdown" }], { margin: { t: 12, r: 12, b: 28, l: 42 }, paper_bgcolor: "transparent", plot_bgcolor: "transparent", font: { color: "#8BA3C7" }, showlegend: true, responsive: true }, { displayModeBar: false, responsive: true }); }
+      function renderReview() { const target = document.getElementById("reviewQueue"); clear(target); document.getElementById("reviewCount").textContent = `${state.review.length} pending`; state.selectedReviewId = state.review[0]?.id || null; state.review.forEach((hypothesis) => { const article = node("article", undefined, "blocker"); article.append(node("div", `${hypothesis.id} · score ${display(hypothesis.total_score)}`, "eyebrow"), node("strong", hypothesis.mechanism), node("p", hypothesis.thesis), node("p", `${(hypothesis.supporting_sources || []).length} supporting · ${(hypothesis.contradicting_sources || []).length} contradicting`, "event-sub")); target.append(article); }); if (!target.children.length) target.append(node("p", "No hypothesis is waiting for review.", "muted")); }
+      async function review(action) { const selected = state.selectedReviewId; const reason = document.getElementById("reviewReason").value.trim(); if (!selected) return; if (!reason) { document.getElementById("reviewMessage").textContent = "A reason is required."; return; } if (!window.confirm(`Confirm ${action} for ${selected}?`)) return; const response = await fetch(`/api/hypotheses/${encodeURIComponent(selected)}/review`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, reason }) }); const body = await response.json(); if (!response.ok) throw new Error(body.error || `${response.status}`); document.getElementById("reviewMessage").textContent = `Recorded ${action}.`; await load(); }
+      async function load() { document.getElementById("loading").hidden = false; document.getElementById("error").hidden = true; try { [state.overview, state.sources, state.hypotheses, state.experiments, state.review] = await Promise.all([get("/api/overview"), get("/api/sources"), get("/api/hypotheses"), get("/api/experiments"), get("/api/review")]); renderOverview(); renderSources(); renderHypotheses(); renderExperiments(); renderReview(); renderChart(); document.getElementById("dbStatus").textContent = "CONNECTED"; } catch (error) { document.getElementById("dbStatus").textContent = "ERROR"; document.getElementById("error").textContent = `Unable to load research state: ${error.message}`; document.getElementById("error").hidden = false; } finally { document.getElementById("loading").hidden = true; } }
+      document.querySelectorAll("[data-view-target]").forEach((element) => element.addEventListener("click", (event) => { event.preventDefault(); activate(element.dataset.viewTarget); })); document.querySelectorAll("[data-review-action]").forEach((element) => element.addEventListener("click", () => review(element.dataset.reviewAction).catch((error) => { document.getElementById("reviewMessage").textContent = error.message; }))); window.addEventListener("hashchange", () => activate(location.hash.slice(1), false)); window.addEventListener("load", renderChart); document.getElementById("clock").textContent = new Date().toISOString(); activate(location.hash.slice(1) || "overview", false); load();
+    })();
+  </script>
 </body>
 </html>
