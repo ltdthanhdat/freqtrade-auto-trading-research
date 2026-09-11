@@ -10,7 +10,7 @@ type RuntimeResponse = {
 };
 
 export function invokeRuntime(tool: string, payload: Record<string, unknown>): RuntimeResponse {
-  const result = spawnSync("python3", ["-m", "research_runtime.cli"], {
+  const result = spawnSync("uv", ["run", "python", "-m", "research_runtime.cli"], {
     input: `${JSON.stringify({ tool, payload })}\n`,
     encoding: "utf8",
   });

@@ -17,3 +17,7 @@ test("runtime errors include the structured code and details", () => {
   assert.match(source, /response\.error\.code/);
   assert.match(source, /response\.error\.details/);
 });
+
+test("runtime uses the project Python environment", () => {
+  assert.match(source, /spawnSync\("uv",\s*\["run",\s*"python3?"/);
+});
