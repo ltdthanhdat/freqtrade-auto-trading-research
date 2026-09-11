@@ -8,7 +8,9 @@ SQL, arbitrary file writes, or automated TradingView acquisition.
    Call `start_or_resume_cycle`, then `load_context`.
 2. Collect a bounded set of sources from the supported providers. Keep source
    provenance, retrieval time, and contradictions; do not retry a provider more
-   than the runtime allows.
+   than the runtime allows. Prefer only `openalex`, `arxiv`, and `crossref`,
+   with at most four results per provider; if one returns a retryable error,
+   record it and continue with another provider.
 3. Assess source quality and propose no more than three structured hypotheses.
    One hypothesis contains one mechanism or market assumption, explicit OHLCV
    inputs, executable rules, and a falsifier. Unsupported data stays backlog.

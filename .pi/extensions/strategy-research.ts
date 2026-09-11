@@ -78,7 +78,7 @@ export default function (pi: ExtensionAPI) {
       updateStatus(ctx, response);
       pi.setActiveTools(["strategy_research_runtime"]);
       pi.sendUserMessage(
-        `Run exactly one bounded research cycle through strategy_research_runtime. ${researchDataContext()} Load context, collect sources, assess provenance, propose at most three hypotheses, write and validate one candidate, record interpretation, finalize, then stop. Use only the documented runtime operations; do not start trading, alter the parent strategy/config/policy, or tune after a failed validation.`,
+        `Run exactly one bounded research cycle through strategy_research_runtime. ${researchDataContext()} Load context, collect at most four sources each from openalex, arxiv, and crossref (do not use semantic_scholar), assess provenance, propose at most three hypotheses, write and validate one candidate, record interpretation, finalize, then stop. Use only the documented runtime operations; if a provider returns a retryable error, record it and continue with another provider. Do not start trading, alter the parent strategy/config/policy, or tune after a failed validation.`,
       );
     },
   });

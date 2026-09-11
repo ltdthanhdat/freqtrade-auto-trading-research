@@ -34,3 +34,8 @@ test("research command carries the prepared snapshot into the cycle", () => {
   assert.match(source, /RESEARCH_TIMERANGE/);
   assert.match(source, /data preflight completed successfully/);
 });
+
+test("research command avoids the rate-limited provider", () => {
+  assert.match(source, /openalex, arxiv, and crossref/);
+  assert.match(source, /do not use semantic_scholar/);
+});
