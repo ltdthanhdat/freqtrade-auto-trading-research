@@ -21,7 +21,7 @@ DB ?= user_data/tradesv3.demo.sqlite
 PAIR     ?= BTC/USDT:USDT
 SNAPSHOT_DATADIR := user_data/data/snapshots/$(DATASET)
 
-.PHONY: help install seed seed-range seed-snapshot list-data list-snapshot backtest backtest-snapshot validate-snapshot validate-pass monitor-decay plot plot-df dry-run demo live compose-demo compose-live list-strategies research-cycle clean clean-backtest-results
+.PHONY: help install seed seed-range seed-snapshot list-data list-snapshot backtest backtest-snapshot validate-snapshot validate-pass monitor-decay plot plot-df dry-run demo live compose-demo compose-live list-strategies research-cycle research-dashboard clean clean-backtest-results
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -61,6 +61,9 @@ validate-pass: ## Require VALIDATION_MANIFEST with verdict PASS
 
 research-cycle: ## Start or resume one bounded Pi research cycle
 	pi --approve --model openai-codex/gpt-5.6-luna --thinking max --no-builtin-tools
+
+research-dashboard: ## Open the local research dashboard server
+	$(PYTHON) -m research_runtime.dashboard --db user_data/research.sqlite --artifacts user_data/research-artifacts --port 7400
 
 monitor-decay: install ## Monitor demo/live decay with BASELINE=<zip> DB=<sqlite>
 	$(PYTHON) -m scripts.monitor_decay --baseline $(BASELINE) --db $(DB)
