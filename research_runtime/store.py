@@ -275,6 +275,45 @@ class ResearchStore:
                 (_timestamp(now), cycle_id),
             )
 
+    def ensure_cycle(
+        self,
+        cycle_id: str,
+        *,
+        stage: str = "IMPORTED",
+        status: CycleStatus | str = CycleStatus.COMPLETED,
+        now: datetime | str | None = None,
+    ) -> dict[str, Any]:
+        timestamp = _timestamp(now)
+        target = CycleStatus(status)
+        with self.connect() as connection:
+            connection.execute(
+                "INSERT OR IGNORE INTO cycles (id, status, stage, source_count, hypothesis_count, candidate_count, lease_until, created_at, updated_at) VALUES (?, ?, ?, 0, 0, 0, NULL, ?, ?)",
+                (cycle_id, target, stage, timestamp, timestamp),
+            )
+            if connection.execute(
+                "SELECT COUNT(*) FROM state_events WHERE entity_type = 'cycle' AND entity_id = ?", (cycle_id,)
+            ).fetchone()[0] == 0:
+                self._append_event(
+                    connection,
+                    entity_type="cycle",
+                    entity_id=cycle_id,
+                    from_state=None,
+                    to_state=target,
+                    actor="migration",
+                    reason="legacy import cycle",
+                    cycle_id=cycle_id,
+                    created_at=timestamp,
+                )
+            return dict(connection.execute("SELECT * FROM cycles WHERE id = ?", (cycle_id,)).fetchone())
+
+    def integrity_report(self) -> dict[str, Any]:
+        with self.connect() as connection:
+            integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
+            foreign_key_errors = [
+                tuple(row) for row in connection.execute("PRAGMA foreign_key_check")
+            ]
+            return {"integrity_check": integrity, "foreign_key_errors": foreign_key_errors}
+
     def insert_source(self, cycle_id: str, source: dict[str, Any] | Any) -> dict[str, Any]:
         data = source if isinstance(source, dict) else vars(source)
         doi = _normalize_doi(data.get("doi"))

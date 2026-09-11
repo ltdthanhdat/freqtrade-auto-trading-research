@@ -37,6 +37,9 @@ tradesv3.sqlite
 tradesv3.sqlite-shm
 tradesv3.sqlite-wal
 user_data/validation_state.sqlite*
+user_data/research.sqlite*
+user_data/research-artifacts/
+user_data/research-backups/
 storage/
 
 # Secrets
