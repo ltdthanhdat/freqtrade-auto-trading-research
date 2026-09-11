@@ -44,7 +44,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "strategy_research_runtime",
     label: "Strategy research runtime",
-    description: "Call one validated Python research-runtime operation; state and files stay behind the typed boundary.",
+    description: "Call one validated Python research-runtime operation; valid operations: start_or_resume_cycle, load_context, collect_sources, record_source_assessment, propose_hypothesis, write_candidate, start_validation, record_interpretation, finalize_cycle. State and files stay behind the typed boundary.",
     promptSnippet: "Run a bounded strategy research runtime operation",
     parameters: Type.Object({
       tool: Type.String(),
