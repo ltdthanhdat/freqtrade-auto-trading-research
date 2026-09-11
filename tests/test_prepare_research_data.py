@@ -28,7 +28,7 @@ def _policy(path: Path) -> None:
     )
 
 
-def test_prepare_seeds_and_requires_policy_folds(tmp_path, monkeypatch):
+def test_prepare_reuses_ready_snapshot_and_requires_policy_folds(tmp_path, monkeypatch):
     monkeypatch.setattr(module, "ROOT", tmp_path)
     policy = tmp_path / "policy.json"
     _policy(policy)
@@ -57,7 +57,8 @@ def test_prepare_seeds_and_requires_policy_folds(tmp_path, monkeypatch):
     )
 
     assert result["folds"] >= 3
-    assert calls and "download-data" in calls[0]
+    assert result["seeded"] is False
+    assert calls == []
 
 
 def test_dataset_path_rejects_parent_escape():

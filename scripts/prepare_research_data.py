@@ -48,6 +48,38 @@ def prepare(
         raise ValueError("validation policy has no accepted pairs")
     start, end = _timerange(timerange)
     dataset_path = _dataset_path(dataset)
+    datadir = ROOT / "user_data/data" / dataset_path
+
+    def verify(*, seeded: bool) -> dict[str, object]:
+        evidence, errors, warnings = inspect_snapshot(datadir, policy.accepted_pairs, start, end)
+        if errors:
+            raise RuntimeError("snapshot validation failed: " + "; ".join(errors))
+        common = evidence.get("common_interval")
+        if not isinstance(common, dict):
+            raise RuntimeError("snapshot has no common OHLCV interval")
+        effective_start = max(start, pd.Timestamp(common["start"])).ceil("D")
+        effective_end = min(end, pd.Timestamp(common["end_exclusive"])).floor("D")
+        folds = build_oos_folds(effective_start, effective_end, policy)
+        if len(folds) < policy.required_folds:
+            raise RuntimeError(
+                f"snapshot has {len(folds)} OOS folds; requires {policy.required_folds}"
+            )
+        return {
+            "dataset": str(dataset_path),
+            "datadir": str(datadir),
+            "requested_timerange": timerange,
+            "effective_start": effective_start.isoformat(),
+            "effective_end": effective_end.isoformat(),
+            "folds": len(folds),
+            "seeded": seeded,
+            "warnings": warnings,
+        }
+
+    if datadir.exists():
+        try:
+            return verify(seeded=False)
+        except RuntimeError:
+            pass
     seed_args = argparse.Namespace(
         config=str(config),
         dataset=str(dataset_path),
@@ -61,30 +93,7 @@ def prepare(
         cwd=ROOT,
         check=True,
     )
-
-    datadir = ROOT / "user_data/data" / dataset_path
-    evidence, errors, warnings = inspect_snapshot(datadir, policy.accepted_pairs, start, end)
-    if errors:
-        raise RuntimeError("snapshot validation failed: " + "; ".join(errors))
-    common = evidence.get("common_interval")
-    if not isinstance(common, dict):
-        raise RuntimeError("snapshot has no common OHLCV interval")
-    effective_start = max(start, pd.Timestamp(common["start"])).ceil("D")
-    effective_end = min(end, pd.Timestamp(common["end_exclusive"])).floor("D")
-    folds = build_oos_folds(effective_start, effective_end, policy)
-    if len(folds) < policy.required_folds:
-        raise RuntimeError(
-            f"snapshot has {len(folds)} OOS folds; requires {policy.required_folds}"
-        )
-    return {
-        "dataset": str(dataset_path),
-        "datadir": str(datadir),
-        "requested_timerange": timerange,
-        "effective_start": effective_start.isoformat(),
-        "effective_end": effective_end.isoformat(),
-        "folds": len(folds),
-        "warnings": warnings,
-    }
+    return verify(seeded=True)
 
 
 def parse_args() -> argparse.Namespace:
