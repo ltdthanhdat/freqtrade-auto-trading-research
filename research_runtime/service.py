@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import json
 import time
 from pathlib import Path
 from typing import Any, Callable
 
+from .candidates import write_candidate
 from .collectors import COLLECTORS, ProviderError, ProviderRetryableError
 from .core import HypothesisState
 from .store import CANDIDATE_BUDGET, HYPOTHESIS_BUDGET, SOURCE_BUDGET, ResearchStore
+from .validation import ResearchVerdict, validate_candidate
 
 
 class ResearchService:
@@ -16,6 +19,15 @@ class ResearchService:
         "start_or_resume_cycle": {"now"},
         "load_context": {"cycle_id"},
         "collect_sources": {"cycle_id", "provider", "query", "limit"},
+        "write_candidate": {"cycle_id", "hypothesis_id", "strategy_name", "source"},
+        "start_validation": {
+            "cycle_id", "hypothesis_id", "experiment",
+            "id", "parent_strategy", "parent_sha256", "changed_variable",
+            "config_path", "config_sha256", "pairs", "timeframes", "timeframe_detail",
+            "snapshot_path", "snapshot_sha256", "policy_path", "policy_sha256",
+            "strategy_name", "strategy_path", "strategy_file", "candidate_path",
+            "start_at", "end_at", "runs_dir", "artifact_root",
+        },
         "record_source_assessment": {"cycle_id", "source_id", "assessment"},
         "propose_hypothesis": {
             "cycle_id",
@@ -37,6 +49,8 @@ class ResearchService:
         "start_or_resume_cycle": set(),
         "load_context": {"cycle_id"},
         "collect_sources": {"cycle_id", "provider", "query", "limit"},
+        "write_candidate": {"cycle_id", "hypothesis_id", "strategy_name", "source"},
+        "start_validation": {"cycle_id", "hypothesis_id"},
         "record_source_assessment": {"cycle_id", "source_id", "assessment"},
         "propose_hypothesis": {
             "cycle_id",
@@ -176,6 +190,248 @@ class ResearchService:
             raise ValueError(f"unknown source: {source_id}")
         self.store.update_source_metadata(source_id, {"assessment": payload["assessment"]})
         return {"source_id": source_id, "recorded": True}
+
+    def write_candidate(self, payload: dict[str, Any]) -> dict[str, Any]:
+        cycle_id = payload["cycle_id"]
+        cycle = self.store.get_cycle(cycle_id)
+        if cycle is None:
+            raise ValueError(f"unknown cycle: {cycle_id}")
+        hypothesis = self.store.get_hypothesis(payload["hypothesis_id"])
+        if hypothesis is None or hypothesis["cycle_id"] != cycle_id:
+            raise ValueError(f"unknown hypothesis: {payload['hypothesis_id']}")
+        if not self._hypothesis_data_supported(hypothesis):
+            raise ValueError("candidate requires OHLCV-supported required data")
+        if not self._has_candidate_evidence(hypothesis["id"]):
+            raise ValueError("candidate requires full-text or corroborating independent evidence")
+        eligible = [
+            item
+            for item in self.store.list_hypotheses(cycle_id)
+            if item["state"] in {HypothesisState.SCORED, HypothesisState.IMPLEMENTING}
+            and self._hypothesis_data_supported(item)
+            and self._has_candidate_evidence(item["id"])
+        ]
+        if not eligible or eligible[0]["id"] != hypothesis["id"]:
+            raise ValueError("only the highest-scoring eligible hypothesis may create a candidate")
+        if hypothesis["state"] == HypothesisState.SCORED:
+            self.store.transition_hypothesis(
+                hypothesis["id"], HypothesisState.QUEUED, "runtime", "selected highest-scoring hypothesis", cycle_id
+            )
+            self.store.transition_hypothesis(
+                hypothesis["id"], HypothesisState.IMPLEMENTING, "runtime", "writing candidate", cycle_id
+            )
+        identity = write_candidate(
+            self.artifact_root,
+            cycle_id,
+            payload["strategy_name"],
+            payload["source"],
+        )
+        updated = self.store.set_candidate(hypothesis["id"], identity.path, identity.sha256)
+        return {
+            "candidate": {
+                "path": str(identity.path),
+                "sha256": identity.sha256,
+                "strategy_name": identity.strategy_name,
+            },
+            "hypothesis": updated,
+        }
+
+    def _hypothesis_data_supported(self, hypothesis: dict[str, Any]) -> bool:
+        try:
+            required_data = json.loads(hypothesis["required_data_json"])
+        except (KeyError, json.JSONDecodeError):
+            return False
+        return isinstance(required_data, list) and bool(required_data) and all(
+            str(item).upper() == "OHLCV" for item in required_data
+        )
+
+    def _has_candidate_evidence(self, hypothesis_id: str) -> bool:
+        supporting = [
+            source
+            for source in self.store.list_hypothesis_sources(hypothesis_id)
+            if source["stance"] == "SUPPORT"
+        ]
+        if not supporting:
+            return False
+        providers: set[str] = set()
+        for source in supporting:
+            try:
+                metadata = json.loads(source["metadata_json"])
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(metadata, dict) or metadata.get("falsifier_only") is True:
+                continue
+            if metadata.get("full_text") is True or metadata.get("full_text_available") is True:
+                return True
+            providers.add(str(source["provider"]))
+        return len(providers) >= 2
+
+    def start_validation(self, payload: dict[str, Any]) -> dict[str, Any]:
+        cycle_id = payload["cycle_id"]
+        hypothesis = self.store.get_hypothesis(payload["hypothesis_id"])
+        if hypothesis is None or hypothesis["cycle_id"] != cycle_id:
+            raise ValueError(f"unknown hypothesis: {payload['hypothesis_id']}")
+        if not hypothesis["candidate_path"] or not hypothesis["candidate_sha256"]:
+            raise ValueError("candidate identity is required before validation")
+        existing = self.store.find_experiment(cycle_id, hypothesis["id"])
+        if existing is None:
+            experiment = self._experiment_payload(payload, cycle_id, hypothesis)
+            existing = self.store.insert_experiment(experiment)
+        runs = self.store.list_runs(existing["id"])
+        if runs and hypothesis["state"] != HypothesisState.TESTING:
+            latest = runs[-1]
+            if latest["status"] != "RETRYABLE":
+                return self._validation_result(latest, hypothesis["state"], existing["id"])
+        if hypothesis["state"] in {
+            HypothesisState.NEEDS_REVIEW,
+            HypothesisState.INCONCLUSIVE,
+            HypothesisState.REJECTED,
+            HypothesisState.APPROVED_FOR_DRY_RUN,
+        }:
+            return {"state": hypothesis["state"], "experiment_id": existing["id"]}
+        if hypothesis["state"] == HypothesisState.IMPLEMENTING:
+            self.store.transition_hypothesis(
+                hypothesis["id"], HypothesisState.TESTING, "runtime", "validation started", cycle_id
+            )
+        elif hypothesis["state"] != HypothesisState.TESTING:
+            raise ValueError(f"hypothesis is not ready for validation: {hypothesis['state']}")
+
+        try:
+            result = self.validator(existing) if self.validator is not None else validate_candidate(existing, artifact_root=self.artifact_root)
+        except Exception as exc:  # pragma: no cover - validator boundary is tested through the wrapper
+            result = ResearchVerdict(
+                verdict="RETRYABLE", state="RETRYABLE", metrics={}, artifacts={},
+                error_code="validation_exception", details=(f"{type(exc).__name__}: {exc}",),
+            )
+        normalized = self._normalize_validation_result(result)
+        run_id = f"RUN-{existing['id']}-validation"
+        run = self.store.record_run(
+            {
+                "id": run_id,
+                "experiment_id": existing["id"],
+                "kind": "validation",
+                "status": normalized["state"],
+                "verdict": normalized["verdict"],
+                "metrics": normalized["metrics"],
+                "artifact_manifest": normalized["artifacts"],
+                "error_code": normalized.get("error_code"),
+            }
+        )
+        if normalized["state"] == "RETRYABLE":
+            return self._validation_result(run, "RETRYABLE", existing["id"])
+        target = HypothesisState(normalized["state"])
+        updated = self.store.transition_hypothesis(
+            hypothesis["id"], target, "runtime", f"validation verdict {normalized['verdict']}", cycle_id, run_id,
+            payload={"verdict": normalized["verdict"], "metrics": normalized["metrics"]},
+        )
+        return self._validation_result(run, updated["state"], existing["id"])
+
+    def _experiment_payload(
+        self, payload: dict[str, Any], cycle_id: str, hypothesis: dict[str, Any]
+    ) -> dict[str, Any]:
+        spec = dict(payload.get("experiment") or {})
+        for key in self.OPERATION_FIELDS["start_validation"] - {"cycle_id", "hypothesis_id", "experiment"}:
+            if key in payload:
+                spec[key] = payload[key]
+        candidate_path = Path(hypothesis["candidate_path"])
+        if not spec:
+            if self.validator is None:
+                raise ValueError("experiment identity is required before validation")
+            digest = hypothesis["candidate_sha256"]
+            spec = {
+                "id": f"EXP-{hypothesis['id']}",
+                "parent_strategy": "fixture",
+                "parent_sha256": digest,
+                "changed_variable": "research-generated",
+                "config_path": "fixture-config",
+                "config_sha256": digest,
+                "pairs": [],
+                "timeframes": ["30m"],
+                "timeframe_detail": "1m",
+                "snapshot_path": "fixture-snapshot",
+                "snapshot_sha256": digest,
+                "policy_path": "fixture-policy",
+                "policy_sha256": digest,
+                "strategy_name": candidate_path.stem,
+                "strategy_path": str(candidate_path.parent),
+                "candidate_path": str(candidate_path),
+                "start_at": hypothesis["created_at"],
+                "end_at": hypothesis["updated_at"],
+                "status": "PENDING",
+            }
+        spec.update(
+            {
+                "cycle_id": cycle_id,
+                "hypothesis_id": hypothesis["id"],
+                "strategy_name": spec.get("strategy_name") or candidate_path.stem,
+                "strategy_path": spec.get("strategy_path") or str(candidate_path.parent),
+                "strategy_file": spec.get("strategy_file") or str(candidate_path),
+                "candidate_path": spec.get("candidate_path") or str(candidate_path),
+                "status": spec.get("status", "PENDING"),
+                "start_at": spec.get("start_at", hypothesis["created_at"]),
+                "end_at": spec.get("end_at", hypothesis["updated_at"]),
+            }
+        )
+        required = (
+            "parent_strategy", "parent_sha256", "changed_variable", "config_path", "config_sha256",
+            "pairs", "timeframes", "timeframe_detail", "snapshot_path", "snapshot_sha256",
+            "policy_path", "policy_sha256", "strategy_name", "strategy_path", "start_at", "end_at",
+        )
+        missing = [
+            key
+            for key in required
+            if key not in spec
+            or spec[key] is None
+            or (isinstance(spec[key], str) and not spec[key].strip())
+        ]
+        if missing:
+            raise ValueError(f"missing experiment fields: {', '.join(missing)}")
+        return spec
+
+    @staticmethod
+    def _normalize_validation_result(result: Any) -> dict[str, Any]:
+        if isinstance(result, ResearchVerdict):
+            return {
+                "verdict": result.verdict,
+                "state": result.state,
+                "metrics": result.metrics,
+                "artifacts": {
+                    **result.artifacts,
+                    "manifest_path": str(result.manifest_path) if result.manifest_path else None,
+                    "report_path": str(result.report_path) if result.report_path else None,
+                    "manifest_sha256": result.manifest_hash,
+                    "report_sha256": result.report_hash,
+                },
+                "error_code": result.error_code,
+            }
+        value = dict(result) if isinstance(result, dict) else {
+            "verdict": getattr(result, "verdict", "RETRYABLE"),
+            "metrics": getattr(result, "metrics", {}),
+            "artifacts": getattr(result, "artifacts", {}),
+        }
+        verdict = str(value.get("verdict", "RETRYABLE"))
+        state = {"PASS": "NEEDS_REVIEW", "WARN": "INCONCLUSIVE", "FAIL": "REJECTED"}.get(verdict, "RETRYABLE")
+        value["verdict"] = verdict
+        value["state"] = state
+        value.setdefault("metrics", {})
+        value.setdefault("artifacts", {})
+        return value
+
+    @staticmethod
+    def _validation_result(run: dict[str, Any], state: str, experiment_id: str) -> dict[str, Any]:
+        try:
+            metrics = json.loads(run["metrics_json"])
+            artifacts = json.loads(run["artifact_manifest_json"])
+        except (KeyError, json.JSONDecodeError):
+            metrics, artifacts = {}, {}
+        return {
+            "state": state,
+            "verdict": run.get("verdict"),
+            "run_id": run.get("id"),
+            "experiment_id": experiment_id,
+            "metrics": metrics,
+            "artifacts": artifacts,
+            "error_code": run.get("error_code"),
+        }
 
     def propose_hypothesis(self, payload: dict[str, Any]) -> dict[str, Any]:
         cycle_id = payload["cycle_id"]

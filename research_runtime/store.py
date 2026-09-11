@@ -438,6 +438,59 @@ class ResearchStore:
                 (hypothesis_id, source_id, stance, note.strip()),
             )
 
+    def list_hypothesis_sources(self, hypothesis_id: str) -> list[dict[str, Any]]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT s.*, hs.stance, hs.note
+                FROM hypothesis_sources hs
+                JOIN sources s ON s.id = hs.source_id
+                WHERE hs.hypothesis_id = ?
+                ORDER BY s.retrieved_at ASC, s.id ASC
+                """,
+                (hypothesis_id,),
+            )
+            return [dict(row) for row in rows]
+
+    def set_candidate(
+        self,
+        hypothesis_id: str,
+        candidate_path: str | Path,
+        candidate_sha256: str,
+    ) -> dict[str, Any]:
+        path = str(candidate_path)
+        if not path or not candidate_sha256:
+            raise ValueError("candidate identity is required")
+        with self.connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            hypothesis = connection.execute(
+                "SELECT * FROM hypotheses WHERE id = ?", (hypothesis_id,)
+            ).fetchone()
+            if hypothesis is None:
+                raise ValueError(f"unknown hypothesis: {hypothesis_id}")
+            if hypothesis["candidate_path"] is not None:
+                if (
+                    hypothesis["candidate_path"] == path
+                    and hypothesis["candidate_sha256"] == candidate_sha256
+                ):
+                    return dict(hypothesis)
+                raise ValueError("candidate identity already exists")
+            cycle = connection.execute(
+                "SELECT * FROM cycles WHERE id = ?", (hypothesis["cycle_id"],)
+            ).fetchone()
+            if cycle["candidate_count"] >= CANDIDATE_BUDGET:
+                raise ValueError("candidate budget exhausted")
+            now = _timestamp(None)
+            connection.execute(
+                "UPDATE hypotheses SET candidate_path = ?, candidate_sha256 = ?, updated_at = ? WHERE id = ?",
+                (path, candidate_sha256, now, hypothesis_id),
+            )
+            connection.execute(
+                "UPDATE cycles SET candidate_count = candidate_count + 1, updated_at = ? WHERE id = ?",
+                (now, hypothesis["cycle_id"]),
+            )
+            return dict(connection.execute("SELECT * FROM hypotheses WHERE id = ?", (hypothesis_id,)).fetchone())
+
     def insert_experiment(self, experiment: dict[str, Any]) -> dict[str, Any]:
         now = _timestamp(experiment.get("created_at"))
         experiment_id = str(experiment.get("id") or f"EXP-{uuid.uuid4().hex[:12]}")
@@ -479,6 +532,29 @@ class ResearchStore:
                 ),
             )
             return dict(connection.execute("SELECT * FROM runs WHERE id = ?", (run_id,)).fetchone())
+
+    def get_experiment(self, experiment_id: str) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            return _row(connection.execute("SELECT * FROM experiments WHERE id = ?", (experiment_id,)).fetchone())
+
+    def find_experiment(self, cycle_id: str, hypothesis_id: str) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            return _row(
+                connection.execute(
+                    "SELECT * FROM experiments WHERE cycle_id = ? AND hypothesis_id = ? ORDER BY created_at ASC LIMIT 1",
+                    (cycle_id, hypothesis_id),
+                ).fetchone()
+            )
+
+    def list_runs(self, experiment_id: str) -> list[dict[str, Any]]:
+        with self.connect() as connection:
+            return [
+                dict(row)
+                for row in connection.execute(
+                    "SELECT * FROM runs WHERE experiment_id = ? ORDER BY created_at ASC, id ASC",
+                    (experiment_id,),
+                )
+            ]
 
     def transition_hypothesis(
         self,

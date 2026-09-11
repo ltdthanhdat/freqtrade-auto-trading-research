@@ -158,3 +158,77 @@ def test_collect_sources_persists_records_and_duplicates_separately(tmp_path):
     )
     assert len(result["accepted_ids"]) == 1
     assert result["duplicate_ids"] == [result["accepted_ids"][0]]
+
+
+def test_write_candidate_selects_only_highest_scored_hypothesis(tmp_path):
+    service, cycle_id, source_id = make_service(tmp_path)
+    lower = service.propose_hypothesis(proposal(cycle_id, source_id, mechanism="lower"))["hypothesis"]
+    higher_payload = proposal(cycle_id, source_id, mechanism="higher")
+    higher_payload["scores"]["evidence_quality"] = 30
+    higher = service.propose_hypothesis(higher_payload)["hypothesis"]
+
+    with pytest.raises(ValueError, match="highest-scoring"):
+        service.write_candidate(
+            {"cycle_id": cycle_id, "hypothesis_id": lower["id"], "strategy_name": "CandidateA", "source": "class CandidateA: pass\n"}
+        )
+    result = service.write_candidate(
+        {"cycle_id": cycle_id, "hypothesis_id": higher["id"], "strategy_name": "CandidateA", "source": "class CandidateA: pass\n"}
+    )
+    assert result["candidate"]["strategy_name"] == "CandidateA"
+    assert service.store.get_hypothesis(higher["id"])["state"] == HypothesisState.IMPLEMENTING
+
+
+def test_write_candidate_requires_explicit_full_text_or_independent_evidence(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite")
+    cycle_id = store.start_or_resume_cycle("2026-09-11T08:00:00Z")["cycle"]["id"]
+    source_id = store.insert_source(
+        cycle_id,
+        {
+            "provider": "openalex",
+            "canonical_url": "https://example.test/abstract",
+            "title": "abstract only",
+            "excerpt": "abstract",
+            "retrieved_at": "2026-09-11T08:00:00Z",
+            "fingerprint": "abstract-source",
+            "metadata": {},
+        },
+    )["id"]
+    service = ResearchService(store, tmp_path / "artifacts")
+    hypothesis = service.propose_hypothesis(proposal(cycle_id, source_id))["hypothesis"]
+    with pytest.raises(ValueError, match="full-text or corroborating"):
+        service.write_candidate(
+            {"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"], "strategy_name": "CandidateA", "source": "class CandidateA: pass\n"}
+        )
+
+
+def test_start_validation_records_run_and_is_idempotent(tmp_path):
+    service, cycle_id, source_id = make_service(tmp_path)
+    hypothesis = service.propose_hypothesis(proposal(cycle_id, source_id))["hypothesis"]
+    service.write_candidate(
+        {"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"], "strategy_name": "CandidateA", "source": "class CandidateA: pass\n"}
+    )
+    calls = []
+    service.validator = lambda experiment: calls.append(experiment) or {
+        "verdict": "PASS",
+        "metrics": {"profit": 1},
+        "artifacts": {"manifest": "m"},
+    }
+    result = service.start_validation({"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"]})
+    replay = service.start_validation({"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"]})
+    assert result["state"] == HypothesisState.NEEDS_REVIEW
+    assert replay["state"] == HypothesisState.NEEDS_REVIEW
+    assert len(calls) == 1
+    with service.store.connect() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM runs").fetchone()[0] == 1
+
+
+def test_start_validation_does_not_promote_retryable_result(tmp_path):
+    service, cycle_id, source_id = make_service(tmp_path)
+    hypothesis = service.propose_hypothesis(proposal(cycle_id, source_id))["hypothesis"]
+    service.write_candidate(
+        {"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"], "strategy_name": "CandidateA", "source": "class CandidateA: pass\n"}
+    )
+    service.validator = lambda _experiment: (_ for _ in ()).throw(OSError("temporary"))
+    result = service.start_validation({"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"]})
+    assert result["state"] == "RETRYABLE"
+    assert service.store.get_hypothesis(hypothesis["id"])["state"] == HypothesisState.TESTING
