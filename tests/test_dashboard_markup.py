@@ -7,7 +7,7 @@ HTML = Path("dashboard/index.html").read_text()
 
 def test_dashboard_has_five_named_views_and_no_trading_controls():
     assert set(re.findall(r'data-view="([^"]+)"', HTML)) == {
-        "overview", "sources", "hypotheses", "experiments", "review"
+        "overview", "sources", "hypotheses", "experiments", "review", "history"
     }
     assert "Sample data" not in HTML
     assert not re.search(r">\s*(Start dry-run|Start live|Run cycle)\s*<", HTML, re.I)

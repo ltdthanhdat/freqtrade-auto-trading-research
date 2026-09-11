@@ -179,6 +179,14 @@ class ValidationStateStore:
                 values,
             )
 
+    def current(self, scope: str) -> dict[str, object] | None:
+        with sqlite3.connect(self.path) as connection:
+            connection.row_factory = sqlite3.Row
+            row = connection.execute(
+                "SELECT * FROM current_state WHERE scope = ?", (scope,)
+            ).fetchone()
+            return None if row is None else dict(row)
+
 
 def build_oos_folds(
     start: pd.Timestamp, end: pd.Timestamp, policy: ValidationPolicy

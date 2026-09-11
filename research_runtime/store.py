@@ -9,10 +9,17 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterator
 
-from .core import CycleStatus, HypothesisState, canonical_json, next_state_allowed, score_hypothesis
+from .core import (
+    CycleStatus,
+    HypothesisState,
+    canonical_json,
+    next_cycle_state_allowed,
+    next_state_allowed,
+    score_hypothesis,
+)
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 SOURCE_BUDGET = 100
 HYPOTHESIS_BUDGET = 3
 CANDIDATE_BUDGET = 1
@@ -28,7 +35,13 @@ CREATE TABLE cycles (
   candidate_count INTEGER NOT NULL DEFAULT 0 CHECK(candidate_count BETWEEN 0 AND 1),
   lease_until TEXT,
   created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  updated_at TEXT NOT NULL,
+  dataset TEXT,
+  requested_timerange TEXT,
+  policy_sha256 TEXT,
+  search_cohort TEXT,
+  holdout_start TEXT,
+  holdout_end TEXT
 );
 
 CREATE TABLE sources (
@@ -127,6 +140,17 @@ CREATE TABLE state_events (
   payload_json TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
+
+CREATE TABLE validation_windows (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  cycle_id TEXT NOT NULL REFERENCES cycles(id),
+  dataset TEXT NOT NULL,
+  requested_timerange TEXT NOT NULL,
+  policy_sha256 TEXT NOT NULL,
+  verdict TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(dataset, requested_timerange, policy_sha256, cycle_id)
+);
 """
 
 
@@ -183,8 +207,90 @@ class ResearchStore:
             if version == 0:
                 connection.executescript(SCHEMA)
                 connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+            elif version == 1:
+                self._migrate_v1(connection)
+                connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
             elif version != SCHEMA_VERSION:
                 raise RuntimeError(f"unsupported research schema version: {version}")
+            self._reconcile_legacy_state(connection)
+
+    @staticmethod
+    def _migrate_v1(connection: sqlite3.Connection) -> None:
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(cycles)")}
+        for name in ("dataset", "requested_timerange", "policy_sha256", "search_cohort", "holdout_start", "holdout_end"):
+            if name not in columns:
+                connection.execute(f"ALTER TABLE cycles ADD COLUMN {name} TEXT")
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS validation_windows (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              cycle_id TEXT NOT NULL REFERENCES cycles(id),
+              dataset TEXT NOT NULL,
+              requested_timerange TEXT NOT NULL,
+              policy_sha256 TEXT NOT NULL,
+              verdict TEXT NOT NULL,
+              created_at TEXT NOT NULL,
+              UNIQUE(dataset, requested_timerange, policy_sha256, cycle_id)
+            )
+            """
+        )
+
+    @staticmethod
+    def _reconcile_legacy_state(connection: sqlite3.Connection) -> None:
+        connection.execute(
+            "UPDATE cycles SET stage = CASE WHEN status = 'INCOMPLETE' THEN 'INTERRUPTED' WHEN status = 'NEEDS_REVIEW' THEN 'REVIEW' WHEN status IN ('COMPLETED', 'FAILED') THEN 'DONE' ELSE stage END WHERE status != 'RUNNING'"
+        )
+        for row in connection.execute(
+            """
+            SELECT c.id, e.snapshot_path, e.start_at, e.end_at, e.policy_sha256
+            FROM cycles c JOIN experiments e ON e.cycle_id = c.id
+            WHERE c.dataset IS NULL ORDER BY e.created_at ASC
+            """
+        ).fetchall():
+            dataset = Path(str(row["snapshot_path"])).name
+            start = str(row["start_at"])[:10].replace("-", "")
+            end = str(row["end_at"])[:10].replace("-", "")
+            connection.execute(
+                "UPDATE cycles SET dataset = ?, requested_timerange = ?, policy_sha256 = ? WHERE id = ?",
+                (dataset, f"{start}-{end}", row["policy_sha256"], row["id"]),
+            )
+        rows = connection.execute(
+            """
+            SELECT h.id, h.cycle_id
+            FROM hypotheses h
+            JOIN cycles c ON c.id = h.cycle_id
+            WHERE h.state = 'TESTING' AND c.status IN ('INCOMPLETE', 'FAILED')
+            """
+        ).fetchall()
+        for row in rows:
+            connection.execute(
+                "UPDATE hypotheses SET state = 'INCONCLUSIVE', updated_at = COALESCE(updated_at, CURRENT_TIMESTAMP) WHERE id = ?",
+                (row["id"],),
+            )
+            connection.execute(
+                """
+                INSERT INTO state_events
+                    (entity_type, entity_id, from_state, to_state, actor, reason, cycle_id, run_id, payload_json, created_at)
+                SELECT 'hypothesis', ?, 'TESTING', 'INCONCLUSIVE', 'migration',
+                       'reconcile terminal cycle', ?, NULL, '{}',
+                       COALESCE(updated_at, CURRENT_TIMESTAMP)
+                FROM hypotheses WHERE id = ?
+                """,
+                (row["id"], row["cycle_id"], row["id"]),
+            )
+        for cycle in connection.execute("SELECT id, created_at, updated_at FROM cycles").fetchall():
+            floor = max(_as_datetime(cycle["created_at"]), _as_datetime(cycle["updated_at"]))
+            for event in connection.execute(
+                "SELECT id, created_at FROM state_events WHERE cycle_id = ? ORDER BY id ASC",
+                (cycle["id"],),
+            ).fetchall():
+                timestamp = _as_datetime(event["created_at"])
+                if timestamp < floor:
+                    value = _timestamp(floor)
+                    connection.execute("UPDATE state_events SET created_at = ? WHERE id = ?", (value, event["id"]))
+                    timestamp = floor
+                floor = max(floor, timestamp)
+            connection.execute("UPDATE cycles SET updated_at = ? WHERE id = ?", (_timestamp(floor), cycle["id"]))
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:
@@ -201,16 +307,31 @@ class ResearchStore:
             connection.close()
 
     def start_or_resume_cycle(self, now: datetime | str | dict[str, Any] | None = None) -> dict[str, Any]:
+        identity: dict[str, Any] = {}
         if isinstance(now, dict):
+            identity = {
+                key: now.get(key)
+                for key in (
+                    "dataset",
+                    "requested_timerange",
+                    "policy_sha256",
+                    "search_cohort",
+                    "holdout_start",
+                    "holdout_end",
+                )
+                if now.get(key) not in (None, "")
+            }
             now = now.get("now")
         current = _timestamp(now)
         lease_until = _timestamp(_as_datetime(current) + timedelta(seconds=self.lease_seconds))
         with self.connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             row = connection.execute(
-                "SELECT * FROM cycles WHERE status IN ('RUNNING', 'INTERRUPTED') ORDER BY created_at DESC LIMIT 1"
+                "SELECT * FROM cycles WHERE status IN ('RUNNING', 'INTERRUPTED', 'INCOMPLETE') ORDER BY created_at DESC LIMIT 1"
             ).fetchone()
             if row is not None and row["status"] == CycleStatus.RUNNING:
+                self._assert_cycle_identity(row, identity)
+                self._merge_cycle_identity(connection, row, identity)
                 active_lease = row["lease_until"] and _as_datetime(row["lease_until"]) > _as_datetime(current)
                 if active_lease:
                     return {"cycle": dict(row), "acquired": False}
@@ -230,7 +351,9 @@ class ResearchStore:
                     (CycleStatus.INTERRUPTED, current, row["id"]),
                 )
                 row = connection.execute("SELECT * FROM cycles WHERE id = ?", (row["id"],)).fetchone()
-            if row is not None and row["status"] == CycleStatus.INTERRUPTED:
+            if row is not None and row["status"] in {CycleStatus.INTERRUPTED, CycleStatus.INCOMPLETE}:
+                self._assert_cycle_identity(row, identity)
+                self._merge_cycle_identity(connection, row, identity)
                 self._append_event(
                     connection,
                     entity_type="cycle",
@@ -243,7 +366,7 @@ class ResearchStore:
                     created_at=current,
                 )
                 connection.execute(
-                    "UPDATE cycles SET status = ?, lease_until = ?, updated_at = ? WHERE id = ?",
+                    "UPDATE cycles SET status = ?, stage = 'COLLECTING', lease_until = ?, updated_at = ? WHERE id = ?",
                     (CycleStatus.RUNNING, lease_until, current, row["id"]),
                 )
                 updated = connection.execute("SELECT * FROM cycles WHERE id = ?", (row["id"],)).fetchone()
@@ -251,8 +374,21 @@ class ResearchStore:
 
             cycle_id = f"C-{current.replace(':', '').replace('-', '')}-{uuid.uuid4().hex[:8]}"
             connection.execute(
-                "INSERT INTO cycles (id, status, stage, source_count, hypothesis_count, candidate_count, lease_until, created_at, updated_at) VALUES (?, ?, ?, 0, 0, 0, ?, ?, ?)",
-                (cycle_id, CycleStatus.RUNNING, "COLLECTING", lease_until, current, current),
+                "INSERT INTO cycles (id, status, stage, source_count, hypothesis_count, candidate_count, lease_until, created_at, updated_at, dataset, requested_timerange, policy_sha256, search_cohort, holdout_start, holdout_end) VALUES (?, ?, ?, 0, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    cycle_id,
+                    CycleStatus.RUNNING,
+                    "COLLECTING",
+                    lease_until,
+                    current,
+                    current,
+                    identity.get("dataset"),
+                    identity.get("requested_timerange"),
+                    identity.get("policy_sha256"),
+                    identity.get("search_cohort"),
+                    identity.get("holdout_start"),
+                    identity.get("holdout_end"),
+                ),
             )
             self._append_event(
                 connection,
@@ -267,6 +403,26 @@ class ResearchStore:
             )
             created = connection.execute("SELECT * FROM cycles WHERE id = ?", (cycle_id,)).fetchone()
             return {"cycle": dict(created), "acquired": True}
+
+    @staticmethod
+    def _assert_cycle_identity(row: sqlite3.Row, identity: dict[str, Any]) -> None:
+        for key, value in identity.items():
+            existing = row[key]
+            if existing not in (None, "") and str(existing) != str(value):
+                raise ValueError(f"cycle identity mismatch: {key}")
+
+    @staticmethod
+    def _merge_cycle_identity(
+        connection: sqlite3.Connection, row: sqlite3.Row, identity: dict[str, Any]
+    ) -> None:
+        missing = {key: value for key, value in identity.items() if row[key] in (None, "")}
+        if not missing:
+            return
+        assignments = ", ".join(f"{key} = ?" for key in missing)
+        connection.execute(
+            f"UPDATE cycles SET {assignments} WHERE id = ?",
+            (*missing.values(), row["id"]),
+        )
 
     def release_cycle_lease(self, cycle_id: str, now: datetime | str | None = None) -> None:
         with self.connect() as connection:
@@ -527,7 +683,7 @@ class ResearchStore:
         run_id = str(run.get("id") or f"RUN-{uuid.uuid4().hex[:12]}")
         with self.connect() as connection:
             connection.execute(
-                "INSERT OR REPLACE INTO runs (id, experiment_id, kind, status, verdict, metrics_json, artifact_manifest_json, error_code, created_at, completed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO runs (id, experiment_id, kind, status, verdict, metrics_json, artifact_manifest_json, error_code, created_at, completed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     run_id, run["experiment_id"], run["kind"], run["status"], run.get("verdict"),
                     _json_text(run.get("metrics", {}), "metrics"),
@@ -589,6 +745,10 @@ class ResearchStore:
                 raise ValueError(f"illegal transition: {current} -> {target_state}")
             if current == HypothesisState.NEEDS_REVIEW and actor != "local_user":
                 raise ValueError("review transitions require actor local_user")
+            cycle = connection.execute(
+                "SELECT updated_at FROM cycles WHERE id = ?", (hypothesis["cycle_id"],)
+            ).fetchone()
+            timestamp = self._monotonic_timestamp(timestamp, cycle["updated_at"] if cycle else None)
             self._append_event(
                 connection,
                 entity_type="hypothesis",
@@ -605,6 +765,10 @@ class ResearchStore:
             connection.execute(
                 "UPDATE hypotheses SET state = ?, updated_at = ? WHERE id = ?",
                 (target_state, timestamp, hypothesis_id),
+            )
+            connection.execute(
+                "UPDATE cycles SET updated_at = ? WHERE id = ?",
+                (timestamp, hypothesis["cycle_id"]),
             )
             return dict(connection.execute("SELECT * FROM hypotheses WHERE id = ?", (hypothesis_id,)).fetchone())
 
@@ -664,21 +828,29 @@ class ResearchStore:
             raise ValueError("reason is required")
         timestamp = _timestamp(now)
         with self.connect() as connection:
-            cycle = connection.execute("SELECT status FROM cycles WHERE id = ?", (cycle_id,)).fetchone()
+            cycle = connection.execute("SELECT status, updated_at FROM cycles WHERE id = ?", (cycle_id,)).fetchone()
             if cycle is None:
                 raise ValueError(f"unknown cycle: {cycle_id}")
+            try:
+                target = CycleStatus(to_state)
+            except ValueError as exc:
+                raise ValueError("cycle audit event must use a valid cycle status") from exc
+            if target != CycleStatus(cycle["status"]):
+                raise ValueError("cycle audit event cannot change cycle status")
+            timestamp = self._monotonic_timestamp(timestamp, cycle["updated_at"])
             self._append_event(
                 connection,
                 entity_type="cycle",
                 entity_id=cycle_id,
                 from_state=cycle["status"],
-                to_state=to_state,
+                to_state=target,
                 actor=actor.strip(),
                 reason=reason.strip(),
                 cycle_id=cycle_id,
                 payload=payload or {},
                 created_at=timestamp,
             )
+            connection.execute("UPDATE cycles SET updated_at = ? WHERE id = ?", (timestamp, cycle_id))
             return int(connection.execute("SELECT last_insert_rowid()").fetchone()[0])
 
     def set_cycle_status(
@@ -693,6 +865,12 @@ class ResearchStore:
                 raise ValueError(f"unknown cycle: {cycle_id}")
             if not reason or not reason.strip():
                 raise ValueError("reason is required")
+            current = CycleStatus(cycle["status"])
+            if current == target:
+                return dict(cycle)
+            if not next_cycle_state_allowed(current, target):
+                raise ValueError(f"illegal cycle transition: {current} -> {target}")
+            timestamp = self._monotonic_timestamp(timestamp, cycle["updated_at"])
             self._append_event(
                 connection,
                 entity_type="cycle",
@@ -705,8 +883,8 @@ class ResearchStore:
                 created_at=timestamp,
             )
             connection.execute(
-                "UPDATE cycles SET status = ?, lease_until = NULL, updated_at = ? WHERE id = ?",
-                (target, timestamp, cycle_id),
+                "UPDATE cycles SET status = ?, stage = ?, lease_until = NULL, updated_at = ? WHERE id = ?",
+                (target, self._stage_for_status(target, cycle["stage"]), timestamp, cycle_id),
             )
             return dict(connection.execute("SELECT * FROM cycles WHERE id = ?", (cycle_id,)).fetchone())
 
@@ -719,6 +897,66 @@ class ResearchStore:
                 args = (cycle_id,)
             query += " ORDER BY total_score DESC, created_at ASC, id ASC"
             return [dict(row) for row in connection.execute(query, args)]
+
+    def list_cycles(self, limit: int = 100) -> list[dict[str, Any]]:
+        if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 1000:
+            raise ValueError("limit must be between 1 and 1000")
+        with self.connect() as connection:
+            return [
+                dict(row)
+                for row in connection.execute(
+                    "SELECT * FROM cycles ORDER BY updated_at DESC, id DESC LIMIT ?", (limit,)
+                )
+            ]
+
+    def record_validation_window(
+        self,
+        *,
+        cycle_id: str,
+        dataset: str | None,
+        requested_timerange: str | None,
+        policy_sha256: str | None,
+        verdict: str,
+        created_at: datetime | str | None = None,
+    ) -> None:
+        if not all((dataset, requested_timerange, policy_sha256)):
+            return
+        with self.connect() as connection:
+            connection.execute(
+                "INSERT OR IGNORE INTO validation_windows (cycle_id, dataset, requested_timerange, policy_sha256, verdict, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (cycle_id, dataset, requested_timerange, policy_sha256, verdict, _timestamp(created_at)),
+            )
+
+    def window_is_contaminated(
+        self, *, dataset: str | None, requested_timerange: str | None, policy_sha256: str | None
+    ) -> bool:
+        if not all((dataset, requested_timerange, policy_sha256)):
+            return False
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT 1 FROM validation_windows WHERE dataset = ? AND requested_timerange = ? AND policy_sha256 = ? AND verdict = 'PASS' LIMIT 1",
+                (dataset, requested_timerange, policy_sha256),
+            ).fetchone()
+            if row is not None:
+                return True
+            if connection.execute(
+                """
+                SELECT 1
+                FROM experiments e
+                JOIN runs r ON r.experiment_id = e.id
+                JOIN cycles c ON c.id = e.cycle_id
+                WHERE c.dataset = ? AND c.requested_timerange = ?
+                  AND c.policy_sha256 = ? AND r.verdict = 'PASS'
+                LIMIT 1
+                """,
+                (dataset, requested_timerange, policy_sha256),
+            ).fetchone() is not None:
+                return True
+            # Legacy rows without cycle identity remain conservative.
+            return connection.execute(
+                "SELECT 1 FROM experiments e JOIN runs r ON r.experiment_id = e.id WHERE e.policy_sha256 = ? AND r.verdict = 'PASS' LIMIT 1",
+                (policy_sha256,),
+            ).fetchone() is not None
 
     def events(self, cycle_id: str) -> list[dict[str, Any]]:
         with self.connect() as connection:
@@ -759,3 +997,19 @@ class ResearchStore:
                 created_at,
             ),
         )
+
+    @staticmethod
+    def _monotonic_timestamp(value: str, floor: str | None) -> str:
+        if floor is None or _as_datetime(value) >= _as_datetime(floor):
+            return value
+        return floor
+
+    @staticmethod
+    def _stage_for_status(status: CycleStatus, current: str) -> str:
+        if status == CycleStatus.NEEDS_REVIEW:
+            return "REVIEW"
+        if status in {CycleStatus.COMPLETED, CycleStatus.FAILED}:
+            return "DONE"
+        if status == CycleStatus.INCOMPLETE:
+            return "INTERRUPTED"
+        return current

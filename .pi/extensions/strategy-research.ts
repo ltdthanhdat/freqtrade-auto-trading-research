@@ -74,11 +74,18 @@ export default function (pi: ExtensionAPI) {
       if (!model) throw new Error("required model openai-codex/gpt-5.6-luna is unavailable");
       if (!(await pi.setModel(model))) throw new Error("required model authentication is unavailable");
       pi.setThinkingLevel("max");
-      const response = invokeRuntime("start_or_resume_cycle", { now: new Date().toISOString() });
+      const dataset = process.env.RESEARCH_DATASET ?? "accepted_6pair_2026q3_full";
+      const timerange = process.env.RESEARCH_TIMERANGE ?? "20260124-20260911";
+      const response = invokeRuntime("start_or_resume_cycle", {
+        now: new Date().toISOString(),
+        dataset,
+        requested_timerange: timerange,
+        search_cohort: "openalex|arxiv|crossref",
+      });
       updateStatus(ctx, response);
       pi.setActiveTools(["strategy_research_runtime"]);
       pi.sendUserMessage(
-        `Run exactly one bounded research cycle through strategy_research_runtime. ${researchDataContext()} Load context, collect at most four sources each from openalex, arxiv, and crossref (do not use semantic_scholar), assess provenance, propose at most three hypotheses, write and validate one candidate, record interpretation, finalize, then stop. Use only the documented runtime operations; if a provider returns a retryable error, record it and continue with another provider. Do not start trading, alter the parent strategy/config/policy, or tune after a failed validation.`,
+        `Run exactly one bounded research cycle through strategy_research_runtime. ${researchDataContext()} Load context, collect at most four sources each from openalex, arxiv, and crossref (do not use semantic_scholar), then record structured source assessments with relevance (direct/indirect/contradicting), asset, timeframe, mechanism, full_text_available, and falsifier_only. Every proposed hypothesis must use required_data exactly ["OHLCV"], cite at least one direct supporting source and one direct/contradicting source, and state a falsifier. If that evidence is unavailable, keep it out of candidate generation. Propose at most three hypotheses, write and validate one candidate, record interpretation, finalize, then stop. Use only the documented runtime operations; if a provider returns a retryable error, record it and continue with another provider. Do not start trading, alter the parent strategy/config/policy, or tune after a failed validation.`,
       );
     },
   });

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from pathlib import Path
@@ -16,13 +17,17 @@ class ResearchService:
     """Typed application boundary used by Pi and the local dashboard."""
 
     OPERATION_FIELDS = {
-        "start_or_resume_cycle": {"now"},
+        "start_or_resume_cycle": {
+            "now", "dataset", "requested_timerange", "policy_sha256", "search_cohort",
+            "holdout_start", "holdout_end",
+        },
         "load_context": {"cycle_id"},
         "collect_sources": {"cycle_id", "provider", "query", "limit"},
         "write_candidate": {"cycle_id", "hypothesis_id", "strategy_name", "source"},
         "start_validation": {
             "cycle_id", "hypothesis_id", "experiment",
             "id", "parent_strategy", "parent_sha256", "changed_variable",
+            "parent_strategy_path",
             "config_path", "config_sha256", "pairs", "timeframes", "timeframe_detail",
             "snapshot_path", "snapshot_sha256", "policy_path", "policy_sha256",
             "strategy_name", "strategy_path", "strategy_file", "candidate_path",
@@ -94,7 +99,12 @@ class ResearchService:
         return getattr(self, tool)(payload)
 
     def start_or_resume_cycle(self, payload: dict[str, Any] | None = None) -> dict[str, Any]:
-        return self.store.start_or_resume_cycle((payload or {}).get("now"))
+        values = dict(payload or {})
+        if values.get("dataset") and values.get("requested_timerange") and not values.get("policy_sha256"):
+            policy_path = Path("config/validation.baseline.json")
+            if policy_path.is_file():
+                values["policy_sha256"] = hashlib.sha256(policy_path.read_bytes()).hexdigest()
+        return self.store.start_or_resume_cycle(values)
 
     def load_context(self, payload: dict[str, Any]) -> dict[str, Any]:
         cycle_id = payload["cycle_id"]
@@ -188,7 +198,18 @@ class ResearchService:
         source = self.store.get_source(source_id)
         if source is None or source["cycle_id"] != payload["cycle_id"]:
             raise ValueError(f"unknown source: {source_id}")
-        self.store.update_source_metadata(source_id, {"assessment": payload["assessment"]})
+        assessment = payload["assessment"]
+        if isinstance(assessment, dict):
+            missing = [key for key in ("relevance", "asset", "timeframe", "mechanism") if not assessment.get(key)]
+            if missing:
+                raise ValueError(f"source assessment missing fields: {', '.join(missing)}")
+            if str(assessment["relevance"]).casefold() not in {
+                "direct", "directly_relevant", "relevant", "indirect", "contradicting", "falsifier", "irrelevant"
+            }:
+                raise ValueError("invalid source assessment relevance")
+        self.store.update_source_metadata(
+            source_id, assessment if isinstance(assessment, dict) else {"assessment": assessment}
+        )
         return {"source_id": source_id, "recorded": True}
 
     def write_candidate(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -253,6 +274,8 @@ class ResearchService:
         if not supporting:
             return False
         providers: set[str] = set()
+        hardening_metadata = False
+        direct_support = False
         for source in supporting:
             try:
                 metadata = json.loads(source["metadata_json"])
@@ -260,10 +283,40 @@ class ResearchService:
                 continue
             if not isinstance(metadata, dict) or metadata.get("falsifier_only") is True:
                 continue
+            hardening_metadata = hardening_metadata or any(
+                key in metadata for key in ("relevance", "asset", "timeframe", "mechanism")
+            )
+            if str(metadata.get("relevance", "")).casefold() in {
+                "direct", "directly_relevant", "relevant"
+            }:
+                direct_support = True
             if metadata.get("full_text") is True or metadata.get("full_text_available") is True:
-                return True
+                direct_support = True
             providers.add(str(source["provider"]))
-        return len(providers) >= 2
+        if not hardening_metadata:
+            return len(providers) >= 2 or direct_support
+        if not direct_support:
+            return False
+        contradicting = [
+            source
+            for source in self.store.list_hypothesis_sources(hypothesis_id)
+            if source["stance"] == "CONTRADICT"
+        ]
+        return any(
+            str(metadata.get("relevance", "")).casefold()
+            in {"direct", "directly_relevant", "relevant", "contradicting", "falsifier"}
+            and not metadata.get("irrelevant")
+            for source in contradicting
+            if isinstance(metadata := self._source_metadata(source), dict)
+        )
+
+    @staticmethod
+    def _source_metadata(source: dict[str, Any]) -> dict[str, Any]:
+        try:
+            value = json.loads(source.get("metadata_json", "{}"))
+        except json.JSONDecodeError:
+            return {}
+        return value if isinstance(value, dict) else {}
 
     def start_validation(self, payload: dict[str, Any]) -> dict[str, Any]:
         cycle_id = payload["cycle_id"]
@@ -272,6 +325,14 @@ class ResearchService:
             raise ValueError(f"unknown hypothesis: {payload['hypothesis_id']}")
         if not hypothesis["candidate_path"] or not hypothesis["candidate_sha256"]:
             raise ValueError("candidate identity is required before validation")
+        candidate_file = Path(hypothesis["candidate_path"])
+        if not candidate_file.is_file():
+            raise ValueError("candidate path does not exist")
+        if hashlib.sha256(candidate_file.read_bytes()).hexdigest() != hypothesis["candidate_sha256"]:
+            raise ValueError("candidate identity changed after registration")
+        cycle = self.store.get_cycle(cycle_id)
+        if cycle is None:
+            raise ValueError(f"unknown cycle: {cycle_id}")
         existing = self.store.find_experiment(cycle_id, hypothesis["id"])
         if existing is None:
             experiment = self._experiment_payload(payload, cycle_id, hypothesis)
@@ -299,6 +360,8 @@ class ResearchService:
             validation_experiment = {
                 **existing,
                 "candidate_path": hypothesis["candidate_path"],
+                "cycle_id": cycle_id,
+                "hypothesis_id": hypothesis["id"],
             }
             result = (
                 self.validator(validation_experiment)
@@ -311,7 +374,18 @@ class ResearchService:
                 error_code="validation_exception", details=(f"{type(exc).__name__}: {exc}",),
             )
         normalized = self._normalize_validation_result(result)
-        run_id = f"RUN-{existing['id']}-validation"
+        contaminated = self.store.window_is_contaminated(
+            dataset=cycle.get("dataset"),
+            requested_timerange=cycle.get("requested_timerange"),
+            policy_sha256=cycle.get("policy_sha256"),
+        )
+        if contaminated and normalized["verdict"] == "PASS":
+            normalized["verdict"] = "WARN"
+            normalized["state"] = "INCONCLUSIVE"
+            normalized["metrics"] = {**normalized.get("metrics", {}), "research_only": True}
+            normalized["artifacts"] = {**normalized.get("artifacts", {}), "research_only": True}
+            self._mark_manifest_research_only(normalized["artifacts"])
+        run_id = f"RUN-{existing['id']}-attempt-{len(runs) + 1:02d}"
         run = self.store.record_run(
             {
                 "id": run_id,
@@ -323,6 +397,13 @@ class ResearchService:
                 "artifact_manifest": normalized["artifacts"],
                 "error_code": normalized.get("error_code"),
             }
+        )
+        self.store.record_validation_window(
+            cycle_id=cycle_id,
+            dataset=cycle.get("dataset"),
+            requested_timerange=cycle.get("requested_timerange"),
+            policy_sha256=cycle.get("policy_sha256"),
+            verdict=normalized["verdict"],
         )
         if normalized["state"] == "RETRYABLE":
             return self._validation_result(run, "RETRYABLE", existing["id"])
@@ -425,6 +506,24 @@ class ResearchService:
         return value
 
     @staticmethod
+    def _mark_manifest_research_only(artifacts: dict[str, Any]) -> None:
+        path = artifacts.get("manifest_path")
+        if not path:
+            return
+        manifest_path = Path(str(path))
+        if not manifest_path.is_file():
+            return
+        try:
+            manifest = json.loads(manifest_path.read_text())
+            if isinstance(manifest, dict):
+                manifest["research_only"] = True
+                manifest["research_window_contaminated"] = True
+                manifest_path.write_text(json.dumps(manifest, indent=2, default=str) + "\n")
+                artifacts["manifest_sha256"] = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+        except (OSError, json.JSONDecodeError):
+            return
+
+    @staticmethod
     def _validation_result(run: dict[str, Any], state: str, experiment_id: str) -> dict[str, Any]:
         try:
             metrics = json.loads(run["metrics_json"])
@@ -443,16 +542,29 @@ class ResearchService:
 
     def propose_hypothesis(self, payload: dict[str, Any]) -> dict[str, Any]:
         cycle_id = payload["cycle_id"]
+        cycle = self.store.get_cycle(cycle_id)
+        if cycle is None:
+            raise ValueError(f"unknown cycle: {cycle_id}")
         required_data = payload["required_data"]
         if not isinstance(required_data, list) or not required_data:
             raise ValueError("required_data must be a non-empty list")
+        if cycle.get("search_cohort") and [str(item).upper() for item in required_data] != ["OHLCV"]:
+            raise ValueError("identity-bound hypothesis requires required_data exactly [OHLCV]")
         source_ids = list(payload.get("supporting_source_ids", [])) + list(
             payload.get("contradicting_source_ids", [])
         )
+        if cycle.get("search_cohort") and (
+            not payload.get("supporting_source_ids") or not payload.get("contradicting_source_ids")
+        ):
+            raise ValueError("identity-bound hypothesis requires structured evidence")
         for source_id in source_ids:
             source = self.store.get_source(source_id)
             if source is None or source["cycle_id"] != cycle_id:
                 raise ValueError(f"source provenance missing: {source_id}")
+            if cycle.get("search_cohort"):
+                metadata = self._source_metadata(source)
+                if any(not metadata.get(key) for key in ("relevance", "asset", "timeframe", "mechanism")):
+                    raise ValueError(f"structured evidence assessment missing: {source_id}")
         mechanism = str(payload["mechanism"]).strip()
         if not mechanism:
             raise ValueError("mechanism is required")
@@ -478,7 +590,7 @@ class ResearchService:
             raise ValueError(f"unknown hypothesis: {payload['hypothesis_id']}")
         event = self.store.append_cycle_event(
             payload["cycle_id"],
-            to_state=hypothesis["state"],
+            to_state=self.store.get_cycle(payload["cycle_id"])["status"],
             actor="runtime",
             reason="interpretation",
             payload={"hypothesis_id": hypothesis["id"], "interpretation": payload["interpretation"]},

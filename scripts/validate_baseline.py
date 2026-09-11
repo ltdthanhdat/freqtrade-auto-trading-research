@@ -532,6 +532,26 @@ def _attribution(trades: pd.DataFrame) -> tuple[dict[str, object], bool]:
     }, not single_source
 
 
+def _leave_one_pair_out(trades: pd.DataFrame) -> dict[str, dict[str, float]]:
+    """Report how much aggregate stressed profit remains without each pair."""
+    if trades.empty:
+        return {}
+    required = {"pair", "stressed_profit_abs", "portfolio_return"}
+    if not required.issubset(trades.columns):
+        raise ValueError("leave-one-pair-out requires portfolio attribution fields")
+    total_return = float(pd.to_numeric(trades["portfolio_return"], errors="raise").sum())
+    result: dict[str, dict[str, float]] = {}
+    for pair, group in trades.groupby("pair", dropna=False):
+        pair_name = str(pair)
+        pair_profit = float(pd.to_numeric(group["stressed_profit_abs"], errors="raise").sum())
+        pair_return = float(pd.to_numeric(group["portfolio_return"], errors="raise").sum())
+        result[pair_name] = {
+            "excluded_profit_abs": pair_profit,
+            "remaining_net_profit": total_return - pair_return,
+        }
+    return result
+
+
 def _validate_folds(folds: tuple[OosFold, ...], policy: ValidationPolicy) -> list[str]:
     warnings: list[str] = []
     if len(folds) < policy.required_folds:
@@ -567,6 +587,34 @@ def run_oos_folds(
     for index, fold in enumerate(folds, start=1):
         directory = run_dir / f"fold-{index:02d}"
         directory.mkdir()
+        if getattr(args, "wfo", False):
+            fit_directory = directory / "fit"
+            fit_directory.mkdir()
+            fit_timerange = f"{fold.in_sample_start:%Y%m%d}-{fold.in_sample_end:%Y%m%d}"
+            fit_result = executor(
+                _freqtrade_command(args, "backtesting")
+                + [
+                    "--timerange",
+                    fit_timerange,
+                    "--cache",
+                    "none",
+                    "--timeframe-detail",
+                    "1m",
+                    "--enable-protections",
+                    "--fee",
+                    str(policy.stress_fee),
+                    "--export",
+                    "none",
+                    "--backtest-directory",
+                    str(fit_directory),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            (fit_directory / "freqtrade.txt").write_text(_command_text(fit_result))
+            if getattr(fit_result, "returncode", 1) != 0:
+                errors.append(f"fold {index} in-sample fit failed")
         timerange = f"{fold.oos_start:%Y%m%d}-{fold.oos_end:%Y%m%d}"
         result = executor(
             _freqtrade_command(args, "backtesting")
@@ -654,6 +702,8 @@ def _write_result(
     attribution: dict[str, object] | None = None,
     correctness_evidence: dict[str, object] | None = None,
     data_coverage: dict[str, object] | None = None,
+    holdout: dict[str, object] | None = None,
+    walk_forward: dict[str, object] | None = None,
     backtest_artifacts: list[str] | None = None,
     errors: list[str] | None = None,
     warnings: list[str] | None = None,
@@ -705,6 +755,8 @@ def _write_result(
         "bootstrap_summary": asdict(bootstrap) if bootstrap else None,
         "bootstrap_gate_eligible": bootstrap_gate_eligible,
         "attribution": attribution or {},
+        "holdout": holdout or {"available": False, "reason": "not configured"},
+        "walk_forward": walk_forward or {"enabled": False},
         "policy": asdict(policy) if policy else None,
         "verdict": verdict,
         "errors": errors,
@@ -814,6 +866,31 @@ def run_validation(args: argparse.Namespace, executor: Executor = subprocess.run
             )
         if attribution.get("single_source") and not trades.empty:
             warnings.append("OOS profit attribution has a single pair or entry-tag source")
+        if not trades.empty:
+            attribution["leave_one_pair_out"] = _leave_one_pair_out(trades)
+
+        last_oos_end = folds[-1].oos_end if folds else execution_start
+        holdout_days = max(0, int((execution_end - last_oos_end).days))
+        holdout = {
+            "available": holdout_days >= policy.oos_days,
+            "required_days": policy.oos_days,
+            "start": last_oos_end.isoformat(),
+            "end": execution_end.isoformat(),
+            "days": holdout_days,
+            "reason": None if holdout_days >= policy.oos_days else "tail is shorter than required holdout",
+        }
+        walk_forward = {
+            "enabled": bool(getattr(execution_args, "wfo", False)),
+            "selection": "frozen_candidate",
+            "fit_windows": [
+                {"start": fold.in_sample_start.isoformat(), "end": fold.in_sample_end.isoformat()}
+                for fold in folds
+            ],
+            "oos_windows": [
+                {"start": fold.oos_start.isoformat(), "end": fold.oos_end.isoformat()}
+                for fold in folds
+            ],
+        }
 
         bootstrap: BootstrapSummary | None = None
         bootstrap_eligible = (
@@ -831,6 +908,8 @@ def run_validation(args: argparse.Namespace, executor: Executor = subprocess.run
             errors.append("aggregate stressed OOS profit is negative")
         if bootstrap_eligible and bootstrap and bootstrap.p95_max_drawdown > policy.max_drawdown:
             errors.append("bootstrap p95 drawdown exceeds policy")
+        if bootstrap_eligible and bootstrap and bootstrap.p05_net_profit < 0:
+            errors.append("bootstrap p05 net profit is negative")
 
         return _write_result(
             run_dir,
@@ -843,6 +922,8 @@ def run_validation(args: argparse.Namespace, executor: Executor = subprocess.run
             attribution=attribution,
             correctness_evidence=correctness,
             data_coverage=coverage,
+            holdout=holdout,
+            walk_forward=walk_forward,
             backtest_artifacts=artifacts,
             errors=errors,
             warnings=warnings,
@@ -873,6 +954,11 @@ def parse_args() -> argparse.Namespace:
         "--run-id", default=datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
     )
     parser.add_argument("--approved-identity", type=Path, required=True)
+    parser.add_argument(
+        "--wfo",
+        action="store_true",
+        help="run an expanding in-sample transcript before each untouched OOS fold",
+    )
     return parser.parse_args()
 
 

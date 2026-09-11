@@ -250,6 +250,8 @@ def import_legacy(source_root: str | Path, store: ResearchStore, artifact_root: 
                 relative = path.relative_to(source).as_posix()
                 manifest.append({"path": f"legacy/{relative}", "size": path.stat().st_size, "sha256": _sha256(path)})
             run_id = f"legacy-run-{_slug(family)}-{_slug(group)}"
+            if any(run["id"] == run_id for run in store.list_runs(experiment_id)):
+                continue
             store.record_run(
                 {
                     "id": run_id,

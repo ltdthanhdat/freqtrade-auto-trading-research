@@ -80,6 +80,12 @@ def test_read_models_decode_provenance_and_evidence(seeded_store, tmp_path):
     assert ready["supporting_sources"][0]["id"] == "S-fingerprint-1"
 
 
+def test_dashboard_exposes_cycle_and_event_history(seeded_store, tmp_path):
+    model = DashboardReadModel(seeded_store.path, tmp_path / "artifacts")
+    assert model.cycles()[0]["id"] == model.overview()["current_cycle"]["id"]
+    assert model.events(model.cycles()[0]["id"])[0]["cycle_id"] == model.cycles()[0]["id"]
+
+
 def test_review_requires_needs_review_state_and_uses_store_transition(seeded_store, tmp_path):
     model = DashboardReadModel(seeded_store.path, tmp_path / "artifacts")
     with pytest.raises(ValueError, match="illegal transition"):

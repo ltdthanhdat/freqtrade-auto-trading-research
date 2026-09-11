@@ -1,4 +1,6 @@
 from argparse import Namespace
+import json
+from pathlib import Path
 
 import pytest
 
@@ -54,6 +56,9 @@ def test_validation_wrapper_maps_runner_verdicts(tmp_path, verdict, state):
     assert result.state == state
     assert result.manifest_hash
     assert result.report_hash
+    assert json.loads(manifest.read_text())["candidate_sha256"] == __import__("hashlib").sha256(
+        (tmp_path / "candidate" / "CandidateA.py").read_bytes()
+    ).hexdigest()
     assert calls["approved_identity"] == {
         "config_sha256": "b" * 64,
         "snapshot_sha256": "c" * 64,
@@ -80,3 +85,15 @@ def test_validation_wrapper_rejects_missing_identity_hashes(tmp_path):
     del values["policy_sha256"]
     with pytest.raises(ValueError, match="policy_sha256"):
         validate_candidate(values, collect_identity_fn=lambda *_: {}, run_validation_fn=lambda _: {})
+
+
+def test_validation_wrapper_rejects_changed_parent_strategy(tmp_path, monkeypatch):
+    values = experiment(tmp_path)
+    parent_root = tmp_path / "parent-strategies"
+    parent_root.mkdir()
+    parent_file = parent_root / "Frozen.py"
+    parent_file.write_text("class Frozen: pass\n")
+    values.update({"parent_strategy": "Frozen", "parent_strategy_path": str(parent_root), "parent_sha256": "a" * 64})
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(ValueError, match="parent strategy"):
+        validate_candidate(values, collect_identity_fn=lambda *_: {"config_sha256": "b" * 64, "snapshot_sha256": "c" * 64, "policy_sha256": "d" * 64}, run_validation_fn=lambda _: {})

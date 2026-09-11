@@ -8,7 +8,7 @@ import zipfile
 import pandas as pd
 import pytest
 
-from scripts.validate_baseline import _attribution, collect_identity, run_validation
+from scripts.validate_baseline import _attribution, _leave_one_pair_out, collect_identity, run_validation
 
 
 PAIRS = ("PLAY/USDT:USDT", "BIO/USDT:USDT")
@@ -223,6 +223,21 @@ def test_runner_persists_real_bootstrap_stress_and_attribution_summary(tmp_path)
     assert "strategy_files" in manifest and "dependency.py" in " ".join(
         manifest["strategy_files"]
     )
+    assert "leave_one_pair_out" in manifest["attribution"]
+    assert manifest["holdout"]["available"] is False
+
+
+def test_leave_one_pair_out_reports_remaining_portfolio_profit():
+    trades = pd.DataFrame(
+        {
+            "pair": [PAIRS[0], PAIRS[1]],
+            "stressed_profit_abs": [30.0, -10.0],
+            "portfolio_return": [0.03, -0.01],
+        }
+    )
+    result = _leave_one_pair_out(trades)
+    assert result[PAIRS[0]]["remaining_net_profit"] == pytest.approx(-0.01)
+    assert result[PAIRS[1]]["remaining_net_profit"] == pytest.approx(0.03)
 
 
 def test_runner_persists_diagnostic_bootstrap_below_trade_gate(tmp_path):
@@ -271,6 +286,18 @@ def test_runner_uses_frozen_analysis_and_supported_fold_artifact_contract(tmp_pa
     assert all("--enable-protections" in command for command in fold_commands)
     assert all("--fee" in command and "0.001" in command for command in fold_commands)
     assert len(manifest["backtest_artifacts"]) == 3
+
+
+def test_runner_can_execute_expanding_walk_forward_fit_windows(tmp_path):
+    args = make_args(tmp_path)
+    args.wfo = True
+    executor = FakeExecutor()
+    result = run_validation(args, executor=executor)
+    manifest = json.loads(result.manifest_path.read_text())
+    backtests = [command for command in executor.commands if command[3] == "backtesting"]
+    assert len(backtests) == 6
+    assert manifest["walk_forward"]["enabled"] is True
+    assert manifest["walk_forward"]["selection"] == "frozen_candidate"
 
 
 def test_runner_omits_unsupported_cache_option_from_lookahead_command(tmp_path):

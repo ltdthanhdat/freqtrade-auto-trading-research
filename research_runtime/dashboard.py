@@ -140,6 +140,31 @@ class DashboardReadModel:
                 result.append(item)
             return result
 
+    def cycles(self, limit: int = 100) -> list[dict[str, Any]]:
+        with self.connect_readonly() as connection:
+            rows = connection.execute(
+                "SELECT * FROM cycles ORDER BY updated_at DESC, id DESC LIMIT ?", (limit,)
+            )
+            return [dict(row) for row in rows]
+
+    def events(self, cycle_id: str | None = None, limit: int = 200) -> list[dict[str, Any]]:
+        with self.connect_readonly() as connection:
+            if cycle_id:
+                rows = connection.execute(
+                    "SELECT * FROM state_events WHERE cycle_id = ? ORDER BY id DESC LIMIT ?",
+                    (cycle_id, limit),
+                )
+            else:
+                rows = connection.execute(
+                    "SELECT * FROM state_events ORDER BY id DESC LIMIT ?", (limit,)
+                )
+            result = []
+            for row in rows:
+                item = dict(row)
+                item["payload"] = _decode(item.pop("payload_json"), "state_events.payload_json")
+                result.append(item)
+            return result
+
     def review_queue(self) -> list[dict[str, Any]]:
         return [item for item in self.hypotheses() if item["state"] == HypothesisState.NEEDS_REVIEW]
 
@@ -157,13 +182,18 @@ class DashboardReadModel:
             raise ValueError(f"unknown hypothesis: {hypothesis_id}")
         if hypothesis["state"] != HypothesisState.NEEDS_REVIEW:
             raise ValueError(f"illegal transition: {hypothesis['state']} -> {target}")
-        return store.transition_hypothesis(
+        result = store.transition_hypothesis(
             hypothesis_id,
             target,
             "local_user",
             reason.strip(),
             cycle_id=hypothesis["cycle_id"],
         )
+        cycle_status = "COMPLETED" if action == "approve" else "FAILED"
+        cycle = store.get_cycle(hypothesis["cycle_id"])
+        if cycle and cycle["status"] in {"RUNNING", "NEEDS_REVIEW"}:
+            store.set_cycle_status(hypothesis["cycle_id"], cycle_status, f"human review {action}")
+        return result
 
     def _safe_artifact(self, value: Any, expected_sha256: Any = None) -> str | None:
         if not value:
@@ -307,16 +337,25 @@ class _DashboardHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self) -> None:
-        from urllib.parse import urlsplit
+        from urllib.parse import parse_qs, urlsplit
 
-        path = urlsplit(self.path).path
+        parsed = urlsplit(self.path)
+        path = parsed.path
         routes: dict[str, Callable[[], Any]] = {
             "/api/overview": self.model.overview,
             "/api/sources": self.model.sources,
             "/api/hypotheses": self.model.hypotheses,
             "/api/experiments": self.model.experiments,
             "/api/review": self.model.review_queue,
+            "/api/cycles": self.model.cycles,
         }
+        if path == "/api/events":
+            query = parse_qs(parsed.query)
+            try:
+                self._json_response(200, self.model.events(query.get("cycle_id", [None])[0]))
+            except (OSError, ValueError) as exc:
+                self._json_response(500, {"error": str(exc)})
+            return
         if path in routes:
             try:
                 self._json_response(200, routes[path]())

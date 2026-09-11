@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from scripts.validation_core import ValidationPolicy, bootstrap_equity_paths, time_blocks
+from scripts.validation_core import ValidationPolicy, ValidationStateStore, bootstrap_equity_paths, time_blocks
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -76,6 +76,12 @@ def parse_args() -> argparse.Namespace:
         help="Number of block-bootstrap resamples (default: 20000).",
     )
     parser.add_argument("--seed", type=int, default=7, help="RNG seed for reproducibility.")
+    parser.add_argument(
+        "--state-db",
+        type=Path,
+        help="Optional validation-state SQLite path; alerts persist a PAUSED state until review-approved.",
+    )
+    parser.add_argument("--run-id", default="decay-monitor")
     args = parser.parse_args()
 
     if bool(args.db) == bool(args.recent_backtest):
@@ -187,9 +193,26 @@ def main() -> int:
             "This is not typical variance for this strategy's history -- "
             "reduce size / re-investigate before scaling further."
         )
+        if args.state_db:
+            store = ValidationStateStore(args.state_db)
+            current = store.current("global")
+            if not current or current["state"] != "PAUSED":
+                store.transition(
+                    "global",
+                    "PAUSED",
+                    "decay alert",
+                    {"observed_win_rate": float(observed_win_rate), "alert_threshold": float(alert_threshold)},
+                    None,
+                    args.run_id,
+                )
         return 1
     else:
         print("\nOK: recent performance is within the normal range of historical variation.")
+        if args.state_db:
+            store = ValidationStateStore(args.state_db)
+            current = store.current("global")
+            if not current:
+                store.transition("global", "ACTIVE", "decay-ok", {"observed_win_rate": float(observed_win_rate)}, None, args.run_id)
         return 0
 
 

@@ -201,6 +201,43 @@ def test_write_candidate_requires_explicit_full_text_or_independent_evidence(tmp
         )
 
 
+def test_structured_evidence_requires_a_contradicting_source(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite")
+    cycle_id = store.start_or_resume_cycle("2026-09-11T08:00:00Z")["cycle"]["id"]
+    support = store.insert_source(
+        cycle_id,
+        {
+            "provider": "openalex",
+            "canonical_url": "https://example.test/direct",
+            "title": "direct",
+            "excerpt": "direct",
+            "retrieved_at": "2026-09-11T08:00:00Z",
+            "fingerprint": "structured-support",
+            "metadata": {"relevance": "direct", "asset": "crypto", "timeframe": "30m", "mechanism": "continuation"},
+        },
+    )["id"]
+    service = ResearchService(store, tmp_path / "artifacts")
+    hypothesis = service.propose_hypothesis(proposal(cycle_id, support)) ["hypothesis"]
+    with pytest.raises(ValueError, match="full-text or corroborating"):
+        service.write_candidate(
+            {"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"], "strategy_name": "CandidateA", "source": "class CandidateA: pass\n"}
+        )
+
+
+def test_identity_bound_cycle_requires_structured_support_and_contradiction(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite")
+    cycle_id = store.start_or_resume_cycle(
+        {"now": "2026-09-11T08:00:00Z", "dataset": "accepted", "requested_timerange": "20260101-20260901", "search_cohort": "cohort"}
+    )["cycle"]["id"]
+    source_id = store.insert_source(
+        cycle_id,
+        {"provider": "openalex", "canonical_url": "https://example.test/source", "title": "source", "excerpt": "e", "retrieved_at": "2026-09-11T08:00:00Z", "fingerprint": "bound-source", "metadata": {"relevance": "direct", "asset": "crypto", "timeframe": "30m", "mechanism": "continuation"}},
+    )["id"]
+    service = ResearchService(store, tmp_path / "artifacts")
+    with pytest.raises(ValueError, match="structured evidence"):
+        service.propose_hypothesis(proposal(cycle_id, source_id))
+
+
 def test_start_validation_records_run_and_is_idempotent(tmp_path):
     service, cycle_id, source_id = make_service(tmp_path)
     hypothesis = service.propose_hypothesis(proposal(cycle_id, source_id))["hypothesis"]
@@ -233,3 +270,20 @@ def test_start_validation_does_not_promote_retryable_result(tmp_path):
     result = service.start_validation({"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"]})
     assert result["state"] == "RETRYABLE"
     assert service.store.get_hypothesis(hypothesis["id"])["state"] == HypothesisState.TESTING
+
+
+def test_retryable_validation_creates_a_new_attempt(tmp_path):
+    service, cycle_id, source_id = make_service(tmp_path)
+    hypothesis = service.propose_hypothesis(proposal(cycle_id, source_id))["hypothesis"]
+    service.write_candidate(
+        {"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"], "strategy_name": "CandidateA", "source": "class CandidateA: pass\n"}
+    )
+    attempts = iter([OSError("temporary"), {"verdict": "PASS", "metrics": {}, "artifacts": {}}])
+    service.validator = lambda _experiment: next(attempts)
+    first = service.start_validation({"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"]})
+    second = service.start_validation({"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"]})
+    assert first["state"] == "RETRYABLE"
+    assert second["state"] == HypothesisState.NEEDS_REVIEW
+    runs = service.store.list_runs(second["experiment_id"])
+    assert len(runs) == 2
+    assert runs[0]["id"] != runs[1]["id"]

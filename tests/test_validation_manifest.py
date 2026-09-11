@@ -4,6 +4,9 @@ from pathlib import Path
 import subprocess
 
 from scripts.validate_baseline import collect_identity
+from research_runtime.core import HypothesisState
+from research_runtime.store import ResearchStore
+from scripts.validation_core import ValidationStateStore
 
 
 PAIRS = ("PLAY/USDT:USDT", "BIO/USDT:USDT")
@@ -45,8 +48,25 @@ def _setup(tmp_path: Path, *, verdict="PASS", dry_run=True):
     identity = collect_identity(
         config, strategy_file, snapshot, policy, "Strategy", strategy_path
     )
+    state_db = tmp_path / "research.sqlite"
+    store = ResearchStore(state_db)
+    cycle = store.start_or_resume_cycle({"dataset": "fixture", "requested_timerange": "20250101-20250102", "now": "2026-01-01T00:00:00Z"})["cycle"]
+    candidate = tmp_path / "candidate.py"
+    candidate.write_text("class Strategy: pass\n")
+    import hashlib
+    digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
+    hypothesis = store.insert_hypothesis(
+        cycle["id"],
+        {"id": "H-gate", "thesis": "x", "mechanism": "y", "market_scope": "x", "required_data": ["OHLCV"], "falsifier": "z", "scores": {"evidence_quality": 1, "reproducibility": 1, "ohlcv_transferability": 1, "novelty": 1, "falsifiability": 1}},
+    )
+    store.set_candidate(hypothesis["id"], candidate, digest)
+    store.transition_hypothesis(hypothesis["id"], HypothesisState.QUEUED, "runtime", "queue")
+    store.transition_hypothesis(hypothesis["id"], HypothesisState.IMPLEMENTING, "runtime", "implement")
+    store.transition_hypothesis(hypothesis["id"], HypothesisState.TESTING, "runtime", "test")
+    store.transition_hypothesis(hypothesis["id"], HypothesisState.NEEDS_REVIEW, "runtime", "validation")
+    store.transition_hypothesis(hypothesis["id"], HypothesisState.APPROVED_FOR_DRY_RUN, "local_user", "approved")
     manifest = tmp_path / "manifest.json"
-    manifest.write_text(json.dumps({**asdict(identity), "verdict": verdict}))
+    manifest.write_text(json.dumps({**asdict(identity), "verdict": verdict, "cycle_id": cycle["id"], "hypothesis_id": "H-gate", "candidate_path": str(candidate), "candidate_sha256": digest, "holdout": {"available": True}, "walk_forward": {"enabled": True}}))
     return config, policy, strategy_path, manifest
 
 
@@ -66,7 +86,9 @@ def _make_gate(config, policy, strategy_path, manifest):
             f"VALIDATION_POLICY={policy}",
             "STRATEGY=Strategy",
             f"SPATH={strategy_path}",
-            f"VALIDATION_MANIFEST={manifest}",
+        f"VALIDATION_MANIFEST={manifest}",
+            f"RESEARCH_DB={manifest.parent / 'research.sqlite'}",
+            f"VALIDATION_STATE_DB={manifest.parent / 'validation-state.sqlite'}",
         ],
         check=False,
         capture_output=True,
@@ -107,6 +129,16 @@ def test_make_gate_blocks_freqtrade_environment_override_to_live(tmp_path, monke
 
     assert result.returncode != 0
     assert "dry_run=true" in result.stderr
+
+
+def test_make_gate_blocks_paused_decay_state(tmp_path):
+    config, policy, strategy_path, manifest = _setup(tmp_path)
+    ValidationStateStore(manifest.parent / "validation-state.sqlite").transition(
+        "global", "PAUSED", "decay", {}, None, "r1"
+    )
+    result = _make_gate(config, policy, strategy_path, manifest)
+    assert result.returncode != 0
+    assert "runtime state is PAUSED" in result.stderr
 
 
 def test_active_validation_paths_use_sqlite_artifacts_not_legacy_research():

@@ -44,6 +44,10 @@ strategy research dashboard.
 - KPI tiles show a label, tabular value, and factual qualifier.
 - Tables keep headers visible and use aligned tabular numbers.
 - Charts use labeled axes and never rely on color alone.
+- Cycle history exposes append-only events, retries, window identity and review
+  state; it does not expose trading start/stop controls.
+- Dry-run eligibility is shown only after the SQLite hypothesis state, candidate
+  hash, untouched holdout, WFO and runtime decay lock all agree.
 - Focus-visible outlines use `--active` at 2px.
 
 ## Responsive and motion

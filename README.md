@@ -20,8 +20,9 @@ The target first seeds and verifies a separate six-pair snapshot with enough
 history for the frozen OOS-fold policy. Override `RESEARCH_DATASET` or
 `RESEARCH_TIMERANGE` when intentionally changing the data window. The project
 extension pins `openai-codex/gpt-5.6-luna` with maximum thinking and drives one
-bounded, resumable cycle through the typed Python runtime. It stops for review
-after validation; it never starts a trading process. State is in
+bounded, resumable cycle through the typed Python runtime. `make research-loop`
+supervises a small maximum number of retries and stops at a terminal cycle
+state; it never starts a trading process. State is in
 `user_data/research.sqlite`, and candidates/reports are under
 `user_data/research-artifacts/<cycle-id>/`.
 
@@ -44,11 +45,12 @@ flowchart TD
     B --> C[Score up to 3 hypotheses]
     C --> D[Write one candidate]
     D --> E[Correctness + smoke]
-    E --> F[WFO + stress + bootstrap]
+    E --> F[WFO + stress + block-bootstrap Monte Carlo]
     F --> G{Validation verdict}
     G --> H[NEEDS_REVIEW / INCONCLUSIVE / REJECTED]
     H --> I[Dashboard review]
-    I --> J[Explicit dry-run eligibility]
+    I --> J[DB state + identity gate]
+    J --> K[Explicit dry-run eligibility]
 
     style A fill:#1a1a2e,color:#e0e0e0
     style B fill:#16213e,color:#e0e0e0
@@ -141,6 +143,7 @@ Make targets:
 - `make plot-df PAIR=BTC/USDT:USDT`
 - `make dry-run VALIDATION_MANIFEST=user_data/research-artifacts/validation/<run-id>/manifest.json`
 - `make research-cycle`
+- `make research-loop MAX_CYCLES=1`
 - `make research-dashboard`
 - `make demo`
 - `make live`
@@ -177,11 +180,12 @@ make validate-snapshot DATASET=accepted_6pair_2026q3 \
 
 The command uses `config/config.futures.json`, the named snapshot datadir,
 `config/validation.baseline.json`, `SMC_FVG_Context30m_Freqtrade`,
-`src/strategies`, and `user_data/research-artifacts/validation/`. Only a `PASS` verdict
-allows `make dry-run`. `WARN` and `FAIL` keep the validation artifacts and
-block dry-run; record a new hypothesis before rerunning, without changing
-thresholds in that loop. Named snapshots have been validated with retained
-`WARN`/`FAIL` results, but none has reached `PASS`.
+`src/strategies`, and `user_data/research-artifacts/validation/`. A `PASS`
+only allows `make dry-run` when its hypothesis is
+`APPROVED_FOR_DRY_RUN` in `user_data/research.sqlite`, the candidate hash still
+matches, and the validation window has not already produced a PASS.
+`WARN`, `FAIL`, stale identities and repeated-window PASS results remain
+research-only; record a new hypothesis or holdout before rerunning.
 
 Pass the resulting manifest explicitly when starting dry-run:
 
@@ -192,8 +196,8 @@ make dry-run VALIDATION_MANIFEST=user_data/research-artifacts/validation/<run-id
 `make dry-run` re-hashes the effective config, policy, strategy and its local
 dependencies (including `SMC_FVG_Confirmation_Freqtrade.py`), verifies the
 accepted basket and `dry_run: true`, and rejects any mismatch before it runs
-Freqtrade. The named snapshots currently have retained `WARN`/`FAIL`
-validation manifests only; none has reached `PASS`, so dry-run remains blocked.
+Freqtrade. The current retained PASS candidate is still `NEEDS_REVIEW`, so
+dry-run remains blocked.
 
 Each non-empty OOS validation also stores a block-bootstrap Monte Carlo summary
 in `manifest.json`, including samples below `min_oos_trades`. The field
@@ -201,9 +205,14 @@ in `manifest.json`, including samples below `min_oos_trades`. The field
 `PASS` only after all required folds and the minimum trade count are present;
 diagnostic summaries never weaken the fail-closed gate.
 
+With `--wfo` (enabled by the research validation wrapper), each fold stores an
+expanding in-sample fit transcript before its untouched OOS window. A separate
+holdout tail is reported but is never reused automatically after a PASS.
+
 Monitor closed demo or live trades against a retained baseline export:
 
 ```bash
 make monitor-decay BASELINE=user_data/backtest_results/baseline.zip \\
-  DB=user_data/tradesv3.demo.sqlite
+  DB=user_data/tradesv3.demo.sqlite \\
+  VALIDATION_STATE_DB=user_data/validation-state.sqlite
 ```

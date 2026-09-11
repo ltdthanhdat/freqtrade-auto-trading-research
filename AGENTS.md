@@ -27,7 +27,7 @@ Freqtrade repo for `SMC_FVG_Context30m`.
 - `src/strategies/SMC_FVG_Context30m_Freqtrade.py`
 - `config/config.futures.json`
 - `scripts/seed_freqtrade_data.py`
-- `.research/`
+- `research_runtime/`, `scripts/`, `dashboard/`, `.pi/extensions/`, and `user_data/research-artifacts/` (SQLite state is `user_data/research.sqlite`)
 
 ## Verify
 
@@ -42,7 +42,9 @@ Freqtrade repo for `SMC_FVG_Context30m`.
 
 ## Source of truth
 
-Read `README.md` root, then `.research/smc_fvg_pinbar/state.md` → `decisions.md` → `roadmap.md`.
+Read `README.md`, then `user_data/research.sqlite` through `research_runtime` and
+the immutable manifests under `user_data/research-artifacts/`. Legacy `.research/`
+files are import-only and are not active cycle state.
 
 ## Response style
 

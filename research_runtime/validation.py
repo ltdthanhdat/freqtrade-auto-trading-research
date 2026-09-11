@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass, is_dataclass
 from pathlib import Path
 from typing import Any, Callable
 
-from scripts.validate_baseline import collect_identity, run_validation
+from scripts.validate_baseline import _combined_hash, _strategy_files, collect_identity, run_validation
 
 
 @dataclass(frozen=True)
@@ -78,6 +78,14 @@ def validate_candidate(
     if strategy_path.suffix == ".py":
         strategy_file = strategy_path
         strategy_path = strategy_path.parent
+    parent_strategy = str(experiment.get("parent_strategy", ""))
+    if parent_strategy and parent_strategy != "fixture":
+        parent_root = Path(experiment.get("parent_strategy_path") or "src/strategies")
+        parent_file = parent_root / f"{parent_strategy}.py"
+        if not parent_file.is_file():
+            raise ValueError("parent strategy file does not exist")
+        if _combined_hash(_strategy_files(parent_file, parent_root)) != str(experiment["parent_sha256"]):
+            raise ValueError("parent strategy identity does not match experiment")
     root = Path(artifact_root or experiment.get("artifact_root") or candidate_file.parent.parent)
     args = argparse.Namespace(
         config=Path(experiment["config_path"]),
@@ -91,6 +99,7 @@ def validate_candidate(
         runs_dir=Path(experiment.get("runs_dir") or root / "validation"),
         run_id=str(experiment.get("id") or "validation"),
         approved_identity=None,
+        wfo=bool(experiment.get("wfo", True)),
     )
     try:
         identity = _identity_dict(
@@ -119,6 +128,20 @@ def validate_candidate(
         if manifest_path and manifest_path.is_file():
             try:
                 manifest = json.loads(manifest_path.read_text())
+                annotations = {
+                    key: experiment.get(key)
+                    for key in ("cycle_id", "hypothesis_id", "candidate_path")
+                    if experiment.get(key)
+                }
+                annotations["candidate_sha256"] = str(
+                    experiment.get("candidate_sha256") or _sha256(candidate_file)
+                )
+                if annotations:
+                    manifest.update(annotations)
+                    manifest_path.write_text(
+                        json.dumps(manifest, default=str, indent=2, allow_nan=False) + "\n"
+                    )
+                    manifest_hash = _sha256(manifest_path)
                 if not metrics:
                     metrics = manifest.get("fold_metrics", {})
                 if not artifacts:

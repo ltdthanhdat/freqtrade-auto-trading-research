@@ -59,6 +59,27 @@ _TRANSITIONS = MappingProxyType(
     }
 )
 
+_CYCLE_TRANSITIONS = MappingProxyType(
+    {
+        CycleStatus.RUNNING: frozenset(
+            {
+                CycleStatus.INTERRUPTED,
+                CycleStatus.COMPLETED,
+                CycleStatus.NEEDS_REVIEW,
+                CycleStatus.INCOMPLETE,
+                CycleStatus.FAILED,
+            }
+        ),
+        CycleStatus.INTERRUPTED: frozenset(
+            {CycleStatus.RUNNING, CycleStatus.INCOMPLETE, CycleStatus.FAILED}
+        ),
+        CycleStatus.COMPLETED: frozenset(),
+        CycleStatus.NEEDS_REVIEW: frozenset({CycleStatus.COMPLETED, CycleStatus.FAILED}),
+        CycleStatus.INCOMPLETE: frozenset({CycleStatus.RUNNING}),
+        CycleStatus.FAILED: frozenset(),
+    }
+)
+
 
 def score_hypothesis(
     evidence_quality: int,
@@ -87,6 +108,15 @@ def next_state_allowed(current: HypothesisState | str, target: HypothesisState |
     except ValueError:
         return False
     return target_state in _TRANSITIONS[current_state]
+
+
+def next_cycle_state_allowed(current: CycleStatus | str, target: CycleStatus | str) -> bool:
+    try:
+        current_state = CycleStatus(current)
+        target_state = CycleStatus(target)
+    except ValueError:
+        return False
+    return target_state in _CYCLE_TRANSITIONS[current_state]
 
 
 def canonical_json(value: Any) -> str:
