@@ -21,7 +21,7 @@ DB ?= user_data/tradesv3.demo.sqlite
 PAIR     ?= BTC/USDT:USDT
 SNAPSHOT_DATADIR := user_data/data/snapshots/$(DATASET)
 
-.PHONY: help install seed seed-range seed-snapshot list-data list-snapshot backtest backtest-snapshot validate-snapshot validate-pass monitor-decay plot plot-df dry-run demo live compose-demo compose-live list-strategies clean clean-backtest-results
+.PHONY: help install seed seed-range seed-snapshot list-data list-snapshot backtest backtest-snapshot validate-snapshot validate-pass monitor-decay plot plot-df dry-run demo live compose-demo compose-live list-strategies research-cycle clean clean-backtest-results
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -58,6 +58,9 @@ validate-snapshot: install ## Validate snapshot gate with DATASET=<name>
 validate-pass: ## Require VALIDATION_MANIFEST with verdict PASS
 	@test -n "$(VALIDATION_MANIFEST)" || { echo "VALIDATION_MANIFEST is required" >&2; exit 1; }
 	@$(PYTHON) -m scripts.validate_manifest --manifest "$(VALIDATION_MANIFEST)" --config "$(CONFIG)" --policy "$(VALIDATION_POLICY)" --strategy "$(STRATEGY)" --strategy-path "$(SPATH)"
+
+research-cycle: ## Start or resume one bounded Pi research cycle
+	pi --approve --model openai-codex/gpt-5.6-luna --thinking max --no-builtin-tools
 
 monitor-decay: install ## Monitor demo/live decay with BASELINE=<zip> DB=<sqlite>
 	$(PYTHON) -m scripts.monitor_decay --baseline $(BASELINE) --db $(DB)

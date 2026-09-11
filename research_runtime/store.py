@@ -384,7 +384,11 @@ class ResearchStore:
         required_data = hypothesis.get("required_data", ["OHLCV"])
         if not isinstance(required_data, list) or not required_data:
             raise ValueError("required_data must be a non-empty list")
-        now = _timestamp(hypothesis.get("created_at"))
+        now = (
+            _timestamp(hypothesis["created_at"])
+            if hypothesis.get("created_at") is not None
+            else _utc_now().isoformat(timespec="microseconds").replace("+00:00", "Z")
+        )
         state = HypothesisState(hypothesis.get("state", HypothesisState.SCORED))
         hypothesis_id = str(hypothesis.get("id") or f"H-{uuid.uuid4().hex[:12]}")
         with self.connect() as connection:

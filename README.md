@@ -13,6 +13,15 @@ New research state is stored in SQLite. Raw reports and validation outputs live
 under `user_data/research-artifacts/`; the dashboard is loopback-only and only
 records explicit review decisions.
 
+## Automated research cycle
+
+Run `make research-cycle`, then enter `/research-cycle` in the opened Pi session.
+The project extension pins `openai-codex/gpt-5.6-luna` with maximum thinking and
+drives one bounded, resumable cycle through the typed Python runtime. It stops
+for review after validation; it never starts a trading process. State is in
+`user_data/research.sqlite`, and candidates/reports are under
+`user_data/research-artifacts/<cycle-id>/`.
+
 ## Default strategy
 
 `SMC_FVG_Context30m_Freqtrade` is a hybrid:
