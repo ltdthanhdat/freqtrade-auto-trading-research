@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import time
 from pathlib import Path
 from typing import Any, Callable
 
+from .collectors import COLLECTORS, ProviderError, ProviderRetryableError
 from .core import HypothesisState
-from .store import ResearchStore
+from .store import CANDIDATE_BUDGET, HYPOTHESIS_BUDGET, SOURCE_BUDGET, ResearchStore
 
 
 class ResearchService:
@@ -13,6 +15,7 @@ class ResearchService:
     OPERATION_FIELDS = {
         "start_or_resume_cycle": {"now"},
         "load_context": {"cycle_id"},
+        "collect_sources": {"cycle_id", "provider", "query", "limit"},
         "record_source_assessment": {"cycle_id", "source_id", "assessment"},
         "propose_hypothesis": {
             "cycle_id",
@@ -33,6 +36,7 @@ class ResearchService:
     REQUIRED_FIELDS = {
         "start_or_resume_cycle": set(),
         "load_context": {"cycle_id"},
+        "collect_sources": {"cycle_id", "provider", "query", "limit"},
         "record_source_assessment": {"cycle_id", "source_id", "assessment"},
         "propose_hypothesis": {
             "cycle_id",
@@ -53,12 +57,14 @@ class ResearchService:
         artifact_root: str | Path,
         collectors: dict[str, Callable[..., Any]] | None = None,
         validator: Callable[..., Any] | None = None,
+        sleeper: Callable[[float], None] = time.sleep,
     ):
         self.store = store
         self.artifact_root = Path(artifact_root)
         self.artifact_root.mkdir(parents=True, exist_ok=True)
-        self.collectors = collectors or {}
+        self.collectors = COLLECTORS if collectors is None else collectors
         self.validator = validator
+        self.sleeper = sleeper
 
     def call(self, tool: str, payload: dict[str, Any]) -> dict[str, Any]:
         if tool not in self.OPERATION_FIELDS:
@@ -85,12 +91,82 @@ class ResearchService:
         return {
             "cycle": cycle,
             "hypotheses": hypotheses,
-            "budgets": {"sources": 100, "hypotheses": 3, "candidates": 1},
+            "budgets": {
+                "sources": SOURCE_BUDGET,
+                "hypotheses": HYPOTHESIS_BUDGET,
+                "candidates": CANDIDATE_BUDGET,
+            },
             "usage": {
                 "sources": cycle["source_count"],
                 "hypotheses": cycle["hypothesis_count"],
                 "candidates": cycle["candidate_count"],
             },
+        }
+
+    def collect_sources(self, payload: dict[str, Any]) -> dict[str, Any]:
+        cycle_id = payload["cycle_id"]
+        cycle = self.store.get_cycle(cycle_id)
+        if cycle is None:
+            raise ValueError(f"unknown cycle: {cycle_id}")
+        provider = payload["provider"]
+        query = payload["query"]
+        limit = payload["limit"]
+        if not isinstance(provider, str) or not provider.strip():
+            raise ValueError("provider is required")
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError("query is required")
+        if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= SOURCE_BUDGET:
+            raise ValueError(f"limit must be between 1 and {SOURCE_BUDGET}")
+        remaining = SOURCE_BUDGET - cycle["source_count"]
+        if limit > remaining:
+            raise ValueError(f"source budget remaining: {remaining}")
+        collector = self.collectors.get(provider.strip())
+        if collector is None:
+            raise ValueError(f"unsupported provider: {provider}")
+
+        records = None
+        for attempt in range(3):
+            try:
+                records = collector(query.strip(), limit)
+                break
+            except ProviderRetryableError as exc:
+                if attempt == 2:
+                    return self._provider_failure(cycle_id, provider, "retry_exhausted", exc, attempt + 1)
+                self.sleeper(float(attempt + 1))
+            except ProviderError as exc:
+                return self._provider_failure(cycle_id, provider, "provider_error", exc, attempt + 1)
+        if records is None:
+            return self._provider_failure(cycle_id, provider, "provider_error", RuntimeError("no result"), 3)
+
+        accepted_ids: list[str] = []
+        duplicate_ids: list[str] = []
+        for record in list(records)[:remaining]:
+            result = self.store.insert_source(cycle_id, record)
+            if result["inserted"]:
+                accepted_ids.append(result["id"])
+            else:
+                duplicate_ids.append(result["id"])
+        return {
+            "accepted_ids": accepted_ids,
+            "duplicate_ids": duplicate_ids,
+            "provider_errors": [],
+        }
+
+    def _provider_failure(
+        self, cycle_id: str, provider: str, code: str, error: Exception, attempts: int
+    ) -> dict[str, Any]:
+        details = str(error) or type(error).__name__
+        self.store.append_cycle_event(
+            cycle_id,
+            to_state=self.store.get_cycle(cycle_id)["status"],
+            actor="runtime",
+            reason="source collection failed",
+            payload={"provider": provider, "code": code, "attempts": attempts, "details": details},
+        )
+        return {
+            "accepted_ids": [],
+            "duplicate_ids": [],
+            "provider_errors": [{"provider": provider, "code": code, "details": [details]}],
         }
 
     def record_source_assessment(self, payload: dict[str, Any]) -> dict[str, Any]:
