@@ -54,7 +54,6 @@ def _setup(tmp_path: Path, *, verdict="PASS", dry_run=True, bundle=True):
     cycle = store.start_or_resume_cycle({"dataset": "fixture", "requested_timerange": "20250101-20250102", "now": "2026-01-01T00:00:00Z"})["cycle"]
     candidate = tmp_path / "candidate.py"
     candidate.write_text("class Strategy: pass\n")
-    import hashlib
     digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
     plan_json = json.dumps({"schema_version": 1}, sort_keys=True, separators=(",", ":"))
     plan_sha256 = hashlib.sha256(plan_json.encode()).hexdigest()
@@ -83,6 +82,9 @@ def _setup(tmp_path: Path, *, verdict="PASS", dry_run=True, bundle=True):
         "candidate_path": str(candidate),
         "candidate_sha256": digest,
         "plan_sha256": plan_sha256,
+        "exit_coverage": 1.0,
+        "risk_ledger": {"coverage": 1.0},
+        "oos_consumption": {"status": "consumed"},
         "experiment_id": "EXP-gate",
         "run_id": "RUN-gate",
         "oos_partitions": [partition],
@@ -179,6 +181,23 @@ def test_make_gate_accepts_only_matching_pass_identity(tmp_path):
     values = _setup(tmp_path)
 
     assert _make_gate(*values).returncode == 0
+
+
+def test_make_gate_blocks_incomplete_complete_plan_evidence(tmp_path):
+    config, policy, strategy_path, manifest = _setup(tmp_path)
+    values = json.loads(manifest.read_text())
+    values.pop("exit_coverage")
+    values["risk_ledger"] = {"coverage": 0.5}
+    values["oos_consumption"] = {"status": "incomplete"}
+    manifest.write_text(json.dumps(values))
+
+    errors = __import__("scripts.validate_manifest", fromlist=["validate_manifest"]).validate_manifest(
+        manifest, config, policy, "Strategy", strategy_path
+    )
+
+    assert any("exit coverage" in error for error in errors)
+    assert any("risk-ledger coverage" in error for error in errors)
+    assert any("OOS consumption" in error for error in errors)
 
 
 def test_make_gate_blocks_missing_warn_fail_changed_identity_and_live_config(tmp_path):

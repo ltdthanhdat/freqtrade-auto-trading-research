@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from dataclasses import asdict
 import json
 import hashlib
+import math
 from pathlib import Path
 
 from research_runtime.core import HypothesisState, canonical_json
@@ -93,6 +94,24 @@ def validate_manifest(
         errors: list[str] = []
         if not manifest.get("plan_sha256"):
             errors.append("validation manifest plan identity is required")
+        else:
+            try:
+                exit_coverage = float(manifest.get("exit_coverage", 0))
+            except (TypeError, ValueError):
+                exit_coverage = 0.0
+            if not math.isfinite(exit_coverage) or exit_coverage < 1:
+                errors.append("validation manifest complete-plan exit coverage is incomplete")
+        risk_ledger = manifest.get("risk_ledger")
+        risk_coverage = risk_ledger.get("coverage", 0) if isinstance(risk_ledger, dict) else manifest.get("risk_ledger_coverage", 0)
+        try:
+            risk_coverage = float(risk_coverage)
+        except (TypeError, ValueError):
+            risk_coverage = 0.0
+        if manifest.get("plan_sha256") and (not math.isfinite(risk_coverage) or risk_coverage < 1):
+            errors.append("validation manifest complete-plan risk-ledger coverage is incomplete")
+        consumption = manifest.get("oos_consumption")
+        if manifest.get("plan_sha256") and (not isinstance(consumption, dict) or consumption.get("status") not in {"verified", "consumed"}):
+            errors.append("validation manifest OOS consumption is incomplete")
         if manifest.get("verdict") != "PASS":
             errors.append("validation verdict is not PASS")
         if manifest.get("research_only") is True or manifest.get("research_window_contaminated") is True:

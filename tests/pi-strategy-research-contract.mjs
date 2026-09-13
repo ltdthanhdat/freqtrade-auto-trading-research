@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const source = readFileSync(".pi/extensions/strategy-research.ts", "utf8");
+const prompt = readFileSync("prompts/strategy-research.md", "utf8");
 
 test("extension pins Luna Max and exposes one runtime tool", () => {
   assert.match(source, /openai-codex.*gpt-5\.6-luna/);
@@ -52,6 +53,37 @@ test("research command requires sealed ranking and bounded evidence", () => {
   assert.match(source, /complete.*exit|exit.*evidence/i);
   assert.match(source, /OOS.*consum|consum.*OOS/i);
   assert.match(source, /no post-OOS tuning/i);
+  assert.match(source, /entry_plan.*sizing_plan|sizing_plan.*entry_plan/i);
+  assert.match(source, /role-specific claim-level evidence/i);
+  assert.match(source, /shell.*SQL|SQL.*shell/i);
+  assert.match(source, /parameter sweeps/i);
+});
+
+test("research prompt requires the complete sealed protocol", () => {
+  for (const phrase of [
+    "list_source_views",
+    "seal_hypothesis_ranking",
+    "role-specific claim-level",
+    "entry_plan",
+    "exit_designs",
+    "sizing_plan",
+    "cost_model",
+    "development_protocol",
+    "outer_acceptance_policy",
+    "full_text_available",
+    "parameter sweep",
+    "post-OOS",
+    "shell",
+    "SQL",
+    "TradingView",
+    "record_interpretation",
+    "finalize_cycle",
+  ]) {
+    assert.match(prompt, new RegExp(phrase.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&"), "i"));
+  }
+  assert.match(prompt, /required_data.*exactly.*OHLCV/i);
+  assert.match(prompt, /explicit.*NONE/i);
+  assert.match(prompt, /no automatic promotion|automatic.*promotion/i);
 });
 
 test("research command requires structured source assessments", () => {

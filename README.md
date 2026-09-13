@@ -44,8 +44,8 @@ flowchart TD
     A[Load SQLite context] --> B[Collect bounded sources]
     B --> C[Score up to 3 hypotheses]
     C --> D[Write one candidate]
-    D --> E[Correctness + smoke]
-    E --> F[WFO + stress + block-bootstrap Monte Carlo]
+    D --> E[Correctness + development folds]
+    E --> F[Expanding-window frozen-candidate OOS + stress + bootstrap]
     F --> G{Validation verdict}
     G --> H[NEEDS_REVIEW / INCONCLUSIVE / REJECTED]
     H --> I[Dashboard review]
@@ -60,6 +60,13 @@ flowchart TD
     style K fill:#1a472a,color:#e0e0e0
     style M fill:#1a472a,color:#e0e0e0
 ```
+
+A family comparison is a separate sealed protocol: register three frozen
+complete-plan candidates before exposing their shared comparison OOS, select at
+most one winner with the predeclared rule, then run that winner once on the
+sealed holdout. Development data, comparison OOS, and holdout are never
+interchanged. The retained snapshot is research evidence only and is not
+approval-grade by itself; the linked, hash-verified review bundle is required.
 
 ## Trace model
 
@@ -206,8 +213,10 @@ in `manifest.json`, including samples below `min_oos_trades`. The field
 diagnostic summaries never weaken the fail-closed gate.
 
 With `--wfo` (enabled by the research validation wrapper), each fold stores an
-expanding in-sample fit transcript before its untouched OOS window. A separate
-holdout tail is reported but is never reused automatically after a PASS.
+expanding development transcript before its untouched OOS window. This is not
+parameter optimization: the candidate and complete plan remain frozen. A
+separate sealed-holdout tail is reported but is never reused automatically after
+a PASS.
 
 Monitor closed demo or live trades against a retained baseline export:
 
