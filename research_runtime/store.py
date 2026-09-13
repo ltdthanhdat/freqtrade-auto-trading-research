@@ -537,11 +537,9 @@ class ResearchStore:
 
     @staticmethod
     def _migrate_v3(connection: sqlite3.Connection) -> None:
-        columns = {row[1] for row in connection.execute("PRAGMA table_info(comparison_cohorts)")}
-        if columns and "selected_hypothesis_id" not in columns:
-            connection.execute("ALTER TABLE comparison_cohorts ADD COLUMN selected_hypothesis_id TEXT")
-        if columns and "manifest_json" not in columns:
-            connection.execute("ALTER TABLE comparison_cohorts ADD COLUMN manifest_json TEXT NOT NULL DEFAULT '[]'")
+        # Re-run the idempotent v2 bridge so databases upgraded before the
+        # cohort triggers were introduced receive the same protections.
+        ResearchStore._migrate_v2(connection)
 
     @staticmethod
     def _reconcile_legacy_state(connection: sqlite3.Connection) -> None:

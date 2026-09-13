@@ -509,6 +509,16 @@ class ResearchService:
                 "partitions": verified_partitions,
                 "owner_id": existing.get("owner_id"),
             }
+        if consumption:
+            normalized["artifacts"] = {
+                **normalized.get("artifacts", {}),
+                "oos_consumption": {
+                    "status": "consumed",
+                    "partitions": verified_partitions,
+                    "owner_id": existing.get("owner_id"),
+                },
+            }
+            run_payload["artifact_manifest"] = normalized["artifacts"]
         target = None if normalized["state"] == "RETRYABLE" else HypothesisState(normalized["state"])
         run, updated = self.store.record_validation_bundle(
             run=run_payload,
