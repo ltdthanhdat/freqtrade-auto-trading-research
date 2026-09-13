@@ -111,6 +111,29 @@ def make_identity_service(tmp_path):
     return service, cycle_id, source_ids
 
 
+def full_evidence_links(sources):
+    roles = {
+        "entry": ["ENTRY_SUPPORT"],
+        "stop": ["STOP_SUPPORT"],
+        "profit": ["PROFIT_EXIT_SUPPORT"],
+        "contradiction": ["CONTRADICTION", "FALSIFIER"],
+    }
+    return [
+        {
+            "source_id": sources[name],
+            "stance": "CONTRADICT" if name == "contradiction" else "SUPPORT",
+            "note": name,
+            "evidence": {
+                "roles": roles[name],
+                "supported_claim": name,
+                "transfer_assumption": "crypto",
+                "limitations": "limited",
+            },
+        }
+        for name in ("entry", "stop", "profit", "contradiction")
+    ]
+
+
 def make_service(tmp_path):
     store = ResearchStore(tmp_path / "research.sqlite")
     cycle_id = store.start_or_resume_cycle("2026-09-11T08:00:00Z")["cycle"]["id"]
@@ -148,6 +171,37 @@ def test_duplicate_mechanism_attaches_evidence_without_new_hypothesis(tmp_path):
     assert duplicate["duplicate"] is True
     assert duplicate["hypothesis"]["id"] == first["id"]
     assert service.store.get_cycle(cycle_id)["hypothesis_count"] == 1
+
+
+def test_sealed_ranking_is_idempotent_and_freezes_research_inputs(tmp_path):
+    service, cycle_id, sources = make_identity_service(tmp_path)
+    hypotheses = []
+    for identifier, evidence_score in (("low", 10), ("high", 30), ("mid", 20)):
+        payload = {
+            **proposal(cycle_id, sources["entry"], mechanism=identifier),
+            "supporting_source_ids": [sources["entry"], sources["stop"], sources["profit"]],
+            "contradicting_source_ids": [sources["contradiction"]],
+            "trading_plan": {**complete_plan(), "family_id": identifier},
+            "evidence_links": full_evidence_links(sources),
+        }
+        payload["scores"]["evidence_quality"] = evidence_score
+        hypotheses.append(service.propose_hypothesis(payload)["hypothesis"])
+
+    sealed = service.call("seal_hypothesis_ranking", {"cycle_id": cycle_id})
+    replay = service.call("seal_hypothesis_ranking", {"cycle_id": cycle_id})
+
+    assert sealed == replay
+    assert [item["hypothesis_id"] for item in sealed["ranking"]] == [hypotheses[1]["id"], hypotheses[2]["id"], hypotheses[0]["id"]]
+    assert sealed["ranking"][0]["eligible"] is True
+    assert service.store.get_cycle(cycle_id)["stage"] == "RANKED"
+    with pytest.raises(ValueError, match="ranking sealed"):
+        service.record_source_assessment(
+            {"cycle_id": cycle_id, "source_id": sources["entry"], "assessment": {"relevance": "direct", "asset": "crypto", "timeframe": "30m", "mechanism": "new"}}
+        )
+    with pytest.raises(ValueError, match="ranking sealed"):
+        service.propose_hypothesis(
+            {**proposal(cycle_id, sources["entry"], mechanism="after-seal"), "supporting_source_ids": [sources["entry"]], "contradicting_source_ids": [sources["contradiction"]], "trading_plan": complete_plan(), "evidence_links": full_evidence_links(sources)}
+        )
 
 
 def test_service_records_interpretation_and_finalizes_cycle(tmp_path):

@@ -369,6 +369,88 @@ def test_v2_migration_preserves_rows_and_quarantines_unsafe_links(tmp_path):
     assert store.integrity_report() == {"integrity_check": "ok", "foreign_key_errors": []}
 
 
+def test_ranking_seal_is_deterministic_and_blocks_mutation(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite")
+    cycle_id = store.start_or_resume_cycle("2026-09-11T08:00:00Z")["cycle"]["id"]
+    for identifier, score in (("H-low", 40), ("H-high", 60), ("H-mid", 50)):
+        store.insert_hypothesis(
+            cycle_id,
+            {
+                "id": identifier,
+                "thesis": identifier,
+                "mechanism": identifier,
+                "market_scope": "crypto",
+                "required_data": ["OHLCV"],
+                "falsifier": "negative OOS",
+                "scores": {
+                    "evidence_quality": score - 35,
+                    "reproducibility": 20,
+                    "ohlcv_transferability": 15,
+                    "novelty": 5,
+                    "falsifiability": 10,
+                },
+            },
+        )
+
+    first = store.seal_hypothesis_ranking(cycle_id)
+    replay = store.seal_hypothesis_ranking(cycle_id)
+
+    assert first == replay
+    assert [item["hypothesis_id"] for item in first["ranking"]] == ["H-high", "H-mid", "H-low"]
+    assert all(len(item["evidence_sha256"]) == 64 for item in first["ranking"])
+    assert len(first["ranking_sha256"]) == 64
+    assert store.get_cycle(cycle_id)["stage"] == "RANKED"
+
+    with pytest.raises(ValueError, match="ranking sealed"):
+        store.insert_hypothesis(
+            cycle_id,
+            {
+                "id": "H-after",
+                "thesis": "after",
+                "mechanism": "after",
+                "market_scope": "crypto",
+                "required_data": ["OHLCV"],
+                "falsifier": "negative",
+                "scores": {"evidence_quality": 1, "reproducibility": 1, "ohlcv_transferability": 1, "novelty": 1, "falsifiability": 1},
+            },
+        )
+    with pytest.raises(sqlite3.IntegrityError):
+        with store.connect() as connection:
+            connection.execute("UPDATE hypotheses SET total_score = 1 WHERE id = 'H-high'")
+    with pytest.raises(ValueError, match="ranking sealed"):
+        store.insert_source(
+            cycle_id,
+            {"provider": "fixture", "canonical_url": "https://example.test/after", "title": "after", "excerpt": "e", "retrieved_at": "2026-09-11T08:00:00Z", "fingerprint": "after-source", "metadata": {}},
+        )
+
+
+def test_sealed_hypothesis_source_links_are_immutable(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite")
+    cycle_id = store.start_or_resume_cycle("2026-09-11T08:00:00Z")["cycle"]["id"]
+    source_ids = [
+        store.insert_source(
+            cycle_id,
+            {"provider": "fixture", "canonical_url": f"https://example.test/link-{index}", "title": "link", "excerpt": "e", "retrieved_at": "2026-09-11T08:00:00Z", "fingerprint": f"link-{index}", "metadata": {}},
+        )["id"]
+        for index in range(2)
+    ]
+    store.insert_hypothesis(
+        cycle_id,
+        {"id": "H-links", "thesis": "links", "mechanism": "links", "market_scope": "crypto", "required_data": ["OHLCV"], "falsifier": "negative", "scores": {"evidence_quality": 1, "reproducibility": 1, "ohlcv_transferability": 1, "novelty": 1, "falsifiability": 1}},
+    )
+    store.add_hypothesis_source("H-links", source_ids[0], "SUPPORT", "before")
+    store.seal_hypothesis_ranking(cycle_id)
+
+    with pytest.raises(ValueError, match="ranking sealed"):
+        store.add_hypothesis_source("H-links", source_ids[1], "SUPPORT", "after")
+    with pytest.raises(sqlite3.IntegrityError):
+        with store.connect() as connection:
+            connection.execute(
+                "INSERT INTO hypothesis_sources (hypothesis_id, source_id, stance, note, evidence_json) VALUES (?, ?, 'SUPPORT', 'after', '{}')",
+                ("H-links", source_ids[1]),
+            )
+
+
 def test_review_requires_actor_and_reason(tmp_path):
     store = ResearchStore(tmp_path / "research.sqlite")
     cycle_id = store.start_or_resume_cycle("2026-09-11T08:00:00Z")["cycle"]["id"]

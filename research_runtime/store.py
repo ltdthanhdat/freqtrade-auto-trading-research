@@ -458,6 +458,47 @@ class ResearchStore:
             BEGIN
               SELECT RAISE(ABORT, 'OOS consumptions are append-only');
             END;
+            CREATE TRIGGER IF NOT EXISTS immutable_sealed_hypothesis_update
+            BEFORE UPDATE OF thesis, mechanism, market_scope, required_data_json, falsifier,
+              evidence_quality, reproducibility, ohlcv_transferability, novelty, falsifiability,
+              total_score, metadata_json, family_id, plan_json, plan_sha256 ON hypotheses
+            WHEN EXISTS (
+              SELECT 1 FROM cycles
+              WHERE cycles.id = NEW.cycle_id AND cycles.ranking_sealed_at IS NOT NULL
+            )
+            BEGIN
+              SELECT RAISE(ABORT, 'ranking sealed');
+            END;
+            CREATE TRIGGER IF NOT EXISTS immutable_sealed_hypothesis_source_insert
+            BEFORE INSERT ON hypothesis_sources
+            WHEN EXISTS (
+              SELECT 1 FROM hypotheses
+              JOIN cycles ON cycles.id = hypotheses.cycle_id
+              WHERE hypotheses.id = NEW.hypothesis_id AND cycles.ranking_sealed_at IS NOT NULL
+            )
+            BEGIN
+              SELECT RAISE(ABORT, 'ranking sealed');
+            END;
+            CREATE TRIGGER IF NOT EXISTS immutable_sealed_hypothesis_source_update
+            BEFORE UPDATE ON hypothesis_sources
+            WHEN EXISTS (
+              SELECT 1 FROM hypotheses
+              JOIN cycles ON cycles.id = hypotheses.cycle_id
+              WHERE hypotheses.id = OLD.hypothesis_id AND cycles.ranking_sealed_at IS NOT NULL
+            )
+            BEGIN
+              SELECT RAISE(ABORT, 'ranking sealed');
+            END;
+            CREATE TRIGGER IF NOT EXISTS immutable_sealed_hypothesis_source_delete
+            BEFORE DELETE ON hypothesis_sources
+            WHEN EXISTS (
+              SELECT 1 FROM hypotheses
+              JOIN cycles ON cycles.id = hypotheses.cycle_id
+              WHERE hypotheses.id = OLD.hypothesis_id AND cycles.ranking_sealed_at IS NOT NULL
+            )
+            BEGIN
+              SELECT RAISE(ABORT, 'ranking sealed');
+            END;
             """
         )
 
@@ -714,6 +755,8 @@ class ResearchStore:
             cycle = connection.execute("SELECT * FROM cycles WHERE id = ?", (cycle_id,)).fetchone()
             if cycle is None:
                 raise ValueError(f"unknown cycle: {cycle_id}")
+            if cycle["ranking_sealed_at"] is not None:
+                raise ValueError("ranking sealed")
             existing = connection.execute(
                 "SELECT * FROM sources WHERE fingerprint = ? OR (? IS NOT NULL AND doi = ?) OR (? IS NOT NULL AND canonical_url = ?) LIMIT 1",
                 (fingerprint, doi, doi, canonical_url, canonical_url),
@@ -812,7 +855,7 @@ class ResearchStore:
             if "ranking_sealed_at" in columns and connection.execute(
                 "SELECT ranking_sealed_at FROM cycles WHERE id = ?", (cycle_id,)
             ).fetchone()[0] is not None:
-                raise ValueError("source assessment is blocked after ranking seal")
+                raise ValueError("ranking sealed: source assessment is blocked")
             cursor = connection.execute(
                 """
                 INSERT INTO source_assessments
@@ -865,6 +908,8 @@ class ResearchStore:
             cycle = connection.execute("SELECT * FROM cycles WHERE id = ?", (cycle_id,)).fetchone()
             if cycle is None:
                 raise ValueError(f"unknown cycle: {cycle_id}")
+            if cycle["ranking_sealed_at"] is not None:
+                raise ValueError("ranking sealed")
             if cycle["hypothesis_count"] >= HYPOTHESIS_BUDGET:
                 raise ValueError("hypothesis budget exhausted")
             connection.execute(
@@ -945,6 +990,11 @@ class ResearchStore:
             ).fetchone()
             if hypothesis is None:
                 raise ValueError(f"unknown hypothesis: {hypothesis_id}")
+            cycle = connection.execute(
+                "SELECT ranking_sealed_at FROM cycles WHERE id = ?", (hypothesis["cycle_id"],)
+            ).fetchone()
+            if cycle is not None and cycle["ranking_sealed_at"] is not None:
+                raise ValueError("ranking sealed")
             if connection.execute(
                 "SELECT 1 FROM cycle_sources WHERE cycle_id = ? AND source_id = ?",
                 (hypothesis["cycle_id"], source_id),
@@ -1011,7 +1061,7 @@ class ResearchStore:
                 (path, candidate_sha256, now, hypothesis_id),
             )
             connection.execute(
-                "UPDATE cycles SET candidate_count = candidate_count + 1, updated_at = ? WHERE id = ?",
+                "UPDATE cycles SET candidate_count = candidate_count + 1, stage = 'CANDIDATE_FROZEN', updated_at = ? WHERE id = ?",
                 (now, hypothesis["cycle_id"]),
             )
             return dict(connection.execute("SELECT * FROM hypotheses WHERE id = ?", (hypothesis_id,)).fetchone())
@@ -1332,6 +1382,80 @@ class ResearchStore:
                 (target, self._stage_for_status(target, cycle["stage"]), timestamp, cycle_id),
             )
             return dict(connection.execute("SELECT * FROM cycles WHERE id = ?", (cycle_id,)).fetchone())
+
+    def seal_hypothesis_ranking(self, cycle_id: str) -> dict[str, Any]:
+        with self.connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            cycle = connection.execute("SELECT * FROM cycles WHERE id = ?", (cycle_id,)).fetchone()
+            if cycle is None:
+                raise ValueError(f"unknown cycle: {cycle_id}")
+            if cycle["ranking_sealed_at"] is not None:
+                try:
+                    ranking = json.loads(cycle["ranking_json"] or "[]")
+                except json.JSONDecodeError as exc:
+                    raise ValueError("stored ranking seal is invalid") from exc
+                return {
+                    "cycle": dict(cycle),
+                    "ranking": ranking,
+                    "ranking_sha256": cycle["ranking_sha256"],
+                    "sealed_at": cycle["ranking_sealed_at"],
+                }
+            rows = connection.execute(
+                "SELECT * FROM hypotheses WHERE cycle_id = ? ORDER BY total_score DESC, created_at ASC, id ASC",
+                (cycle_id,),
+            ).fetchall()
+            if not rows:
+                raise ValueError("cannot seal an empty hypothesis ranking")
+            ranking: list[dict[str, Any]] = []
+            eligible_rank = 0
+            identity_bound = bool(cycle["search_cohort"])
+            for rank, hypothesis in enumerate(rows, start=1):
+                try:
+                    required_data = json.loads(hypothesis["required_data_json"])
+                except json.JSONDecodeError:
+                    required_data = None
+                supported = isinstance(required_data, list) and bool(required_data) and all(
+                    str(item).upper() == "OHLCV" for item in required_data
+                )
+                eligible = supported and not hypothesis["approval_blocked_reason"]
+                if identity_bound:
+                    eligible = eligible and bool(hypothesis["plan_json"] and hypothesis["plan_sha256"])
+                links = [
+                    dict(link)
+                    for link in connection.execute(
+                        "SELECT source_id, stance, note, evidence_json FROM hypothesis_sources WHERE hypothesis_id = ? ORDER BY source_id ASC",
+                        (hypothesis["id"],),
+                    )
+                ]
+                evidence_hash = hashlib.sha256(canonical_json(links).encode("utf-8")).hexdigest()
+                if eligible:
+                    eligible_rank += 1
+                ranking.append(
+                    {
+                        "rank": rank,
+                        "eligible_rank": eligible_rank if eligible else None,
+                        "hypothesis_id": hypothesis["id"],
+                        "total_score": hypothesis["total_score"],
+                        "created_at": hypothesis["created_at"],
+                        "eligible": eligible,
+                        "plan_sha256": hypothesis["plan_sha256"],
+                        "evidence_sha256": evidence_hash,
+                    }
+                )
+            ranking_json = canonical_json(ranking)
+            ranking_sha256 = hashlib.sha256(ranking_json.encode("utf-8")).hexdigest()
+            sealed_at = _timestamp(None)
+            connection.execute(
+                "UPDATE cycles SET stage = 'RANKED', ranking_sealed_at = ?, ranking_json = ?, ranking_sha256 = ?, updated_at = ? WHERE id = ?",
+                (sealed_at, ranking_json, ranking_sha256, sealed_at, cycle_id),
+            )
+            updated = connection.execute("SELECT * FROM cycles WHERE id = ?", (cycle_id,)).fetchone()
+            return {
+                "cycle": dict(updated),
+                "ranking": ranking,
+                "ranking_sha256": ranking_sha256,
+                "sealed_at": sealed_at,
+            }
 
     def list_hypotheses(self, cycle_id: str | None = None) -> list[dict[str, Any]]:
         with self.connect() as connection:

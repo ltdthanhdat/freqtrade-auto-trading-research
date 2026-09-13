@@ -24,6 +24,7 @@ class ResearchService:
         },
         "load_context": {"cycle_id"},
         "list_source_views": {"cycle_id", "limit", "after"},
+        "seal_hypothesis_ranking": {"cycle_id"},
         "collect_sources": {"cycle_id", "provider", "query", "limit"},
         "write_candidate": {"cycle_id", "hypothesis_id", "strategy_name", "source"},
         "start_validation": {
@@ -59,6 +60,7 @@ class ResearchService:
         "start_or_resume_cycle": set(),
         "load_context": {"cycle_id"},
         "list_source_views": {"cycle_id"},
+        "seal_hypothesis_ranking": {"cycle_id"},
         "collect_sources": {"cycle_id", "provider", "query", "limit"},
         "write_candidate": {"cycle_id", "hypothesis_id", "strategy_name", "source"},
         "start_validation": {"cycle_id", "hypothesis_id"},
@@ -121,6 +123,8 @@ class ResearchService:
         return {
             "cycle": cycle,
             "hypotheses": hypotheses,
+            "ranking_sealed": bool(cycle.get("ranking_sealed_at")),
+            "ranking_sha256": cycle.get("ranking_sha256"),
             "budgets": {
                 "sources": SOURCE_BUDGET,
                 "hypotheses": HYPOTHESIS_BUDGET,
@@ -240,6 +244,9 @@ class ResearchService:
         self.store.insert_source_assessment(cycle_id, source_id, normalized, actor="runtime")
         return {"source_id": source_id, "recorded": True}
 
+    def seal_hypothesis_ranking(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self.store.seal_hypothesis_ranking(payload["cycle_id"])
+
     def write_candidate(self, payload: dict[str, Any]) -> dict[str, Any]:
         cycle_id = payload["cycle_id"]
         cycle = self.store.get_cycle(cycle_id)
@@ -254,15 +261,10 @@ class ResearchService:
             if hypothesis.get("plan_json"):
                 raise ValueError("candidate requires claim-level exit evidence")
             raise ValueError("candidate requires full-text or corroborating independent evidence")
-        eligible = [
-            item
-            for item in self.store.list_hypotheses(cycle_id)
-            if item["state"] in {HypothesisState.SCORED, HypothesisState.IMPLEMENTING}
-            and self._hypothesis_data_supported(item)
-            and self._has_candidate_evidence(item["id"])
-        ]
-        if not eligible or eligible[0]["id"] != hypothesis["id"]:
-            raise ValueError("only the highest-scoring eligible hypothesis may create a candidate")
+        ranking = self.store.seal_hypothesis_ranking(cycle_id)
+        eligible_ids = [item["hypothesis_id"] for item in ranking["ranking"] if item["eligible"]]
+        if not eligible_ids or eligible_ids[0] != hypothesis["id"]:
+            raise ValueError("only the highest-scoring sealed rank-1 eligible hypothesis may create a candidate")
         if hypothesis["state"] == HypothesisState.SCORED:
             self.store.transition_hypothesis(
                 hypothesis["id"], HypothesisState.QUEUED, "runtime", "selected highest-scoring hypothesis", cycle_id
@@ -590,6 +592,8 @@ class ResearchService:
         cycle = self.store.get_cycle(cycle_id)
         if cycle is None:
             raise ValueError(f"unknown cycle: {cycle_id}")
+        if cycle.get("ranking_sealed_at") is not None:
+            raise ValueError("ranking sealed")
         required_data = payload["required_data"]
         if not isinstance(required_data, list) or not required_data:
             raise ValueError("required_data must be a non-empty list")
