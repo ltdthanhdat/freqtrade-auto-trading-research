@@ -750,6 +750,14 @@ def _write_result(
         "correctness_evidence": correctness_evidence or {},
         "data_coverage": data_coverage or {},
         "folds": [asdict(fold) for fold in folds],
+        "oos_partitions": [
+            {
+                "kind": "WFO_OOS",
+                "start_at": fold.oos_start.isoformat(),
+                "end_at": fold.oos_end.isoformat(),
+            }
+            for fold in folds
+        ],
         "fold_metrics": [asdict(metric) for metric in fold_metrics],
         "backtest_artifacts": backtest_artifacts or [],
         "bootstrap_summary": asdict(bootstrap) if bootstrap else None,

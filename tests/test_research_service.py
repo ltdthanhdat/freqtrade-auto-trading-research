@@ -566,6 +566,108 @@ def test_start_validation_does_not_promote_retryable_result(tmp_path):
     assert service.store.get_hypothesis(hypothesis["id"])["state"] == HypothesisState.TESTING
 
 
+def identity_experiment(partitions):
+    return {
+        "id": "EXP-oos",
+        "parent_strategy": "fixture",
+        "parent_sha256": "a" * 64,
+        "changed_variable": "complete-plan",
+        "config_path": "config.json",
+        "config_sha256": "b" * 64,
+        "pairs": ["BTC/USDT:USDT"],
+        "timeframes": ["30m", "1h", "1m"],
+        "timeframe_detail": "1m",
+        "snapshot_path": "snapshot",
+        "snapshot_sha256": "c" * 64,
+        "policy_path": "policy.json",
+        "policy_sha256": "d" * 64,
+        "strategy_name": "CandidateA",
+        "strategy_path": "candidate",
+        "start_at": "2026-01-01T00:00:00Z",
+        "end_at": "2026-02-01T00:00:00Z",
+        "status": "PENDING",
+        "oos_partitions": partitions,
+    }
+
+
+def prepare_identity_candidate(service, cycle_id, sources):
+    payload = {
+        **proposal(cycle_id, sources["entry"], mechanism="oos-candidate"),
+        "supporting_source_ids": [sources["entry"], sources["stop"], sources["profit"]],
+        "contradicting_source_ids": [sources["contradiction"]],
+        "trading_plan": complete_plan(),
+        "evidence_links": full_evidence_links(sources),
+    }
+    hypothesis = service.propose_hypothesis(payload)["hypothesis"]
+    return service.write_candidate(
+        {"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"], "strategy_name": "CandidateA", "source": "class CandidateA: pass\n"}
+    )["hypothesis"]
+
+
+@pytest.mark.parametrize("verdict", ["PASS", "WARN", "FAIL"])
+def test_conclusive_oos_verdict_consumes_partition_once(tmp_path, verdict):
+    service, cycle_id, sources = make_identity_service(tmp_path)
+    hypothesis = prepare_identity_candidate(service, cycle_id, sources)
+    partitions = [{"kind": "WFO_OOS", "start_at": "2026-01-01T00:00:00Z", "end_at": "2026-02-01T00:00:00Z"}]
+    calls = []
+    service.validator = lambda experiment: calls.append(experiment) or {
+        "verdict": verdict,
+        "metrics": {"folds": 1},
+        "artifacts": {"oos_partitions": partitions},
+    }
+
+    result = service.start_validation(
+        {"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"], "experiment": identity_experiment(partitions)}
+    )
+    replay = service.start_validation(
+        {"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"], "experiment": identity_experiment(partitions)}
+    )
+
+    assert result["verdict"] == verdict
+    assert replay["run_id"] == result["run_id"]
+    assert len(calls) == 1
+    with service.store.connect() as connection:
+        rows = connection.execute("SELECT verdict, kind FROM oos_partition_consumptions").fetchall()
+        assert [(row[0], row[1]) for row in rows] == [(verdict, "WFO_OOS")]
+
+
+def test_overlapping_oos_partition_is_rejected_before_validator(tmp_path):
+    service, cycle_id, sources = make_identity_service(tmp_path)
+    hypothesis = prepare_identity_candidate(service, cycle_id, sources)
+    partitions = [{"kind": "WFO_OOS", "start_at": "2026-01-01T00:00:00Z", "end_at": "2026-02-01T00:00:00Z"}]
+    service.validator = lambda _experiment: {"verdict": "PASS", "metrics": {}, "artifacts": {"oos_partitions": partitions}}
+    service.start_validation(
+        {"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"], "experiment": identity_experiment(partitions)}
+    )
+
+    assert service.store.is_oos_partition_consumed(
+        snapshot_sha256="c" * 64,
+        kind="WFO_OOS",
+        start_at="2026-01-15T00:00:00Z",
+        end_at="2026-01-20T00:00:00Z",
+    ) is True
+
+
+def test_second_infrastructure_failure_becomes_inconclusive(tmp_path):
+    service, cycle_id, source_id = make_service(tmp_path)
+    hypothesis = service.propose_hypothesis(proposal(cycle_id, source_id))["hypothesis"]
+    service.write_candidate(
+        {"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"], "strategy_name": "CandidateA", "source": "class CandidateA: pass\n"}
+    )
+    calls = []
+    service.validator = lambda _experiment: calls.append(True) or (_ for _ in ()).throw(OSError("temporary"))
+
+    first = service.start_validation({"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"]})
+    second = service.start_validation({"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"]})
+    third = service.start_validation({"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"]})
+
+    assert first["state"] == "RETRYABLE"
+    assert second["state"] == "INCONCLUSIVE"
+    assert third["state"] == "INCONCLUSIVE"
+    assert len(calls) == 2
+    assert service.store.get_hypothesis(hypothesis["id"])["state"] == HypothesisState.INCONCLUSIVE
+
+
 def test_retryable_validation_creates_a_new_attempt(tmp_path):
     service, cycle_id, source_id = make_service(tmp_path)
     hypothesis = service.propose_hypothesis(proposal(cycle_id, source_id))["hypothesis"]

@@ -144,8 +144,14 @@ def validate_candidate(
                     manifest_hash = _sha256(manifest_path)
                 if not metrics:
                     metrics = manifest.get("fold_metrics", {})
-                if not artifacts:
-                    artifacts = {"backtest_artifacts": manifest.get("backtest_artifacts", [])}
+                manifest_artifacts = {
+                    "backtest_artifacts": manifest.get("backtest_artifacts", []),
+                    "oos_partitions": manifest.get("oos_partitions", []),
+                }
+                if isinstance(artifacts, dict):
+                    artifacts = {**manifest_artifacts, **artifacts}
+                else:
+                    artifacts = manifest_artifacts
             except (OSError, json.JSONDecodeError):
                 pass
         state = _state_for(verdict)

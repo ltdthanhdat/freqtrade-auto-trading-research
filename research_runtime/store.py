@@ -1078,9 +1078,19 @@ class ResearchStore:
         missing = [key for key in required if key not in experiment]
         if missing:
             raise ValueError(f"missing experiment fields: {', '.join(missing)}")
+        oos_partitions = experiment.get("oos_partitions", [])
+        if not isinstance(oos_partitions, list):
+            raise ValueError("oos_partitions must be a list")
         with self.connect() as connection:
             connection.execute(
-                "INSERT OR IGNORE INTO experiments (id, cycle_id, hypothesis_id, parent_strategy, parent_sha256, changed_variable, config_path, config_sha256, pairs_json, timeframes_json, timeframe_detail, snapshot_path, snapshot_sha256, policy_path, policy_sha256, strategy_name, strategy_path, start_at, end_at, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                """
+                INSERT OR IGNORE INTO experiments (
+                    id, cycle_id, hypothesis_id, parent_strategy, parent_sha256, changed_variable,
+                    config_path, config_sha256, pairs_json, timeframes_json, timeframe_detail,
+                    snapshot_path, snapshot_sha256, policy_path, policy_sha256, strategy_name,
+                    strategy_path, start_at, end_at, status, created_at, oos_partitions_json, owner_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
                 (
                     experiment_id, experiment["cycle_id"], experiment["hypothesis_id"], experiment["parent_strategy"],
                     experiment["parent_sha256"], experiment["changed_variable"], experiment["config_path"],
@@ -1089,24 +1099,29 @@ class ResearchStore:
                     experiment["snapshot_path"], experiment["snapshot_sha256"], experiment["policy_path"],
                     experiment["policy_sha256"], experiment["strategy_name"], experiment["strategy_path"],
                     _timestamp(experiment["start_at"]), _timestamp(experiment["end_at"]), experiment["status"], now,
+                    _json_text(oos_partitions, "oos_partitions"), experiment.get("owner_id"),
                 ),
             )
             return dict(connection.execute("SELECT * FROM experiments WHERE id = ?", (experiment_id,)).fetchone())
 
-    def record_run(self, run: dict[str, Any]) -> dict[str, Any]:
+    @staticmethod
+    def _insert_run(connection: sqlite3.Connection, run: dict[str, Any]) -> dict[str, Any]:
         now = _timestamp(run.get("created_at"))
         run_id = str(run.get("id") or f"RUN-{uuid.uuid4().hex[:12]}")
+        connection.execute(
+            "INSERT INTO runs (id, experiment_id, kind, status, verdict, metrics_json, artifact_manifest_json, error_code, created_at, completed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                run_id, run["experiment_id"], run["kind"], run["status"], run.get("verdict"),
+                _json_text(run.get("metrics", {}), "metrics"),
+                _json_text(run.get("artifact_manifest", {}), "artifact_manifest"),
+                run.get("error_code"), now, _timestamp(run["completed_at"]) if run.get("completed_at") else None,
+            ),
+        )
+        return dict(connection.execute("SELECT * FROM runs WHERE id = ?", (run_id,)).fetchone())
+
+    def record_run(self, run: dict[str, Any]) -> dict[str, Any]:
         with self.connect() as connection:
-            connection.execute(
-                "INSERT INTO runs (id, experiment_id, kind, status, verdict, metrics_json, artifact_manifest_json, error_code, created_at, completed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (
-                    run_id, run["experiment_id"], run["kind"], run["status"], run.get("verdict"),
-                    _json_text(run.get("metrics", {}), "metrics"),
-                    _json_text(run.get("artifact_manifest", {}), "artifact_manifest"),
-                    run.get("error_code"), now, _timestamp(run["completed_at"]) if run.get("completed_at") else None,
-                ),
-            )
-            return dict(connection.execute("SELECT * FROM runs WHERE id = ?", (run_id,)).fetchone())
+            return self._insert_run(connection, run)
 
     def get_experiment(self, experiment_id: str) -> dict[str, Any] | None:
         with self.connect() as connection:
@@ -1131,10 +1146,11 @@ class ResearchStore:
                 )
             ]
 
-    def transition_hypothesis(
+    def _transition_hypothesis_in_connection(
         self,
+        connection: sqlite3.Connection,
         hypothesis_id: str,
-        target: HypothesisState | str,
+        target_state: HypothesisState,
         actor: str,
         reason: str,
         cycle_id: str | None = None,
@@ -1146,46 +1162,61 @@ class ResearchStore:
             raise ValueError("actor is required")
         if not reason or not reason.strip():
             raise ValueError("reason is required")
-        target_state = HypothesisState(target)
+        hypothesis = connection.execute("SELECT * FROM hypotheses WHERE id = ?", (hypothesis_id,)).fetchone()
+        if hypothesis is None:
+            raise ValueError(f"unknown hypothesis: {hypothesis_id}")
+        if cycle_id is not None and cycle_id != hypothesis["cycle_id"]:
+            raise ValueError("cycle does not own hypothesis")
+        current = HypothesisState(hypothesis["state"])
+        if not next_state_allowed(current, target_state):
+            raise ValueError(f"illegal transition: {current} -> {target_state}")
+        if current == HypothesisState.NEEDS_REVIEW and actor != "local_user":
+            raise ValueError("review transitions require actor local_user")
         timestamp = _timestamp(now)
+        cycle = connection.execute(
+            "SELECT updated_at FROM cycles WHERE id = ?", (hypothesis["cycle_id"],)
+        ).fetchone()
+        timestamp = self._monotonic_timestamp(timestamp, cycle["updated_at"] if cycle else None)
+        self._append_event(
+            connection,
+            entity_type="hypothesis",
+            entity_id=hypothesis_id,
+            from_state=current,
+            to_state=target_state,
+            actor=actor.strip(),
+            reason=reason.strip(),
+            cycle_id=hypothesis["cycle_id"],
+            run_id=run_id,
+            payload=payload or {},
+            created_at=timestamp,
+        )
+        connection.execute(
+            "UPDATE hypotheses SET state = ?, updated_at = ? WHERE id = ?",
+            (target_state, timestamp, hypothesis_id),
+        )
+        connection.execute(
+            "UPDATE cycles SET updated_at = ? WHERE id = ?",
+            (timestamp, hypothesis["cycle_id"]),
+        )
+        return dict(connection.execute("SELECT * FROM hypotheses WHERE id = ?", (hypothesis_id,)).fetchone())
+
+    def transition_hypothesis(
+        self,
+        hypothesis_id: str,
+        target: HypothesisState | str,
+        actor: str,
+        reason: str,
+        cycle_id: str | None = None,
+        run_id: str | None = None,
+        payload: dict[str, Any] | None = None,
+        now: datetime | str | None = None,
+    ) -> dict[str, Any]:
         with self.connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
-            hypothesis = connection.execute("SELECT * FROM hypotheses WHERE id = ?", (hypothesis_id,)).fetchone()
-            if hypothesis is None:
-                raise ValueError(f"unknown hypothesis: {hypothesis_id}")
-            if cycle_id is not None and cycle_id != hypothesis["cycle_id"]:
-                raise ValueError("cycle does not own hypothesis")
-            current = HypothesisState(hypothesis["state"])
-            if not next_state_allowed(current, target_state):
-                raise ValueError(f"illegal transition: {current} -> {target_state}")
-            if current == HypothesisState.NEEDS_REVIEW and actor != "local_user":
-                raise ValueError("review transitions require actor local_user")
-            cycle = connection.execute(
-                "SELECT updated_at FROM cycles WHERE id = ?", (hypothesis["cycle_id"],)
-            ).fetchone()
-            timestamp = self._monotonic_timestamp(timestamp, cycle["updated_at"] if cycle else None)
-            self._append_event(
-                connection,
-                entity_type="hypothesis",
-                entity_id=hypothesis_id,
-                from_state=current,
-                to_state=target_state,
-                actor=actor.strip(),
-                reason=reason.strip(),
-                cycle_id=hypothesis["cycle_id"],
-                run_id=run_id,
-                payload=payload or {},
-                created_at=timestamp,
+            return self._transition_hypothesis_in_connection(
+                connection, hypothesis_id, HypothesisState(target), actor, reason,
+                cycle_id, run_id, payload, now,
             )
-            connection.execute(
-                "UPDATE hypotheses SET state = ?, updated_at = ? WHERE id = ?",
-                (target_state, timestamp, hypothesis_id),
-            )
-            connection.execute(
-                "UPDATE cycles SET updated_at = ? WHERE id = ?",
-                (timestamp, hypothesis["cycle_id"]),
-            )
-            return dict(connection.execute("SELECT * FROM hypotheses WHERE id = ?", (hypothesis_id,)).fetchone())
 
     def get_cycle(self, cycle_id: str) -> dict[str, Any] | None:
         with self.connect() as connection:
@@ -1477,6 +1508,222 @@ class ResearchStore:
                     "SELECT * FROM cycles ORDER BY updated_at DESC, id DESC LIMIT ?", (limit,)
                 )
             ]
+
+    @staticmethod
+    def _validate_partition(partition: dict[str, Any]) -> tuple[str, str, str]:
+        if not isinstance(partition, dict):
+            raise ValueError("OOS partition must be an object")
+        kind = str(partition.get("kind") or "")
+        if kind not in {"WFO_OOS", "HOLDOUT", "COMPARISON_OOS"}:
+            raise ValueError("invalid OOS partition kind")
+        start_at = _timestamp(partition.get("start_at"))
+        end_at = _timestamp(partition.get("end_at"))
+        if _as_datetime(start_at) >= _as_datetime(end_at):
+            raise ValueError("OOS partition must have start before end")
+        return kind, start_at, end_at
+
+    def is_partition_consumed(
+        self,
+        *,
+        snapshot_sha256: str,
+        kind: str,
+        start_at: str,
+        end_at: str,
+        owner_id: str | None = None,
+    ) -> bool:
+        return self.is_oos_partition_consumed(
+            snapshot_sha256=snapshot_sha256,
+            kind=kind,
+            start_at=start_at,
+            end_at=end_at,
+            owner_id=owner_id,
+        )
+
+    def is_oos_partition_consumed(
+        self,
+        *,
+        snapshot_sha256: str,
+        kind: str,
+        start_at: str,
+        end_at: str,
+        owner_id: str | None = None,
+    ) -> bool:
+        _, normalized_start, normalized_end = self._validate_partition(
+            {"kind": kind, "start_at": start_at, "end_at": end_at}
+        )
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT 1 FROM oos_partition_consumptions
+                WHERE snapshot_sha256 = ? AND kind = ?
+                  AND start_at < ? AND end_at > ?
+                LIMIT 1
+                """,
+                (snapshot_sha256, kind, normalized_end, normalized_start),
+            ).fetchone()
+            return row is not None
+
+    def assert_oos_partitions_available(
+        self,
+        *,
+        snapshot_sha256: str,
+        partitions: list[dict[str, Any]],
+        owner_id: str | None = None,
+    ) -> None:
+        for partition in partitions:
+            kind, start_at, end_at = self._validate_partition(partition)
+            if self.is_partition_consumed(
+                snapshot_sha256=snapshot_sha256,
+                kind=kind,
+                start_at=start_at,
+                end_at=end_at,
+                owner_id=owner_id,
+            ):
+                raise ValueError("OOS partition is already consumed")
+
+    def _consume_partitions_in_connection(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        dataset: str,
+        snapshot_sha256: str,
+        cycle_id: str,
+        experiment_id: str,
+        run_id: str,
+        verdict: str,
+        partitions: list[dict[str, Any]],
+        owner_id: str | None = None,
+        consumed_at: datetime | str | None = None,
+    ) -> None:
+        if not dataset or not snapshot_sha256 or not cycle_id or not experiment_id or not run_id:
+            raise ValueError("OOS consumption identity is required")
+        if verdict not in {"PASS", "WARN", "FAIL"}:
+            raise ValueError("only conclusive verdicts consume OOS partitions")
+        timestamp = _timestamp(consumed_at)
+        for partition in partitions:
+            kind, start_at, end_at = self._validate_partition(partition)
+            overlap = connection.execute(
+                """
+                SELECT 1 FROM oos_partition_consumptions
+                WHERE snapshot_sha256 = ? AND kind = ?
+                  AND start_at < ? AND end_at > ?
+                LIMIT 1
+                """,
+                (snapshot_sha256, kind, end_at, start_at),
+            ).fetchone()
+            if overlap is not None:
+                raise ValueError("OOS partition is already consumed")
+            connection.execute(
+                """
+                INSERT INTO oos_partition_consumptions
+                    (dataset, snapshot_sha256, kind, start_at, end_at, owner_id,
+                     cycle_id, experiment_id, run_id, verdict, consumed_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    dataset, snapshot_sha256, kind, start_at, end_at, owner_id or cycle_id,
+                    cycle_id, experiment_id, run_id, verdict, timestamp,
+                ),
+            )
+
+    def consume_partitions(
+        self,
+        *,
+        dataset: str,
+        snapshot_sha256: str,
+        cycle_id: str,
+        experiment_id: str,
+        run_id: str,
+        verdict: str,
+        partitions: list[dict[str, Any]],
+        owner_id: str | None = None,
+        consumed_at: datetime | str | None = None,
+    ) -> None:
+        self.consume_oos_partitions(
+            dataset=dataset,
+            snapshot_sha256=snapshot_sha256,
+            cycle_id=cycle_id,
+            experiment_id=experiment_id,
+            run_id=run_id,
+            verdict=verdict,
+            partitions=partitions,
+            owner_id=owner_id,
+            consumed_at=consumed_at,
+        )
+
+    def consume_oos_partitions(
+        self,
+        *,
+        dataset: str,
+        snapshot_sha256: str,
+        cycle_id: str,
+        experiment_id: str,
+        run_id: str,
+        verdict: str,
+        partitions: list[dict[str, Any]],
+        owner_id: str | None = None,
+        consumed_at: datetime | str | None = None,
+    ) -> None:
+        with self.connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            self._consume_partitions_in_connection(
+                connection,
+                dataset=dataset,
+                snapshot_sha256=snapshot_sha256,
+                cycle_id=cycle_id,
+                experiment_id=experiment_id,
+                run_id=run_id,
+                verdict=verdict,
+                partitions=partitions,
+                owner_id=owner_id,
+                consumed_at=consumed_at,
+            )
+
+    def record_validation_bundle(
+        self,
+        *,
+        run: dict[str, Any],
+        cycle_id: str,
+        hypothesis_id: str,
+        target_state: HypothesisState | str | None,
+        actor: str = "runtime",
+        reason: str = "validation verdict",
+        transition_payload: dict[str, Any] | None = None,
+        validation_window: dict[str, Any] | None = None,
+        consumption: dict[str, Any] | None = None,
+    ) -> tuple[dict[str, Any], dict[str, Any] | None]:
+        target = HypothesisState(target_state) if target_state is not None else None
+        with self.connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            inserted_run = self._insert_run(connection, run)
+            window = validation_window or {}
+            if all((window.get("dataset"), window.get("requested_timerange"), window.get("policy_sha256"))):
+                connection.execute(
+                    "INSERT OR IGNORE INTO validation_windows (cycle_id, dataset, requested_timerange, policy_sha256, verdict, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                    (
+                        cycle_id,
+                        window["dataset"],
+                        window["requested_timerange"],
+                        window["policy_sha256"],
+                        window["verdict"],
+                        _timestamp(window.get("created_at")),
+                    ),
+                )
+            if consumption is not None:
+                self._consume_partitions_in_connection(connection, **consumption, run_id=inserted_run["id"])
+            updated = None
+            if target is not None:
+                updated = self._transition_hypothesis_in_connection(
+                    connection,
+                    hypothesis_id,
+                    target,
+                    actor,
+                    reason,
+                    cycle_id,
+                    inserted_run["id"],
+                    transition_payload,
+                )
+            return inserted_run, updated
 
     def record_validation_window(
         self,

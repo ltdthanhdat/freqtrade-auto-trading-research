@@ -66,6 +66,22 @@ def test_validation_wrapper_maps_runner_verdicts(tmp_path, verdict, state):
     }
 
 
+def test_validation_wrapper_exposes_manifest_oos_partitions(tmp_path):
+    manifest = tmp_path / "manifest.json"
+    report = tmp_path / "report.md"
+    partitions = [{"kind": "WFO_OOS", "start_at": "2025-01-02T00:00:00Z", "end_at": "2025-01-03T00:00:00Z"}]
+    manifest.write_text(json.dumps({"verdict": "PASS", "oos_partitions": partitions}))
+    report.write_text("report\n")
+
+    result = validate_candidate(
+        experiment(tmp_path),
+        collect_identity_fn=lambda *_: {"config_sha256": "b" * 64, "snapshot_sha256": "c" * 64, "policy_sha256": "d" * 64},
+        run_validation_fn=lambda _args: {"verdict": "PASS", "manifest_path": manifest, "report_path": report},
+    )
+
+    assert result.artifacts["oos_partitions"] == partitions
+
+
 def test_validation_wrapper_classifies_runner_exception_as_retryable(tmp_path):
     def identity(*_args):
         return {"config_sha256": "b" * 64, "snapshot_sha256": "c" * 64, "policy_sha256": "d" * 64}

@@ -396,6 +396,19 @@ class ResearchService:
             HypothesisState.APPROVED_FOR_DRY_RUN,
         }:
             return {"state": hypothesis["state"], "experiment_id": existing["id"]}
+        try:
+            planned_partitions = json.loads(existing.get("oos_partitions_json") or "[]")
+        except json.JSONDecodeError as exc:
+            raise ValueError("invalid OOS partition plan") from exc
+        if not isinstance(planned_partitions, list):
+            raise ValueError("OOS partition plan must be a list")
+        if hypothesis.get("plan_json") and not planned_partitions:
+            raise ValueError("identity-bound validation requires a non-empty OOS plan")
+        self.store.assert_oos_partitions_available(
+            snapshot_sha256=existing["snapshot_sha256"],
+            partitions=planned_partitions,
+            owner_id=existing.get("owner_id"),
+        )
         if hypothesis["state"] == HypothesisState.IMPLEMENTING:
             self.store.transition_hypothesis(
                 hypothesis["id"], HypothesisState.TESTING, "runtime", "validation started", cycle_id
@@ -415,12 +428,42 @@ class ResearchService:
                 if self.validator is not None
                 else validate_candidate(validation_experiment, artifact_root=self.artifact_root)
             )
-        except Exception as exc:  # pragma: no cover - validator boundary is tested through the wrapper
+        except (OSError, TimeoutError, ConnectionError) as exc:  # infrastructure boundary
             result = ResearchVerdict(
                 verdict="RETRYABLE", state="RETRYABLE", metrics={}, artifacts={},
                 error_code="validation_exception", details=(f"{type(exc).__name__}: {exc}",),
             )
+        except Exception as exc:  # invalid validation evidence is not retryable
+            result = ResearchVerdict(
+                verdict="FAIL", state="REJECTED", metrics={}, artifacts={},
+                error_code="validation_error", details=(f"{type(exc).__name__}: {exc}",),
+            )
         normalized = self._normalize_validation_result(result)
+        verified_partitions = self._verified_oos_partitions(normalized.get("artifacts", {}))
+        if normalized["state"] == "RETRYABLE" and verified_partitions:
+            normalized["verdict"] = "FAIL"
+            normalized["state"] = "REJECTED"
+            normalized["error_code"] = "retryable_after_oos_output"
+        elif normalized["state"] == "RETRYABLE" and len(runs) >= 1:
+            normalized["state"] = "INCONCLUSIVE"
+        oos_evidence_valid = True
+        planned_keys: set[tuple[str, str, str]] = set()
+        verified_keys: set[tuple[str, str, str]] = set()
+        try:
+            planned_keys = {self._partition_key(partition) for partition in planned_partitions}
+            verified_keys = {self._partition_key(partition) for partition in verified_partitions}
+        except ValueError:
+            oos_evidence_valid = False
+        if len(verified_keys) != len(verified_partitions):
+            oos_evidence_valid = False
+        if normalized["verdict"] in {"PASS", "WARN", "FAIL"} and planned_partitions:
+            if verified_keys != planned_keys:
+                oos_evidence_valid = False
+        if normalized["verdict"] in {"PASS", "WARN", "FAIL"} and planned_partitions and not oos_evidence_valid:
+            normalized["verdict"] = "FAIL"
+            normalized["state"] = "REJECTED"
+            normalized["error_code"] = "missing_oos_evidence"
+            normalized["details"] = ("conclusive validation did not verify planned OOS partitions",)
         contaminated = self.store.window_is_contaminated(
             dataset=cycle.get("dataset"),
             requested_timerange=cycle.get("requested_timerange"),
@@ -433,33 +476,49 @@ class ResearchService:
             normalized["artifacts"] = {**normalized.get("artifacts", {}), "research_only": True}
             self._mark_manifest_research_only(normalized["artifacts"])
         run_id = f"RUN-{existing['id']}-attempt-{len(runs) + 1:02d}"
-        run = self.store.record_run(
-            {
-                "id": run_id,
+        run_payload = {
+            "id": run_id,
+            "experiment_id": existing["id"],
+            "kind": "validation",
+            "status": normalized["state"],
+            "verdict": normalized["verdict"],
+            "metrics": normalized["metrics"],
+            "artifact_manifest": normalized["artifacts"],
+            "error_code": normalized.get("error_code"),
+        }
+        consumption = None
+        if normalized["verdict"] in {"PASS", "WARN", "FAIL"} and verified_partitions and oos_evidence_valid:
+            consumption = {
+                "dataset": cycle.get("dataset") or "unknown",
+                "snapshot_sha256": existing["snapshot_sha256"],
+                "cycle_id": cycle_id,
                 "experiment_id": existing["id"],
-                "kind": "validation",
-                "status": normalized["state"],
                 "verdict": normalized["verdict"],
-                "metrics": normalized["metrics"],
-                "artifact_manifest": normalized["artifacts"],
-                "error_code": normalized.get("error_code"),
+                "partitions": verified_partitions,
+                "owner_id": existing.get("owner_id"),
             }
-        )
-        self.store.record_validation_window(
+        target = None if normalized["state"] == "RETRYABLE" else HypothesisState(normalized["state"])
+        run, updated = self.store.record_validation_bundle(
+            run=run_payload,
             cycle_id=cycle_id,
-            dataset=cycle.get("dataset"),
-            requested_timerange=cycle.get("requested_timerange"),
-            policy_sha256=cycle.get("policy_sha256"),
-            verdict=normalized["verdict"],
+            hypothesis_id=hypothesis["id"],
+            target_state=target,
+            actor="runtime",
+            reason=f"validation verdict {normalized['verdict']}",
+            transition_payload={"verdict": normalized["verdict"], "metrics": normalized["metrics"]},
+            validation_window={
+                "dataset": cycle.get("dataset"),
+                "requested_timerange": cycle.get("requested_timerange"),
+                "policy_sha256": cycle.get("policy_sha256"),
+                "verdict": normalized["verdict"],
+            },
+            consumption=consumption,
         )
-        if normalized["state"] == "RETRYABLE":
-            return self._validation_result(run, "RETRYABLE", existing["id"])
-        target = HypothesisState(normalized["state"])
-        updated = self.store.transition_hypothesis(
-            hypothesis["id"], target, "runtime", f"validation verdict {normalized['verdict']}", cycle_id, run_id,
-            payload={"verdict": normalized["verdict"], "metrics": normalized["metrics"]},
+        return self._validation_result(
+            run,
+            updated["state"] if updated is not None else normalized["state"],
+            existing["id"],
         )
-        return self._validation_result(run, updated["state"], existing["id"])
 
     def _experiment_payload(
         self, payload: dict[str, Any], cycle_id: str, hypothesis: dict[str, Any]
@@ -522,6 +581,25 @@ class ResearchService:
         if missing:
             raise ValueError(f"missing experiment fields: {', '.join(missing)}")
         return spec
+
+    def _verified_oos_partitions(self, artifacts: dict[str, Any]) -> list[dict[str, Any]]:
+        if not isinstance(artifacts, dict):
+            return []
+        value = artifacts.get("oos_partitions")
+        manifest_path = artifacts.get("manifest_path")
+        if value is None and manifest_path:
+            try:
+                manifest = json.loads(Path(str(manifest_path)).read_text())
+            except (OSError, json.JSONDecodeError):
+                return []
+            if isinstance(manifest, dict):
+                value = manifest.get("oos_partitions")
+        if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
+            return []
+        return value
+
+    def _partition_key(self, partition: dict[str, Any]) -> tuple[str, str, str]:
+        return self.store._validate_partition(partition)
 
     @staticmethod
     def _normalize_validation_result(result: Any) -> dict[str, Any]:
