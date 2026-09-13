@@ -1,7 +1,9 @@
+import json
+
 import pytest
 
 from research_runtime.collectors import ProviderRetryableError, SourceRecord
-from research_runtime.core import HypothesisState
+from research_runtime.core import CycleStatus, HypothesisState
 from research_runtime.service import ResearchService
 from research_runtime.store import ResearchStore
 
@@ -24,6 +26,89 @@ def proposal(cycle_id, source_id, *, required_data=("OHLCV",), mechanism="contin
         "supporting_source_ids": [source_id],
         "contradicting_source_ids": [],
     }
+
+
+def complete_plan():
+    return {
+        "schema_version": 1,
+        "family_id": "family-a",
+        "required_data": ["OHLCV"],
+        "entry_plan": {
+            "signal_definition": "confirmed continuation",
+            "confirmation": "completed candle close",
+            "timestamp_semantics": "signal at close",
+            "order_assumption": "market",
+            "validity_window": "one candle",
+            "duplicate_signal_policy": "one entry",
+            "pre_fill_invalidation": "cancel on stop cross",
+        },
+        "exit_designs": [
+            {
+                "name": "complete",
+                "protective_stop": {"type": "FVG_ABSOLUTE", "formula": "structural stop"},
+                "profit_exit": {"type": "R_MULTIPLE", "formula": "one R", "multiple": 1},
+                "time_exit": {"type": "NONE"},
+                "trailing_exit": {"type": "NONE"},
+                "regime_exit": {"type": "NONE"},
+                "exit_precedence": ["PROTECTIVE_STOP", "PROFIT_TARGET"],
+                "gap_behavior": "exchange dependent",
+                "stop_update_policy": "fixed",
+                "emergency_behavior": "fallback",
+            }
+        ],
+        "sizing_plan": {"risk_basis": "initial stop"},
+        "cost_model": {"fees": "configured"},
+        "development_protocol": {"windows": ["development"], "attempt_limit": 1},
+        "outer_acceptance_policy": {"required_folds": 3},
+        "falsifiers": ["negative stressed OOS"],
+        "evidence_map": {"entry": ["entry"], "stop": ["stop"], "profit_exit": ["profit"]},
+    }
+
+
+def make_identity_service(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite")
+    cycle_id = store.start_or_resume_cycle(
+        {
+            "now": "2026-09-11T08:00:00Z",
+            "dataset": "identity",
+            "requested_timerange": "20260101-20260901",
+            "search_cohort": "cohort-a",
+        }
+    )["cycle"]["id"]
+    service = ResearchService(store, tmp_path / "artifacts")
+    source_ids = {}
+    for name, relevance in (
+        ("entry", "direct"),
+        ("stop", "direct"),
+        ("profit", "direct"),
+        ("contradiction", "contradicting"),
+    ):
+        source_id = store.insert_source(
+            cycle_id,
+            {
+                "provider": "fixture",
+                "canonical_url": f"https://example.test/{name}",
+                "title": name,
+                "excerpt": name,
+                "retrieved_at": "2026-09-11T08:00:00Z",
+                "fingerprint": f"identity-{name}",
+                "metadata": {"collector": "fixture"},
+            },
+        )["id"]
+        service.record_source_assessment(
+            {
+                "cycle_id": cycle_id,
+                "source_id": source_id,
+                "assessment": {
+                    "relevance": relevance,
+                    "asset": "crypto",
+                    "timeframe": "30m",
+                    "mechanism": "continuation",
+                },
+            }
+        )
+        source_ids[name] = source_id
+    return service, cycle_id, source_ids
 
 
 def make_service(tmp_path):
@@ -76,6 +161,74 @@ def test_service_records_interpretation_and_finalizes_cycle(tmp_path):
         {"cycle_id": cycle_id, "status": "NEEDS_REVIEW", "reason": "validation passed"}
     )
     assert final["cycle"]["status"] == "NEEDS_REVIEW"
+
+
+def test_identity_bound_proposal_persists_complete_plan_and_claim_roles(tmp_path):
+    service, cycle_id, sources = make_identity_service(tmp_path)
+    payload = {
+        **proposal(cycle_id, sources["entry"]),
+        "supporting_source_ids": [sources["entry"], sources["stop"], sources["profit"]],
+        "contradicting_source_ids": [sources["contradiction"]],
+        "trading_plan": complete_plan(),
+        "evidence_links": [
+            {"source_id": sources["entry"], "stance": "SUPPORT", "note": "entry", "evidence": {"roles": ["ENTRY_SUPPORT"], "supported_claim": "entry", "transfer_assumption": "crypto", "limitations": "limited"}},
+            {"source_id": sources["stop"], "stance": "SUPPORT", "note": "stop", "evidence": {"roles": ["STOP_SUPPORT"], "supported_claim": "stop", "transfer_assumption": "crypto", "limitations": "limited"}},
+            {"source_id": sources["profit"], "stance": "SUPPORT", "note": "profit", "evidence": {"roles": ["PROFIT_EXIT_SUPPORT"], "supported_claim": "profit", "transfer_assumption": "crypto", "limitations": "limited"}},
+            {"source_id": sources["contradiction"], "stance": "CONTRADICT", "note": "falsifier", "evidence": {"roles": ["CONTRADICTION", "FALSIFIER"], "supported_claim": "risk", "transfer_assumption": "crypto", "limitations": "limited"}},
+        ],
+    }
+
+    result = service.propose_hypothesis(payload)
+    hypothesis = result["hypothesis"]
+
+    assert json.loads(hypothesis["plan_json"])["schema_version"] == 1
+    assert len(hypothesis["plan_sha256"]) == 64
+    links = service.store.list_hypothesis_sources(hypothesis["id"])
+    assert {link["stance"] for link in links} == {"SUPPORT", "CONTRADICT"}
+    assert all(json.loads(link["evidence_json"])["roles"] for link in links)
+
+
+def test_identity_bound_proposal_rejects_stance_overlap_and_cross_cycle_source(tmp_path):
+    service, cycle_id, sources = make_identity_service(tmp_path)
+    base = {
+        **proposal(cycle_id, sources["entry"]),
+        "supporting_source_ids": [sources["entry"]],
+        "contradicting_source_ids": [sources["entry"]],
+        "trading_plan": complete_plan(),
+    }
+    with pytest.raises(ValueError, match="overlap"):
+        service.propose_hypothesis(base)
+
+    service.store.set_cycle_status(cycle_id, CycleStatus.COMPLETED, "finish")
+    other_cycle = service.store.start_or_resume_cycle(
+        {"now": "2026-09-11T08:01:00Z", "dataset": "other"}
+    )["cycle"]["id"]
+    other_source = service.store.insert_source(
+        other_cycle,
+        {"provider": "fixture", "canonical_url": "https://example.test/other", "title": "other", "excerpt": "e", "retrieved_at": "2026-09-11T08:01:00Z", "fingerprint": "other-source", "metadata": {}},
+    )["id"]
+    with pytest.raises(ValueError, match="source provenance"):
+        service.propose_hypothesis({**base, "supporting_source_ids": [other_source], "contradicting_source_ids": [sources["contradiction"]]})
+
+
+def test_entry_only_evidence_cannot_authorize_complete_exit_plan(tmp_path):
+    service, cycle_id, sources = make_identity_service(tmp_path)
+    payload = {
+        **proposal(cycle_id, sources["entry"]),
+        "supporting_source_ids": [sources["entry"]],
+        "contradicting_source_ids": [sources["contradiction"]],
+        "trading_plan": complete_plan(),
+        "evidence_links": [
+            {"source_id": sources["entry"], "stance": "SUPPORT", "note": "entry", "evidence": {"roles": ["ENTRY_SUPPORT"], "supported_claim": "entry", "transfer_assumption": "crypto", "limitations": "limited"}},
+            {"source_id": sources["contradiction"], "stance": "CONTRADICT", "note": "falsifier", "evidence": {"roles": ["CONTRADICTION"], "supported_claim": "risk", "transfer_assumption": "crypto", "limitations": "limited"}},
+        ],
+    }
+    hypothesis = service.propose_hypothesis(payload)["hypothesis"]
+
+    with pytest.raises(ValueError, match="exit evidence"):
+        service.write_candidate(
+            {"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"], "strategy_name": "CandidateA", "source": "class CandidateA: pass\n"}
+        )
 
 
 def test_collect_sources_retries_temporary_provider_failure_and_records_error(tmp_path):

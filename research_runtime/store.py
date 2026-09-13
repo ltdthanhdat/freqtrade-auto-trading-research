@@ -833,7 +833,12 @@ class ResearchStore:
             )
             return int(cursor.lastrowid)
 
-    def insert_hypothesis(self, cycle_id: str, hypothesis: dict[str, Any]) -> dict[str, Any]:
+    def insert_hypothesis(
+        self,
+        cycle_id: str,
+        hypothesis: dict[str, Any],
+        source_links: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         scores = hypothesis.get("scores", hypothesis)
         total_score = score_hypothesis(
             scores.get("evidence_quality"),
@@ -863,7 +868,14 @@ class ResearchStore:
             if cycle["hypothesis_count"] >= HYPOTHESIS_BUDGET:
                 raise ValueError("hypothesis budget exhausted")
             connection.execute(
-                "INSERT INTO hypotheses (id, cycle_id, thesis, mechanism, market_scope, required_data_json, falsifier, evidence_quality, reproducibility, ohlcv_transferability, novelty, falsifiability, total_score, state, candidate_path, candidate_sha256, metadata_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?)",
+                """
+                INSERT INTO hypotheses (
+                    id, cycle_id, thesis, mechanism, market_scope, required_data_json, falsifier,
+                    evidence_quality, reproducibility, ohlcv_transferability, novelty, falsifiability,
+                    total_score, state, candidate_path, candidate_sha256, metadata_json, created_at,
+                    updated_at, family_id, plan_json, plan_sha256, approval_blocked_reason
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?)
+                """,
                 (
                     hypothesis_id,
                     cycle_id,
@@ -882,32 +894,80 @@ class ResearchStore:
                     _json_text(hypothesis.get("metadata", {}), "metadata"),
                     now,
                     now,
+                    hypothesis.get("family_id"),
+                    hypothesis.get("plan_json"),
+                    hypothesis.get("plan_sha256"),
+                    hypothesis.get("approval_blocked_reason"),
                 ),
             )
             connection.execute(
                 "UPDATE cycles SET hypothesis_count = hypothesis_count + 1, updated_at = ? WHERE id = ?",
                 (now, cycle_id),
             )
+            for link in source_links or []:
+                source_id = link["source_id"]
+                stance = link["stance"]
+                note = str(link.get("note") or "").strip()
+                if stance not in {"SUPPORT", "CONTRADICT"} or not note:
+                    raise ValueError("invalid hypothesis source link")
+                if connection.execute(
+                    "SELECT 1 FROM cycle_sources WHERE cycle_id = ? AND source_id = ?",
+                    (cycle_id, source_id),
+                ).fetchone() is None:
+                    raise ValueError(f"source provenance missing: {source_id}")
+                connection.execute(
+                    "INSERT INTO hypothesis_sources (hypothesis_id, source_id, stance, note, evidence_json) VALUES (?, ?, ?, ?, ?)",
+                    (
+                        hypothesis_id,
+                        source_id,
+                        stance,
+                        note,
+                        _json_text(link.get("evidence", {}), "evidence"),
+                    ),
+                )
             return dict(connection.execute("SELECT * FROM hypotheses WHERE id = ?", (hypothesis_id,)).fetchone())
 
     def add_hypothesis_source(
-        self, hypothesis_id: str, source_id: str, stance: str, note: str
+        self,
+        hypothesis_id: str,
+        source_id: str,
+        stance: str,
+        note: str,
+        evidence: dict[str, Any] | None = None,
     ) -> None:
         if stance not in {"SUPPORT", "CONTRADICT"}:
             raise ValueError("invalid source stance")
         if not note.strip():
             raise ValueError("source note is required")
         with self.connect() as connection:
+            hypothesis = connection.execute(
+                "SELECT cycle_id FROM hypotheses WHERE id = ?", (hypothesis_id,)
+            ).fetchone()
+            if hypothesis is None:
+                raise ValueError(f"unknown hypothesis: {hypothesis_id}")
+            if connection.execute(
+                "SELECT 1 FROM cycle_sources WHERE cycle_id = ? AND source_id = ?",
+                (hypothesis["cycle_id"], source_id),
+            ).fetchone() is None:
+                raise ValueError(f"source provenance missing: {source_id}")
+            existing = connection.execute(
+                "SELECT stance FROM hypothesis_sources WHERE hypothesis_id = ? AND source_id = ?",
+                (hypothesis_id, source_id),
+            ).fetchone()
+            if existing is not None:
+                if existing["stance"] != stance:
+                    raise ValueError("source stance overlap")
+                return
             connection.execute(
-                "INSERT OR IGNORE INTO hypothesis_sources (hypothesis_id, source_id, stance, note) VALUES (?, ?, ?, ?)",
-                (hypothesis_id, source_id, stance, note.strip()),
+                "INSERT INTO hypothesis_sources (hypothesis_id, source_id, stance, note, evidence_json) VALUES (?, ?, ?, ?, ?)",
+                (hypothesis_id, source_id, stance, note.strip(), _json_text(evidence or {}, "evidence")),
             )
 
     def list_hypothesis_sources(self, hypothesis_id: str) -> list[dict[str, Any]]:
         with self.connect() as connection:
             rows = connection.execute(
                 """
-                SELECT s.*, hs.stance, hs.note
+                SELECT s.*, hs.stance, hs.note, hs.evidence_json
                 FROM hypothesis_sources hs
                 JOIN sources s ON s.id = hs.source_id
                 WHERE hs.hypothesis_id = ?
@@ -1088,6 +1148,22 @@ class ResearchStore:
     def get_source(self, source_id: str) -> dict[str, Any] | None:
         with self.connect() as connection:
             return _row(connection.execute("SELECT * FROM sources WHERE id = ?", (source_id,)).fetchone())
+
+    def get_source_assessment(self, cycle_id: str, source_id: str) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT assessment_json FROM source_assessments WHERE cycle_id = ? AND source_id = ? ORDER BY created_at DESC, id DESC LIMIT 1",
+                (cycle_id, source_id),
+            ).fetchone()
+            if row is None:
+                return None
+            try:
+                value = json.loads(row["assessment_json"])
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"invalid stored source assessment: {source_id}") from exc
+            if not isinstance(value, dict):
+                raise ValueError(f"invalid stored source assessment: {source_id}")
+            return value
 
     def list_source_views(
         self, cycle_id: str, *, limit: int = 25, after: str | None = None

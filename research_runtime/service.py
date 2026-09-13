@@ -9,6 +9,7 @@ from typing import Any, Callable
 from .candidates import write_candidate
 from .collectors import COLLECTORS, ProviderError, ProviderRetryableError
 from .core import HypothesisState
+from .plan import canonical_plan_json, plan_sha256, validate_evidence_link, validate_trading_plan
 from .store import CANDIDATE_BUDGET, HYPOTHESIS_BUDGET, SOURCE_BUDGET, ResearchStore
 from .validation import ResearchVerdict, validate_candidate
 
@@ -46,6 +47,9 @@ class ResearchService:
             "supporting_source_ids",
             "contradicting_source_ids",
             "metadata",
+            "family_id",
+            "trading_plan",
+            "evidence_links",
         },
         "record_interpretation": {"cycle_id", "hypothesis_id", "interpretation"},
         "finalize_cycle": {"cycle_id", "status", "reason"},
@@ -247,6 +251,8 @@ class ResearchService:
         if not self._hypothesis_data_supported(hypothesis):
             raise ValueError("candidate requires OHLCV-supported required data")
         if not self._has_candidate_evidence(hypothesis["id"]):
+            if hypothesis.get("plan_json"):
+                raise ValueError("candidate requires claim-level exit evidence")
             raise ValueError("candidate requires full-text or corroborating independent evidence")
         eligible = [
             item
@@ -290,11 +296,30 @@ class ResearchService:
         )
 
     def _has_candidate_evidence(self, hypothesis_id: str) -> bool:
-        supporting = [
-            source
-            for source in self.store.list_hypothesis_sources(hypothesis_id)
-            if source["stance"] == "SUPPORT"
-        ]
+        hypothesis = self.store.get_hypothesis(hypothesis_id)
+        links = self.store.list_hypothesis_sources(hypothesis_id)
+        if hypothesis is not None and hypothesis.get("plan_json"):
+            support_roles: set[str] = set()
+            contradicting = False
+            for link in links:
+                try:
+                    evidence = json.loads(link.get("evidence_json", "{}"))
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(evidence, dict):
+                    continue
+                roles = {str(role) for role in evidence.get("roles", [])}
+                if link["stance"] == "SUPPORT":
+                    support_roles.update(roles)
+                elif link["stance"] == "CONTRADICT" and {"CONTRADICTION", "FALSIFIER"}.intersection(roles):
+                    contradicting = True
+            return {
+                "ENTRY_SUPPORT",
+                "STOP_SUPPORT",
+                "PROFIT_EXIT_SUPPORT",
+            }.issubset(support_roles) and contradicting
+
+        supporting = [source for source in links if source["stance"] == "SUPPORT"]
         if not supporting:
             return False
         providers: set[str] = set()
@@ -321,11 +346,7 @@ class ResearchService:
             return len(providers) >= 2 or direct_support
         if not direct_support:
             return False
-        contradicting = [
-            source
-            for source in self.store.list_hypothesis_sources(hypothesis_id)
-            if source["stance"] == "CONTRADICT"
-        ]
+        contradicting = [source for source in links if source["stance"] == "CONTRADICT"]
         return any(
             str(metadata.get("relevance", "")).casefold()
             in {"direct", "directly_relevant", "relevant", "contradicting", "falsifier"}
@@ -572,41 +593,128 @@ class ResearchService:
         required_data = payload["required_data"]
         if not isinstance(required_data, list) or not required_data:
             raise ValueError("required_data must be a non-empty list")
-        if cycle.get("search_cohort") and [str(item).upper() for item in required_data] != ["OHLCV"]:
+        identity_bound = bool(cycle.get("search_cohort"))
+        if identity_bound and [str(item).upper() for item in required_data] != ["OHLCV"]:
             raise ValueError("identity-bound hypothesis requires required_data exactly [OHLCV]")
-        source_ids = list(payload.get("supporting_source_ids", [])) + list(
-            payload.get("contradicting_source_ids", [])
-        )
-        if cycle.get("search_cohort") and (
-            not payload.get("supporting_source_ids") or not payload.get("contradicting_source_ids")
-        ):
+
+        supporting = list(payload.get("supporting_source_ids", []))
+        contradicting = list(payload.get("contradicting_source_ids", []))
+        if any(not isinstance(source_id, str) or not source_id.strip() for source_id in supporting + contradicting):
+            raise ValueError("source IDs must be non-empty strings")
+        if len(set(supporting)) != len(supporting) or len(set(contradicting)) != len(contradicting):
+            raise ValueError("source IDs must be unique")
+        if set(supporting).intersection(contradicting):
+            raise ValueError("source stance overlap")
+        if identity_bound and (not supporting or not contradicting):
             raise ValueError("identity-bound hypothesis requires structured evidence")
+
+        source_ids = supporting + contradicting
         for source_id in source_ids:
             source = self.store.get_source(source_id)
-            if source is None or source["cycle_id"] != cycle_id:
+            if source is None:
                 raise ValueError(f"source provenance missing: {source_id}")
-            if cycle.get("search_cohort"):
-                metadata = self._source_metadata(source)
-                if any(not metadata.get(key) for key in ("relevance", "asset", "timeframe", "mechanism")):
+            with self.store.connect() as connection:
+                observed = connection.execute(
+                    "SELECT 1 FROM cycle_sources WHERE cycle_id = ? AND source_id = ?",
+                    (cycle_id, source_id),
+                ).fetchone()
+            if observed is None:
+                raise ValueError(f"source provenance missing: {source_id}")
+            if identity_bound:
+                assessment = self.store.get_source_assessment(cycle_id, source_id)
+                if not isinstance(assessment, dict) or any(
+                    not assessment.get(key) for key in ("relevance", "asset", "timeframe", "mechanism")
+                ):
                     raise ValueError(f"structured evidence assessment missing: {source_id}")
+
+        plan_json = None
+        plan_hash = None
+        if identity_bound:
+            if not isinstance(payload.get("trading_plan"), dict):
+                raise ValueError("identity-bound hypothesis requires a complete trading plan")
+            plan = validate_trading_plan(payload["trading_plan"], identity_bound=True)
+            plan_json = canonical_plan_json(plan)
+            plan_hash = plan_sha256(plan)
+
+        links = self._normalize_evidence_links(payload, supporting, contradicting, identity_bound)
         mechanism = str(payload["mechanism"]).strip()
         if not mechanism:
             raise ValueError("mechanism is required")
         existing = self.store.find_hypothesis_by_mechanism(cycle_id, mechanism)
         if existing is not None:
-            for source_id in payload.get("supporting_source_ids", []):
-                self.store.add_hypothesis_source(existing["id"], source_id, "SUPPORT", "new evidence")
-            for source_id in payload.get("contradicting_source_ids", []):
-                self.store.add_hypothesis_source(existing["id"], source_id, "CONTRADICT", "new evidence")
-            return {"hypothesis": existing, "duplicate": True}
+            if identity_bound and existing.get("plan_sha256") not in {None, plan_hash}:
+                raise ValueError("hypothesis plan is immutable")
+            for link in links:
+                self.store.add_hypothesis_source(
+                    existing["id"], link["source_id"], link["stance"], link["note"], link["evidence"]
+                )
+            return {"hypothesis": self.store.get_hypothesis(existing["id"]), "duplicate": True}
+
         unsupported = {str(item).upper() for item in required_data} - {"OHLCV"}
         state = HypothesisState.BACKLOG if unsupported else HypothesisState.SCORED
-        hypothesis = self.store.insert_hypothesis(cycle_id, {**payload, "state": state})
-        for source_id in payload.get("supporting_source_ids", []):
-            self.store.add_hypothesis_source(hypothesis["id"], source_id, "SUPPORT", "supporting evidence")
-        for source_id in payload.get("contradicting_source_ids", []):
-            self.store.add_hypothesis_source(hypothesis["id"], source_id, "CONTRADICT", "contradicting evidence")
+        hypothesis = self.store.insert_hypothesis(
+            cycle_id,
+            {
+                **payload,
+                "state": state,
+                "family_id": payload.get("family_id"),
+                "plan_json": plan_json,
+                "plan_sha256": plan_hash,
+            },
+            source_links=links,
+        )
         return {"hypothesis": hypothesis, "duplicate": False}
+
+    @staticmethod
+    def _normalize_evidence_links(
+        payload: dict[str, Any],
+        supporting: list[str],
+        contradicting: list[str],
+        identity_bound: bool,
+    ) -> list[dict[str, Any]]:
+        raw_links = payload.get("evidence_links")
+        if raw_links is None:
+            if identity_bound:
+                raise ValueError("identity-bound hypothesis requires claim-level evidence links")
+            return [
+                {"source_id": source_id, "stance": "SUPPORT", "note": "supporting evidence", "evidence": {}}
+                for source_id in supporting
+            ] + [
+                {"source_id": source_id, "stance": "CONTRADICT", "note": "contradicting evidence", "evidence": {}}
+                for source_id in contradicting
+            ]
+        if not isinstance(raw_links, list) or not raw_links:
+            raise ValueError("evidence_links must be a non-empty list")
+        expected_stance = {source_id: "SUPPORT" for source_id in supporting}
+        expected_stance.update({source_id: "CONTRADICT" for source_id in contradicting})
+        links: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        roles: set[str] = set()
+        for raw in raw_links:
+            if not isinstance(raw, dict):
+                raise ValueError("evidence link must be an object")
+            source_id = raw.get("source_id")
+            stance = raw.get("stance")
+            if source_id not in expected_stance or expected_stance[source_id] != stance:
+                raise ValueError("evidence link stance does not match source lists")
+            if source_id in seen:
+                raise ValueError("duplicate evidence link")
+            evidence = validate_evidence_link(raw.get("evidence")) if identity_bound else raw.get("evidence", {})
+            if not isinstance(evidence, dict):
+                raise ValueError("evidence must be an object")
+            seen.add(source_id)
+            roles.update(str(role) for role in evidence.get("roles", []))
+            links.append(
+                {
+                    "source_id": source_id,
+                    "stance": stance,
+                    "note": str(raw.get("note") or "evidence").strip(),
+                    "evidence": evidence,
+                }
+            )
+        if identity_bound and seen != set(expected_stance):
+            raise ValueError("evidence links must cover every cited source")
+        return links
 
     def record_interpretation(self, payload: dict[str, Any]) -> dict[str, Any]:
         hypothesis = self.store.get_hypothesis(payload["hypothesis_id"])
