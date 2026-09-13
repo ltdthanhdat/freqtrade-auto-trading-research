@@ -668,6 +668,98 @@ def test_second_infrastructure_failure_becomes_inconclusive(tmp_path):
     assert service.store.get_hypothesis(hypothesis["id"])["state"] == HypothesisState.INCONCLUSIVE
 
 
+def _prepare_cohort_service(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite")
+    members = []
+    for index in range(3):
+        cycle_id = f"C-service-cohort-{index}"
+        store.ensure_cycle(cycle_id, status=CycleStatus.COMPLETED, now=f"2026-09-11T08:0{index}:00Z")
+        plan_json = json.dumps({"schema_version": 1}, sort_keys=True, separators=(",", ":"))
+        plan_sha256 = __import__("hashlib").sha256(plan_json.encode()).hexdigest()
+        hypothesis = store.insert_hypothesis(
+            cycle_id,
+            {
+                "id": f"H-service-cohort-{index}",
+                "thesis": "cohort",
+                "mechanism": f"family-{index}",
+                "market_scope": "crypto",
+                "required_data": ["OHLCV"],
+                "falsifier": "negative OOS",
+                "scores": {"evidence_quality": 1, "reproducibility": 1, "ohlcv_transferability": 1, "novelty": 1, "falsifiability": 1},
+            },
+        )
+        candidate = tmp_path / f"service-candidate-{index}.py"
+        candidate.write_text(f"class Candidate{index}: pass\n")
+        candidate_sha256 = __import__("hashlib").sha256(candidate.read_bytes()).hexdigest()
+        with store.connect() as connection:
+            connection.execute(
+                "UPDATE hypotheses SET plan_json = ?, plan_sha256 = ? WHERE id = ?",
+                (plan_json, plan_sha256, hypothesis["id"]),
+            )
+        store.set_candidate(hypothesis["id"], candidate, candidate_sha256)
+        store.transition_hypothesis(hypothesis["id"], HypothesisState.QUEUED, "runtime", "queued")
+        store.transition_hypothesis(hypothesis["id"], HypothesisState.IMPLEMENTING, "runtime", "implementing")
+        members.append({
+            "cycle_id": cycle_id,
+            "hypothesis_id": hypothesis["id"],
+            "candidate_sha256": candidate_sha256,
+            "plan_sha256": plan_sha256,
+            "dependency_sha256": "d" * 64,
+        })
+    cohort = {
+        "id": "COHORT-service",
+        "dataset": "snapshot",
+        "config_sha256": "b" * 64,
+        "policy_sha256": "d" * 64,
+        "snapshot_sha256": "s" * 64,
+        "comparison_start_at": "2026-01-01T00:00:00Z",
+        "comparison_end_at": "2026-02-01T00:00:00Z",
+        "holdout_start_at": "2026-02-01T00:00:00Z",
+        "holdout_end_at": "2026-03-01T00:00:00Z",
+        "selection_rule": {"metric": "stressed_net_profit", "tie_breaker": "drawdown"},
+        "members": members,
+    }
+    store.create_evaluation_cohort(cohort)
+    return ResearchService(store, tmp_path / "artifacts"), members
+
+
+def test_comparison_cohort_shares_one_owned_partition_across_members(tmp_path):
+    service, members = _prepare_cohort_service(tmp_path)
+    partition = {"kind": "COMPARISON_OOS", "start_at": "2026-01-01T00:00:00Z", "end_at": "2026-02-01T00:00:00Z"}
+    service.validator = lambda _experiment: {"verdict": "PASS", "metrics": {}, "artifacts": {"oos_partitions": [partition]}}
+
+    for index, member in enumerate(members):
+        result = service.start_validation({
+            "cycle_id": member["cycle_id"],
+            "hypothesis_id": member["hypothesis_id"],
+            "experiment": {
+                "id": f"EXP-service-cohort-{index}",
+                "parent_strategy": "fixture",
+                "parent_sha256": "a" * 64,
+                "changed_variable": "cohort",
+                "config_path": "config.json",
+                "config_sha256": "b" * 64,
+                "pairs": [],
+                "timeframes": ["30m"],
+                "timeframe_detail": "1m",
+                "snapshot_path": "snapshot",
+                "snapshot_sha256": "s" * 64,
+                "policy_path": "policy.json",
+                "policy_sha256": "d" * 64,
+                "strategy_name": f"Candidate{index}",
+                "strategy_path": str(tmp_path),
+                "start_at": "2026-01-01T00:00:00Z",
+                "end_at": "2026-02-01T00:00:00Z",
+                "status": "PENDING",
+                "oos_partitions": [partition],
+            },
+        })
+        assert result["state"] == HypothesisState.NEEDS_REVIEW
+    with service.store.connect() as connection:
+        rows = connection.execute("SELECT owner_id, kind FROM oos_partition_consumptions").fetchall()
+        assert [(row[0], row[1]) for row in rows] == [("COHORT-service", "COMPARISON_OOS")]
+
+
 def test_retryable_validation_creates_a_new_attempt(tmp_path):
     service, cycle_id, source_id = make_service(tmp_path)
     hypothesis = service.propose_hypothesis(proposal(cycle_id, source_id))["hypothesis"]

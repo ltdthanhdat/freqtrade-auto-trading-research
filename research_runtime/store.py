@@ -216,7 +216,9 @@ class ResearchStore:
             elif version == 2:
                 self._migrate_v2(connection)
                 connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
-            elif version != SCHEMA_VERSION:
+            elif version == SCHEMA_VERSION:
+                self._migrate_v3(connection)
+            else:
                 raise RuntimeError(f"unsupported research schema version: {version}")
             self._reconcile_legacy_state(connection)
 
@@ -303,6 +305,8 @@ class ResearchStore:
               selection_rule_json TEXT NOT NULL CHECK(json_valid(selection_rule_json)),
               manifest_sha256 TEXT NOT NULL,
               status TEXT NOT NULL CHECK(status IN ('SEALED', 'SELECTED', 'CLOSED')),
+              selected_hypothesis_id TEXT,
+              manifest_json TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(manifest_json)),
               created_at TEXT NOT NULL,
               sealed_at TEXT NOT NULL,
               CHECK(comparison_start_at < comparison_end_at),
@@ -426,6 +430,12 @@ class ResearchStore:
                         ("legacy evidence quarantined during schema migration", hypothesis_id),
                     )
 
+        cohort_columns = {row[1] for row in connection.execute("PRAGMA table_info(comparison_cohorts)")}
+        if "selected_hypothesis_id" not in cohort_columns:
+            connection.execute("ALTER TABLE comparison_cohorts ADD COLUMN selected_hypothesis_id TEXT")
+        if "manifest_json" not in cohort_columns:
+            connection.execute("ALTER TABLE comparison_cohorts ADD COLUMN manifest_json TEXT NOT NULL DEFAULT '[]'")
+
         connection.executescript(
             """
             CREATE TRIGGER IF NOT EXISTS immutable_sources_update
@@ -457,6 +467,29 @@ class ResearchStore:
             BEFORE DELETE ON oos_partition_consumptions
             BEGIN
               SELECT RAISE(ABORT, 'OOS consumptions are append-only');
+            END;
+            CREATE TRIGGER IF NOT EXISTS immutable_comparison_cohort_update
+            BEFORE UPDATE OF id, dataset, snapshot_sha256, comparison_start_at,
+              comparison_end_at, holdout_start_at, holdout_end_at, selection_rule_json,
+              manifest_sha256, manifest_json ON comparison_cohorts
+            BEGIN
+              SELECT RAISE(ABORT, 'evaluation cohorts are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS immutable_comparison_cohort_member_insert
+            BEFORE INSERT ON comparison_cohort_members
+            WHEN (SELECT COUNT(*) FROM comparison_cohort_members WHERE cohort_id = NEW.cohort_id) >= 3
+            BEGIN
+              SELECT RAISE(ABORT, 'evaluation cohort membership is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS immutable_comparison_cohort_member_update
+            BEFORE UPDATE ON comparison_cohort_members
+            BEGIN
+              SELECT RAISE(ABORT, 'evaluation cohort membership is immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS immutable_comparison_cohort_member_delete
+            BEFORE DELETE ON comparison_cohort_members
+            BEGIN
+              SELECT RAISE(ABORT, 'evaluation cohort membership is immutable');
             END;
             CREATE TRIGGER IF NOT EXISTS immutable_sealed_hypothesis_update
             BEFORE UPDATE OF thesis, mechanism, market_scope, required_data_json, falsifier,
@@ -501,6 +534,14 @@ class ResearchStore:
             END;
             """
         )
+
+    @staticmethod
+    def _migrate_v3(connection: sqlite3.Connection) -> None:
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(comparison_cohorts)")}
+        if columns and "selected_hypothesis_id" not in columns:
+            connection.execute("ALTER TABLE comparison_cohorts ADD COLUMN selected_hypothesis_id TEXT")
+        if columns and "manifest_json" not in columns:
+            connection.execute("ALTER TABLE comparison_cohorts ADD COLUMN manifest_json TEXT NOT NULL DEFAULT '[]'")
 
     @staticmethod
     def _reconcile_legacy_state(connection: sqlite3.Connection) -> None:
@@ -1488,6 +1529,229 @@ class ResearchStore:
                 "sealed_at": sealed_at,
             }
 
+    @staticmethod
+    def _cohort_result(connection: sqlite3.Connection, row: sqlite3.Row) -> dict[str, Any]:
+        result = dict(row)
+        manifest_json = result.pop("manifest_json", "[]")
+        try:
+            result["selection_rule"] = json.loads(result.pop("selection_rule_json"))
+        except json.JSONDecodeError as exc:
+            raise ValueError("invalid evaluation cohort selection rule") from exc
+        members = [
+            dict(member)
+            for member in connection.execute(
+                "SELECT cycle_id, hypothesis_id, candidate_sha256, plan_sha256 FROM comparison_cohort_members WHERE cohort_id = ? ORDER BY rowid ASC",
+                (row["id"],),
+            )
+        ]
+        try:
+            manifest_members = {item["hypothesis_id"]: item for item in json.loads(manifest_json)}
+        except (KeyError, TypeError, json.JSONDecodeError) as exc:
+            raise ValueError("invalid evaluation cohort manifest") from exc
+        for member in members:
+            source = manifest_members.get(member["hypothesis_id"], {})
+            member["dependency_sha256"] = source.get("dependency_sha256")
+        result["members"] = members
+        return result
+
+    def create_evaluation_cohort(self, payload: dict[str, Any]) -> dict[str, Any]:
+        values = dict(payload.get("cohort") or payload)
+        required = (
+            "id", "dataset", "config_sha256", "policy_sha256", "snapshot_sha256",
+            "comparison_start_at", "comparison_end_at", "holdout_start_at", "holdout_end_at",
+            "selection_rule", "members",
+        )
+        missing = [key for key in required if key not in values]
+        if missing:
+            raise ValueError(f"missing cohort fields: {', '.join(missing)}")
+        members = values["members"]
+        if not isinstance(members, list) or len(members) != 3:
+            raise ValueError("evaluation cohort requires exactly three members")
+        if not isinstance(values["selection_rule"], dict) or not values["selection_rule"]:
+            raise ValueError("evaluation cohort selection rule is required")
+        if not all(isinstance(values.get(key), str) and values[key] for key in ("id", "dataset", "config_sha256", "policy_sha256", "snapshot_sha256")):
+            raise ValueError("evaluation cohort identity is required")
+        comparison_start = _timestamp(values["comparison_start_at"])
+        comparison_end = _timestamp(values["comparison_end_at"])
+        holdout_start = _timestamp(values["holdout_start_at"])
+        holdout_end = _timestamp(values["holdout_end_at"])
+        if not comparison_start < comparison_end or not holdout_start < holdout_end:
+            raise ValueError("evaluation cohort interval is invalid")
+        if comparison_end > holdout_start:
+            raise ValueError("comparison OOS must end before holdout")
+
+        manifest_members: list[dict[str, Any]] = []
+        seen: set[tuple[str, str, str]] = set()
+        with self.connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            existing = connection.execute(
+                "SELECT * FROM comparison_cohorts WHERE id = ?", (values["id"],)
+            ).fetchone()
+            if existing is not None:
+                expected = self._cohort_result(connection, existing)
+                expected.pop("manifest_json", None)
+                requested_members = values["members"]
+                if expected["members"] == requested_members and expected["dataset"] == values["dataset"]:
+                    return expected
+                raise ValueError("evaluation cohort is immutable")
+            for member in members:
+                if not isinstance(member, dict):
+                    raise ValueError("evaluation cohort member must be an object")
+                member_keys = (str(member.get("cycle_id") or ""), str(member.get("hypothesis_id") or ""), str(member.get("candidate_sha256") or ""))
+                if not all(member_keys) or member_keys in seen:
+                    raise ValueError("evaluation cohort members must be unique")
+                seen.add(member_keys)
+                dependency_sha256 = str(member.get("dependency_sha256") or "")
+                if not dependency_sha256:
+                    raise ValueError("evaluation cohort dependency identity is required")
+                hypothesis = connection.execute(
+                    "SELECT * FROM hypotheses WHERE id = ? AND cycle_id = ?", (member["hypothesis_id"], member["cycle_id"])
+                ).fetchone()
+                if hypothesis is None or not hypothesis["candidate_path"] or not hypothesis["candidate_sha256"]:
+                    raise ValueError("evaluation cohort member candidate is not frozen")
+                candidate_path = Path(str(hypothesis["candidate_path"]))
+                if not candidate_path.is_file() or hashlib.sha256(candidate_path.read_bytes()).hexdigest() != hypothesis["candidate_sha256"]:
+                    raise ValueError("evaluation cohort member candidate identity is invalid")
+                if str(member["candidate_sha256"]) != hypothesis["candidate_sha256"]:
+                    raise ValueError("evaluation cohort candidate identity mismatch")
+                if not hypothesis["plan_json"] or not hypothesis["plan_sha256"] or str(member.get("plan_sha256")) != hypothesis["plan_sha256"]:
+                    raise ValueError("evaluation cohort plan identity mismatch")
+                cycle = connection.execute("SELECT * FROM cycles WHERE id = ?", (member["cycle_id"],)).fetchone()
+                if cycle is None:
+                    raise ValueError("evaluation cohort cycle is missing")
+                if cycle["dataset"] not in (None, "") and str(cycle["dataset"]) != str(values["dataset"]):
+                    raise ValueError("evaluation cohort dataset identity mismatch")
+                experiment = connection.execute(
+                    "SELECT * FROM experiments WHERE hypothesis_id = ? ORDER BY created_at DESC LIMIT 1",
+                    (member["hypothesis_id"],),
+                ).fetchone()
+                if experiment is not None:
+                    for field, expected_value in (("snapshot_sha256", values["snapshot_sha256"]), ("config_sha256", values["config_sha256"]), ("policy_sha256", values["policy_sha256"])):
+                        if str(experiment[field]) != str(expected_value):
+                            raise ValueError(f"evaluation cohort {field} identity mismatch")
+                for field, expected_value in (("config_sha256", values["config_sha256"]), ("policy_sha256", values["policy_sha256"]), ("snapshot_sha256", values["snapshot_sha256"])):
+                    if member.get(field) not in (None, "") and str(member[field]) != str(expected_value):
+                        raise ValueError(f"evaluation cohort {field} identity mismatch")
+                manifest_members.append({
+                    "cycle_id": member["cycle_id"],
+                    "hypothesis_id": member["hypothesis_id"],
+                    "candidate_sha256": hypothesis["candidate_sha256"],
+                    "plan_sha256": hypothesis["plan_sha256"],
+                    "dependency_sha256": dependency_sha256,
+                })
+            manifest = {
+                "id": values["id"],
+                "dataset": values["dataset"],
+                "config_sha256": values["config_sha256"],
+                "policy_sha256": values["policy_sha256"],
+                "snapshot_sha256": values["snapshot_sha256"],
+                "comparison_start_at": comparison_start,
+                "comparison_end_at": comparison_end,
+                "holdout_start_at": holdout_start,
+                "holdout_end_at": holdout_end,
+                "selection_rule": values["selection_rule"],
+                "members": manifest_members,
+            }
+            manifest_json = canonical_json(manifest)
+            manifest_sha256 = hashlib.sha256(manifest_json.encode()).hexdigest()
+            created_at = _timestamp(values.get("created_at"))
+            connection.execute(
+                """
+                INSERT INTO comparison_cohorts
+                    (id, dataset, snapshot_sha256, comparison_start_at, comparison_end_at,
+                     holdout_start_at, holdout_end_at, selection_rule_json, manifest_sha256,
+                     status, selected_hypothesis_id, created_at, sealed_at, manifest_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'SEALED', NULL, ?, ?, ?)
+                """,
+                (
+                    values["id"], values["dataset"], values["snapshot_sha256"], comparison_start,
+                    comparison_end, holdout_start, holdout_end,
+                    _json_text(values["selection_rule"], "selection_rule"), manifest_sha256,
+                    created_at, created_at, canonical_json(manifest_members),
+                ),
+            )
+            for member in manifest_members:
+                connection.execute(
+                    """
+                    INSERT INTO comparison_cohort_members
+                        (cohort_id, cycle_id, hypothesis_id, candidate_sha256, plan_sha256)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (values["id"], member["cycle_id"], member["hypothesis_id"], member["candidate_sha256"], member["plan_sha256"]),
+                )
+            return self._cohort_result(
+                connection,
+                connection.execute("SELECT * FROM comparison_cohorts WHERE id = ?", (values["id"],)).fetchone(),
+            )
+
+    def get_evaluation_cohort(self, cohort_id: str) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute("SELECT * FROM comparison_cohorts WHERE id = ?", (cohort_id,)).fetchone()
+            return None if row is None else self._cohort_result(connection, row)
+
+    def get_evaluation_cohort_for_member(self, hypothesis_id: str) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT c.* FROM comparison_cohorts c
+                JOIN comparison_cohort_members m ON m.cohort_id = c.id
+                WHERE m.hypothesis_id = ? LIMIT 1
+                """,
+                (hypothesis_id,),
+            ).fetchone()
+            return None if row is None else self._cohort_result(connection, row)
+
+    def validate_evaluation_cohort(self, cohort_id: str) -> dict[str, Any]:
+        with self.connect() as connection:
+            row = connection.execute("SELECT * FROM comparison_cohorts WHERE id = ?", (cohort_id,)).fetchone()
+            if row is None:
+                raise ValueError("evaluation cohort is missing")
+            result = self._cohort_result(connection, row)
+            for member in result["members"]:
+                hypothesis = connection.execute("SELECT candidate_path, candidate_sha256, plan_sha256 FROM hypotheses WHERE id = ?", (member["hypothesis_id"],)).fetchone()
+                if hypothesis is None or hypothesis["candidate_sha256"] != member["candidate_sha256"] or hypothesis["plan_sha256"] != member["plan_sha256"]:
+                    raise ValueError("evaluation cohort identity is invalid")
+                path = Path(str(hypothesis["candidate_path"]))
+                if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != member["candidate_sha256"]:
+                    raise ValueError("evaluation cohort candidate identity is invalid")
+            return result
+
+    def select_evaluation_cohort(self, cohort_id: str, hypothesis_id: str) -> dict[str, Any]:
+        self.validate_evaluation_cohort(cohort_id)
+        with self.connect() as connection:
+            row = connection.execute("SELECT * FROM comparison_cohorts WHERE id = ?", (cohort_id,)).fetchone()
+            member = connection.execute(
+                "SELECT 1 FROM comparison_cohort_members WHERE cohort_id = ? AND hypothesis_id = ?",
+                (cohort_id, hypothesis_id),
+            ).fetchone()
+            if row is None or member is None:
+                raise ValueError("selected hypothesis is not a cohort member")
+            if row["status"] == "CLOSED":
+                raise ValueError("evaluation cohort is closed")
+            connection.execute(
+                "UPDATE comparison_cohorts SET status = 'SELECTED', selected_hypothesis_id = ? WHERE id = ?",
+                (hypothesis_id, cohort_id),
+            )
+            return self._cohort_result(connection, connection.execute("SELECT * FROM comparison_cohorts WHERE id = ?", (cohort_id,)).fetchone())
+
+    def authorize_cohort_partition(self, hypothesis_id: str, partition: dict[str, Any], snapshot_sha256: str) -> str:
+        kind, start_at, end_at = self._validate_partition(partition)
+        cohort = self.get_evaluation_cohort_for_member(hypothesis_id)
+        if cohort is None:
+            raise ValueError("comparison cohort is required for this partition")
+        self.validate_evaluation_cohort(cohort["id"])
+        if snapshot_sha256 != cohort["snapshot_sha256"]:
+            raise ValueError("cohort snapshot identity mismatch")
+        expected = {
+            "COMPARISON_OOS": (cohort["comparison_start_at"], cohort["comparison_end_at"]),
+            "HOLDOUT": (cohort["holdout_start_at"], cohort["holdout_end_at"]),
+        }[kind]
+        if (start_at, end_at) != expected:
+            raise ValueError("cohort partition interval mismatch")
+        if kind == "HOLDOUT" and cohort.get("selected_hypothesis_id") != hypothesis_id:
+            raise ValueError("only the selected cohort member may use holdout")
+        return cohort["id"]
+
     def list_hypotheses(self, cycle_id: str | None = None) -> list[dict[str, Any]]:
         with self.connect() as connection:
             query = "SELECT * FROM hypotheses"
@@ -1554,14 +1818,16 @@ class ResearchStore:
         with self.connect() as connection:
             row = connection.execute(
                 """
-                SELECT 1 FROM oos_partition_consumptions
+                SELECT owner_id FROM oos_partition_consumptions
                 WHERE snapshot_sha256 = ? AND kind = ?
                   AND start_at < ? AND end_at > ?
                 LIMIT 1
                 """,
                 (snapshot_sha256, kind, normalized_end, normalized_start),
             ).fetchone()
-            return row is not None
+            if row is None:
+                return False
+            return not (kind == "COMPARISON_OOS" and owner_id and row["owner_id"] == owner_id)
 
     def assert_oos_partitions_available(
         self,
@@ -1604,7 +1870,7 @@ class ResearchStore:
             kind, start_at, end_at = self._validate_partition(partition)
             overlap = connection.execute(
                 """
-                SELECT 1 FROM oos_partition_consumptions
+                SELECT owner_id FROM oos_partition_consumptions
                 WHERE snapshot_sha256 = ? AND kind = ?
                   AND start_at < ? AND end_at > ?
                 LIMIT 1
@@ -1612,6 +1878,8 @@ class ResearchStore:
                 (snapshot_sha256, kind, end_at, start_at),
             ).fetchone()
             if overlap is not None:
+                if kind == "COMPARISON_OOS" and overlap["owner_id"] == (owner_id or cycle_id):
+                    continue
                 raise ValueError("OOS partition is already consumed")
             connection.execute(
                 """

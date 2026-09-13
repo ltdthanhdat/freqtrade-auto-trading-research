@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta, timezone
+import hashlib
+import json
 import sqlite3
 
 import pytest
@@ -449,6 +451,89 @@ def test_sealed_hypothesis_source_links_are_immutable(tmp_path):
                 "INSERT INTO hypothesis_sources (hypothesis_id, source_id, stance, note, evidence_json) VALUES (?, ?, 'SUPPORT', 'after', '{}')",
                 ("H-links", source_ids[1]),
             )
+
+
+def _cohort_member(store, tmp_path, index):
+    cycle_id = f"C-cohort-{index}"
+    store.ensure_cycle(cycle_id, status=CycleStatus.COMPLETED, now=f"2026-09-11T08:0{index}:00Z")
+    plan_json = json.dumps({"schema_version": 1}, sort_keys=True, separators=(",", ":"))
+    plan_sha256 = hashlib.sha256(plan_json.encode()).hexdigest()
+    hypothesis = store.insert_hypothesis(
+        cycle_id,
+        {
+            "id": f"H-cohort-{index}",
+            "thesis": "frozen",
+            "mechanism": f"family-{index}",
+            "market_scope": "crypto",
+            "required_data": ["OHLCV"],
+            "falsifier": "negative OOS",
+            "scores": {"evidence_quality": 1, "reproducibility": 1, "ohlcv_transferability": 1, "novelty": 1, "falsifiability": 1},
+        },
+    )
+    candidate = tmp_path / f"candidate-{index}.py"
+    candidate.write_text(f"class Candidate{index}: pass\n")
+    candidate_sha256 = hashlib.sha256(candidate.read_bytes()).hexdigest()
+    with store.connect() as connection:
+        connection.execute(
+            "UPDATE hypotheses SET plan_json = ?, plan_sha256 = ? WHERE id = ?",
+            (plan_json, plan_sha256, hypothesis["id"]),
+        )
+    store.set_candidate(hypothesis["id"], candidate, candidate_sha256)
+    return {
+        "cycle_id": cycle_id,
+        "hypothesis_id": hypothesis["id"],
+        "candidate_sha256": candidate_sha256,
+        "plan_sha256": plan_sha256,
+        "dependency_sha256": "d" * 64,
+    }
+
+
+def _cohort_payload(members):
+    return {
+        "id": "COHORT-1",
+        "dataset": "snapshot",
+        "config_sha256": "c" * 64,
+        "policy_sha256": "p" * 64,
+        "snapshot_sha256": "s" * 64,
+        "comparison_start_at": "2026-01-01T00:00:00Z",
+        "comparison_end_at": "2026-02-01T00:00:00Z",
+        "holdout_start_at": "2026-02-01T00:00:00Z",
+        "holdout_end_at": "2026-03-01T00:00:00Z",
+        "selection_rule": {"metric": "stressed_net_profit", "tie_breaker": "drawdown"},
+        "members": members,
+    }
+
+
+def test_evaluation_cohort_seals_exactly_three_frozen_members(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite")
+    members = [_cohort_member(store, tmp_path, index) for index in range(3)]
+    with pytest.raises(ValueError, match="exactly three"):
+        store.create_evaluation_cohort(_cohort_payload(members[:2]))
+
+    cohort = store.create_evaluation_cohort(_cohort_payload(members))
+    assert cohort["id"] == "COHORT-1"
+    assert cohort["status"] == "SEALED"
+    assert len(cohort["members"]) == 3
+    assert len(cohort["manifest_sha256"]) == 64
+    assert store.create_evaluation_cohort(_cohort_payload(members)) == cohort
+    store.select_evaluation_cohort("COHORT-1", members[0]["hypothesis_id"])
+    holdout = {"kind": "HOLDOUT", "start_at": "2026-02-01T00:00:00Z", "end_at": "2026-03-01T00:00:00Z"}
+    assert store.authorize_cohort_partition(members[0]["hypothesis_id"], holdout, "s" * 64) == "COHORT-1"
+    with pytest.raises(ValueError, match="selected cohort member"):
+        store.authorize_cohort_partition(members[1]["hypothesis_id"], holdout, "s" * 64)
+
+
+def test_evaluation_cohort_rejects_mutated_member_identity(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite")
+    members = [_cohort_member(store, tmp_path, index) for index in range(3)]
+    store.create_evaluation_cohort(_cohort_payload(members))
+    with store.connect() as connection:
+        connection.execute(
+            "UPDATE hypotheses SET candidate_sha256 = ? WHERE id = ?",
+            ("x" * 64, members[0]["hypothesis_id"]),
+        )
+    with pytest.raises(ValueError, match="cohort identity"):
+        store.validate_evaluation_cohort("COHORT-1")
 
 
 def test_review_requires_actor_and_reason(tmp_path):

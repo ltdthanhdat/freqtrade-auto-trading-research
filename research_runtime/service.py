@@ -25,6 +25,7 @@ class ResearchService:
         "load_context": {"cycle_id"},
         "list_source_views": {"cycle_id", "limit", "after"},
         "seal_hypothesis_ranking": {"cycle_id"},
+        "create_evaluation_cohort": {"cohort", "id", "dataset", "config_sha256", "policy_sha256", "snapshot_sha256", "comparison_start_at", "comparison_end_at", "holdout_start_at", "holdout_end_at", "selection_rule", "members"},
         "collect_sources": {"cycle_id", "provider", "query", "limit"},
         "write_candidate": {"cycle_id", "hypothesis_id", "strategy_name", "source"},
         "start_validation": {
@@ -61,6 +62,7 @@ class ResearchService:
         "load_context": {"cycle_id"},
         "list_source_views": {"cycle_id"},
         "seal_hypothesis_ranking": {"cycle_id"},
+        "create_evaluation_cohort": set(),
         "collect_sources": {"cycle_id", "provider", "query", "limit"},
         "write_candidate": {"cycle_id", "hypothesis_id", "strategy_name", "source"},
         "start_validation": {"cycle_id", "hypothesis_id"},
@@ -247,6 +249,9 @@ class ResearchService:
     def seal_hypothesis_ranking(self, payload: dict[str, Any]) -> dict[str, Any]:
         return self.store.seal_hypothesis_ranking(payload["cycle_id"])
 
+    def create_evaluation_cohort(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self.store.create_evaluation_cohort(payload)
+
     def write_candidate(self, payload: dict[str, Any]) -> dict[str, Any]:
         cycle_id = payload["cycle_id"]
         cycle = self.store.get_cycle(cycle_id)
@@ -404,6 +409,11 @@ class ResearchService:
             raise ValueError("OOS partition plan must be a list")
         if hypothesis.get("plan_json") and not planned_partitions:
             raise ValueError("identity-bound validation requires a non-empty OOS plan")
+        cohort_owner = self._cohort_owner_for_partitions(
+            hypothesis["id"], existing["snapshot_sha256"], planned_partitions, existing.get("owner_id")
+        )
+        if cohort_owner and existing.get("owner_id") != cohort_owner:
+            raise ValueError("experiment owner does not match evaluation cohort")
         self.store.assert_oos_partitions_available(
             snapshot_sha256=existing["snapshot_sha256"],
             partitions=planned_partitions,
@@ -568,6 +578,11 @@ class ResearchService:
                 "end_at": spec.get("end_at", hypothesis["updated_at"]),
             }
         )
+        owner = self._cohort_owner_for_partitions(
+            hypothesis["id"], spec["snapshot_sha256"], spec.get("oos_partitions", []), spec.get("owner_id")
+        )
+        if owner:
+            spec["owner_id"] = owner
         required = (
             "parent_strategy", "parent_sha256", "changed_variable", "config_path", "config_sha256",
             "pairs", "timeframes", "timeframe_detail", "snapshot_path", "snapshot_sha256",
@@ -583,6 +598,25 @@ class ResearchService:
         if missing:
             raise ValueError(f"missing experiment fields: {', '.join(missing)}")
         return spec
+
+    def _cohort_owner_for_partitions(
+        self,
+        hypothesis_id: str,
+        snapshot_sha256: str,
+        partitions: Any,
+        requested_owner: str | None,
+    ) -> str | None:
+        if not isinstance(partitions, list):
+            return requested_owner
+        owner = requested_owner
+        for partition in partitions:
+            if not isinstance(partition, dict) or partition.get("kind") not in {"COMPARISON_OOS", "HOLDOUT"}:
+                continue
+            expected = self.store.authorize_cohort_partition(hypothesis_id, partition, snapshot_sha256)
+            if owner not in (None, expected):
+                raise ValueError("experiment owner does not match evaluation cohort")
+            owner = expected
+        return owner
 
     def _verified_oos_partitions(self, artifacts: dict[str, Any]) -> list[dict[str, Any]]:
         if not isinstance(artifacts, dict):
