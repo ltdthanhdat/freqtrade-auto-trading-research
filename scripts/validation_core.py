@@ -1,6 +1,6 @@
 """Pure policy, fold, and verdict primitives for baseline validation."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import json
 import math
@@ -86,6 +86,7 @@ class FoldMetrics:
     max_drawdown: float
     raw_net_profit: float | None = None
     stressed_profit_abs: float | None = None
+    complete_plan: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -93,6 +94,229 @@ class BootstrapSummary:
     p95_max_drawdown: float
     p05_net_profit: float
     p95_losing_streak: float
+
+
+EXIT_REASON_TAXONOMY = (
+    "PROTECTIVE_STOP",
+    "PROFIT_TARGET",
+    "TIME_EXIT",
+    "TRAILING_EXIT",
+    "REGIME_EXIT",
+    "SIGNAL_EXIT",
+    "EMERGENCY_EXIT",
+    "LIQUIDATION",
+)
+
+
+def _metric_summary(values: list[float]) -> dict[str, object]:
+    if not values:
+        return {"count": 0, "mean": None, "p95": None, "min": None, "max": None}
+    array = np.asarray(values, dtype=float)
+    return {
+        "count": len(values),
+        "mean": float(array.mean()),
+        "p95": float(np.percentile(array, 95)),
+        "min": float(array.min()),
+        "max": float(array.max()),
+    }
+
+
+def _numeric_values(frame: pd.DataFrame, names: tuple[str, ...]) -> list[float]:
+    for name in names:
+        if name not in frame.columns:
+            continue
+        values = pd.to_numeric(frame[name], errors="coerce")
+        return [float(value) for value in values if math.isfinite(float(value))]
+    return []
+
+
+def _reason(value: object) -> str | None:
+    if value is None or (isinstance(value, float) and math.isnan(value)):
+        return None
+    normalized = str(value).strip().upper().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "STOPLOSS": "PROTECTIVE_STOP",
+        "STOP_LOSS": "PROTECTIVE_STOP",
+        "STOP": "PROTECTIVE_STOP",
+        "ROI": "PROFIT_TARGET",
+        "PROFIT": "PROFIT_TARGET",
+        "PROFIT_EXIT": "PROFIT_TARGET",
+        "CUSTOM_ROI": "PROFIT_TARGET",
+        "TIME": "TIME_EXIT",
+        "TIMEOUT": "TIME_EXIT",
+        "TIME_EXIT": "TIME_EXIT",
+        "TRAILING_STOP_LOSS": "TRAILING_EXIT",
+        "TRAILING": "TRAILING_EXIT",
+        "TRAILING_EXIT": "TRAILING_EXIT",
+        "REGIME": "REGIME_EXIT",
+        "REGIME_EXIT": "REGIME_EXIT",
+        "SIGNAL": "SIGNAL_EXIT",
+        "SIGNAL_EXIT": "SIGNAL_EXIT",
+        "EMERGENCY": "EMERGENCY_EXIT",
+        "EMERGENCY_EXIT": "EMERGENCY_EXIT",
+        "LIQUIDATION": "LIQUIDATION",
+    }
+    return aliases.get(normalized, normalized if normalized in EXIT_REASON_TAXONOMY else None)
+
+
+def complete_plan_metrics(
+    trades: pd.DataFrame, policy: ValidationPolicy
+) -> dict[str, object]:
+    """Compute deterministic diagnostics from immutable trade-export fields.
+
+    These metrics are descriptive unless the caller explicitly marks the run as
+    identity-bound. Missing ledger fields are represented as zero coverage rather
+    than inferred from a convenient but unverifiable proxy.
+    """
+    count = len(trades)
+    reasons = {reason: 0 for reason in EXIT_REASON_TAXONOMY}
+    reason_column = next(
+        (name for name in ("exit_reason", "sell_reason", "close_reason") if name in trades.columns),
+        None,
+    )
+    recognized = 0
+    if reason_column:
+        for value in trades[reason_column]:
+            reason = _reason(value)
+            if reason is not None:
+                reasons[reason] += 1
+                recognized += 1
+
+    risk_values: list[float] = []
+    realized_values: list[float] = []
+    risk_column = next(
+        (name for name in ("planned_loss", "planned_risk", "initial_risk_abs") if name in trades.columns),
+        None,
+    )
+    realized_column = next(
+        (name for name in ("realized_r", "net_realized_r", "r_multiple") if name in trades.columns),
+        None,
+    )
+    if risk_column:
+        risk_series = pd.to_numeric(trades[risk_column], errors="coerce")
+        for index, risk in risk_series.items():
+            if not math.isfinite(float(risk)) or float(risk) <= 0:
+                continue
+            realized = None
+            if realized_column:
+                value = pd.to_numeric(pd.Series([trades.loc[index, realized_column]]), errors="coerce").iloc[0]
+                if math.isfinite(float(value)):
+                    realized = float(value)
+            elif "stressed_profit_abs" in trades.columns:
+                value = pd.to_numeric(pd.Series([trades.loc[index, "stressed_profit_abs"]]), errors="coerce").iloc[0]
+                if math.isfinite(float(value)):
+                    realized = float(value) / float(risk)
+            if realized is not None:
+                risk_values.append(float(risk))
+                realized_values.append(realized)
+
+    durations: list[float] = []
+    if {"open_date", "close_date"}.issubset(trades.columns):
+        opened = pd.to_datetime(trades["open_date"], utc=True, errors="coerce")
+        closed = pd.to_datetime(trades["close_date"], utc=True, errors="coerce")
+        durations = [
+            float((end - start).total_seconds())
+            for start, end in zip(opened, closed)
+            if not pd.isna(start) and not pd.isna(end) and end >= start
+        ]
+
+    fees: list[float] = []
+    for name in ("fee_open", "fee_close", "fee", "fees", "funding_fees"):
+        if name in trades.columns:
+            fees.extend(_numeric_values(trades, (name,)))
+    slippage = 0.0
+    if "stake_amount" in trades.columns:
+        stakes = pd.to_numeric(trades["stake_amount"], errors="coerce")
+        slippage = float(stakes[stakes.apply(math.isfinite)].sum()) * 2 * policy.slippage_per_side
+
+    concurrent_planned_risk = None
+    if risk_values and {"open_date", "close_date"}.issubset(trades.columns) and risk_column:
+        events: list[tuple[pd.Timestamp, int, float]] = []
+        for index, risk in zip(trades.index, pd.to_numeric(trades[risk_column], errors="coerce")):
+            if not math.isfinite(float(risk)) or float(risk) <= 0:
+                continue
+            opened = pd.to_datetime(trades.loc[index, "open_date"], utc=True, errors="coerce")
+            closed = pd.to_datetime(trades.loc[index, "close_date"], utc=True, errors="coerce")
+            if pd.isna(opened) or pd.isna(closed) or closed < opened:
+                continue
+            events.extend(((opened, 1, float(risk)), (closed, -1, float(risk))))
+        active = 0.0
+        peak = 0.0
+        for _, direction, risk in sorted(events, key=lambda item: (item[0], 0 if item[1] == 1 else 1)):
+            active += direction * risk
+            peak = max(peak, active)
+        concurrent_planned_risk = float(peak) if events else None
+
+    stop_column = next(
+        (name for name in ("initial_stop_rate", "planned_stop_rate", "stop_rate") if name in trades.columns),
+        None,
+    )
+    stop_failures = count
+    if stop_column and {"open_rate", "is_short"}.issubset(trades.columns):
+        stop_failures = 0
+        for index, stop in pd.to_numeric(trades[stop_column], errors="coerce").items():
+            entry = pd.to_numeric(pd.Series([trades.loc[index, "open_rate"]]), errors="coerce").iloc[0]
+            if not math.isfinite(float(stop)) or not math.isfinite(float(entry)) or float(stop) <= 0 or float(entry) <= 0:
+                stop_failures += 1
+            elif bool(trades.loc[index, "is_short"]):
+                stop_failures += int(float(stop) <= float(entry))
+            else:
+                stop_failures += int(float(stop) >= float(entry))
+
+    explanation_column = next(
+        (name for name in ("emergency_explanation", "exit_explanation") if name in trades.columns),
+        None,
+    )
+    unexplained_emergency = 0
+    if reason_column:
+        for index, value in trades[reason_column].items():
+            if _reason(value) == "EMERGENCY_EXIT":
+                explanation = trades.loc[index, explanation_column] if explanation_column else None
+                unexplained_emergency += int(explanation is None or not str(explanation).strip())
+
+    loss_overruns = [max(0.0, -value - 1.0) for value in realized_values]
+    exit_coverage = recognized / count if count else 0.0
+    risk_coverage = len(risk_values) / count if count else 0.0
+    turnover_values = _numeric_values(trades, ("notional", "turnover"))
+    if not turnover_values and "stake_amount" in trades.columns:
+        turnover_values = _numeric_values(trades, ("stake_amount",))
+    turnover = float(sum(turnover_values))
+    time_in_market = {"seconds": float(sum(durations)) if durations else 0.0}
+    return {
+        "exit_reason_counts": reasons,
+        "exit_coverage": float(exit_coverage),
+        "risk_ledger": {
+            "coverage": float(risk_coverage),
+            "rows": len(risk_values),
+            "planned_loss": float(sum(risk_values)) if risk_values else None,
+            "concurrent_planned_risk": concurrent_planned_risk,
+        },
+        "net_realized_r": float(sum(realized_values)) if realized_values else None,
+        "loss_overrun_p95": float(np.percentile(loss_overruns, 95)) if loss_overruns else None,
+        "costs": {
+            "fees": float(sum(fees)),
+            "slippage": float(slippage),
+            "total": float(sum(fees) + slippage),
+            "turnover": turnover,
+            "cost_burden": float((sum(fees) + slippage) / turnover) if turnover else None,
+        },
+        "turnover": turnover,
+        "time_in_market": time_in_market,
+        "holding_duration": {
+            **_metric_summary(durations),
+            "total_seconds": float(sum(durations)) if durations else 0.0,
+        },
+        "mae_mfe": {
+            "mae": _metric_summary(_numeric_values(trades, ("mae", "max_adverse_excursion"))),
+            "mfe": _metric_summary(_numeric_values(trades, ("mfe", "max_favorable_excursion"))),
+        },
+        "risk_safety": {
+            "wrong_side_or_missing_initial_stops": stop_failures,
+            "missing_exit_plans": count - recognized,
+            "liquidation_events": reasons["LIQUIDATION"],
+            "unexplained_emergency_exits": unexplained_emergency,
+        },
+    }
 
 
 class ValidationStateStore:

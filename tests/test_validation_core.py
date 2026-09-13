@@ -7,6 +7,7 @@ from scripts.validation_core import (
     Checks,
     FoldMetrics,
     ValidationPolicy,
+    complete_plan_metrics,
     bootstrap_equity_paths,
     build_oos_folds,
     evaluate_verdict,
@@ -80,6 +81,37 @@ def test_bootstrap_equity_paths_resamples_stressed_whole_blocks():
     assert summary.p95_max_drawdown == pytest.approx(0.021)
     assert summary.p05_net_profit == pytest.approx(0.0132021066227888)
     assert summary.p95_losing_streak == 1
+
+
+def test_complete_plan_metrics_are_deterministic_and_cover_risk_exit_fields(policy):
+    trades = pd.DataFrame(
+        {
+            "exit_reason": ["STOP_LOSS", "PROFIT_TARGET"],
+            "planned_loss": [1.0, 2.0],
+            "realized_r": [-1.5, 1.0],
+            "open_rate": [10.0, 10.0],
+            "initial_stop_rate": [9.0, 11.0],
+            "is_short": [False, True],
+            "open_date": pd.to_datetime(["2026-01-01", "2026-01-02"], utc=True),
+            "close_date": pd.to_datetime(["2026-01-03", "2026-01-04"], utc=True),
+            "stake_amount": [100.0, 200.0],
+            "fee_open": [1.0, 2.0],
+            "fee_close": [1.0, 2.0],
+            "mae": [-0.1, -0.2],
+            "mfe": [0.2, 0.4],
+        }
+    )
+    metrics = complete_plan_metrics(trades, policy)
+
+    assert metrics["exit_coverage"] == pytest.approx(1.0)
+    assert metrics["risk_ledger"]["coverage"] == pytest.approx(1.0)
+    assert metrics["risk_ledger"]["concurrent_planned_risk"] == pytest.approx(3.0)
+    assert metrics["net_realized_r"] == pytest.approx(-0.5)
+    assert metrics["loss_overrun_p95"] == pytest.approx(0.475)
+    assert metrics["risk_safety"]["wrong_side_or_missing_initial_stops"] == 0
+    assert metrics["costs"]["fees"] == pytest.approx(6.0)
+    assert metrics["holding_duration"]["count"] == 2
+    assert metrics == complete_plan_metrics(trades, policy)
 
 
 def test_verdict_fails_on_drawdown_breach(policy):

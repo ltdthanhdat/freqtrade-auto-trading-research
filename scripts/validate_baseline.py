@@ -30,6 +30,7 @@ from scripts.validation_core import (
     ValidationPolicy,
     bootstrap_equity_paths,
     build_oos_folds,
+    complete_plan_metrics,
     evaluate_verdict,
 )
 
@@ -461,7 +462,9 @@ def _stress_trades(
     return stressed
 
 
-def _fold_metrics(trades: pd.DataFrame) -> FoldMetrics:
+def _fold_metrics(
+    trades: pd.DataFrame, policy: ValidationPolicy | None = None
+) -> FoldMetrics:
     starting_balance = float(trades.attrs.get("starting_balance", float("nan")))
     if (
         not math.isfinite(starting_balance)
@@ -488,6 +491,7 @@ def _fold_metrics(trades: pd.DataFrame) -> FoldMetrics:
         max_drawdown=float(drawdown.max()),
         raw_net_profit=float(raw.sum() / starting_balance),
         stressed_profit_abs=float(stressed.sum()),
+        complete_plan=complete_plan_metrics(trades, policy) if policy else {},
     )
 
 
@@ -656,7 +660,7 @@ def run_oos_folds(
             if not exported.enable_protections:
                 raise ValueError("trade export did not enable protections")
             trades = _stress_trades(exported.trades, exported.starting_balance, policy)
-            metrics.append(_fold_metrics(trades))
+            metrics.append(_fold_metrics(trades, policy))
             frames.append(trades)
         except Exception as error:
             errors.append(f"fold {index} trade export is invalid: {error}")
@@ -697,6 +701,9 @@ def _write_result(
     checks: Checks,
     folds: tuple[OosFold, ...] = (),
     fold_metrics: list[FoldMetrics] | None = None,
+    trades: pd.DataFrame | None = None,
+    plan_sha256: str | None = None,
+    oos_consumption: dict[str, object] | None = None,
     bootstrap: BootstrapSummary | None = None,
     policy: ValidationPolicy | None = None,
     attribution: dict[str, object] | None = None,
@@ -744,8 +751,52 @@ def _write_result(
 
     manifest_path = run_dir / "manifest.json"
     report_path = run_dir / "report.md"
+    complete_plan = (
+        complete_plan_metrics(trades, policy)
+        if plan_sha256 and policy and trades is not None
+        else {}
+    )
     manifest = {
         **(asdict(identity) if identity else {}),
+        "validation_method": "expanding_window_frozen_candidate_oos",
+        "selection": "frozen_candidate",
+        "parameter_fitting": False,
+        "plan": {"sha256": plan_sha256, "complete": bool(plan_sha256)} if plan_sha256 else {"complete": False},
+        "plan_sha256": plan_sha256,
+        "complete_plan": complete_plan,
+        "exit_reason_counts": complete_plan.get("exit_reason_counts", {}),
+        "exit_coverage": complete_plan.get("exit_coverage", 0.0),
+        "risk_ledger": complete_plan.get("risk_ledger", {"coverage": 0.0}),
+        "planned_loss": complete_plan.get("risk_ledger", {}).get("planned_loss"),
+        "concurrent_planned_risk": complete_plan.get("risk_ledger", {}).get("concurrent_planned_risk"),
+        "net_realized_r": complete_plan.get("net_realized_r"),
+        "loss_overrun_p95": complete_plan.get("loss_overrun_p95"),
+        "costs": complete_plan.get("costs", {}),
+        "turnover": complete_plan.get("turnover", 0.0),
+        "time_in_market": complete_plan.get("time_in_market", {}),
+        "holding_duration": complete_plan.get("holding_duration", {}),
+        "mae_mfe": complete_plan.get("mae_mfe", {}),
+        "risk_safety": complete_plan.get("risk_safety", {}),
+        "oos_consumption": oos_consumption or {
+            "planned": [
+                {
+                    "kind": "WFO_OOS",
+                    "start_at": fold.oos_start.isoformat(),
+                    "end_at": fold.oos_end.isoformat(),
+                }
+                for fold in folds
+            ],
+            "verified": [
+                {
+                    "kind": "WFO_OOS",
+                    "start_at": fold.oos_start.isoformat(),
+                    "end_at": fold.oos_end.isoformat(),
+                }
+                for fold in folds
+            ],
+            "status": "verified" if folds else "incomplete",
+        },
+
         "checks": asdict(checks),
         "correctness_evidence": correctness_evidence or {},
         "data_coverage": data_coverage or {},
@@ -877,6 +928,18 @@ def run_validation(args: argparse.Namespace, executor: Executor = subprocess.run
         if not trades.empty:
             attribution["leave_one_pair_out"] = _leave_one_pair_out(trades)
 
+        plan_sha256 = getattr(execution_args, "plan_sha256", None)
+        complete_plan = (
+            complete_plan_metrics(trades, policy)
+            if plan_sha256
+            else {}
+        )
+        if plan_sha256:
+            if complete_plan.get("exit_coverage", 0.0) < 1.0:
+                errors.append("complete-plan exit coverage is incomplete")
+            if complete_plan.get("risk_ledger", {}).get("coverage", 0.0) < 1.0:
+                errors.append("complete-plan risk-ledger coverage is incomplete")
+
         last_oos_end = folds[-1].oos_end if folds else execution_start
         holdout_days = max(0, int((execution_end - last_oos_end).days))
         holdout = {
@@ -890,7 +953,9 @@ def run_validation(args: argparse.Namespace, executor: Executor = subprocess.run
         walk_forward = {
             "enabled": bool(getattr(execution_args, "wfo", False)),
             "selection": "frozen_candidate",
-            "fit_windows": [
+            "protocol": "expanding_window_oos",
+            "parameter_fitting": False,
+            "development_windows": [
                 {"start": fold.in_sample_start.isoformat(), "end": fold.in_sample_end.isoformat()}
                 for fold in folds
             ],
@@ -925,6 +990,27 @@ def run_validation(args: argparse.Namespace, executor: Executor = subprocess.run
             checks=checks,
             folds=folds,
             fold_metrics=metrics,
+            trades=trades,
+            plan_sha256=getattr(execution_args, "plan_sha256", None),
+            oos_consumption={
+                "planned": [
+                    {
+                        "kind": "WFO_OOS",
+                        "start_at": fold.oos_start.isoformat(),
+                        "end_at": fold.oos_end.isoformat(),
+                    }
+                    for fold in folds
+                ],
+                "verified": [
+                    {
+                        "kind": "WFO_OOS",
+                        "start_at": fold.oos_start.isoformat(),
+                        "end_at": fold.oos_end.isoformat(),
+                    }
+                    for fold in folds
+                ],
+                "status": "verified" if len(metrics) == len(folds) else "incomplete",
+            },
             bootstrap=bootstrap,
             policy=policy,
             attribution=attribution,

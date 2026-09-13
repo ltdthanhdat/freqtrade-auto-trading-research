@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 from dataclasses import asdict, dataclass, is_dataclass
 from pathlib import Path
 from typing import Any, Callable
@@ -114,6 +115,9 @@ def validate_candidate(
 ) -> ResearchVerdict:
     required_hashes = ("parent_sha256", "config_sha256", "snapshot_sha256", "policy_sha256")
     missing = [field for field in required_hashes if not str(experiment.get(field, ""))]
+    identity_bound = bool(experiment.get("identity_bound") or experiment.get("plan_sha256"))
+    if identity_bound and not str(experiment.get("plan_sha256", "")):
+        missing.append("plan_sha256")
     if missing:
         raise ValueError(f"missing experiment identity hashes: {', '.join(missing)}")
     candidate_file = Path(experiment.get("candidate_path", "")).resolve()
@@ -123,7 +127,6 @@ def validate_candidate(
     if strategy_path.suffix == ".py":
         strategy_file = strategy_path
         strategy_path = strategy_path.parent
-    identity_bound = bool(experiment.get("identity_bound") or experiment.get("plan_sha256"))
     initial_candidate_sha256 = _assert_candidate_identity(
         candidate_file,
         strategy_name,
@@ -153,6 +156,8 @@ def validate_candidate(
         run_id=str(experiment.get("id") or "validation"),
         approved_identity=None,
         wfo=bool(experiment.get("wfo", True)),
+        plan_sha256=experiment.get("plan_sha256"),
+        trading_plan=experiment.get("trading_plan"),
     )
     try:
         identity = _identity_dict(
@@ -198,9 +203,41 @@ def validate_candidate(
         report_hash = _sha256(report_path)
         metrics = _result_value(result, "metrics", {})
         artifacts = _result_value(result, "artifacts", {})
+        evidence_errors: list[str] = []
+        manifest_loaded = False
         if manifest_path and manifest_path.is_file():
             try:
                 manifest = json.loads(manifest_path.read_text())
+                manifest_loaded = isinstance(manifest, dict)
+                if identity_bound and verdict == "PASS" and manifest_loaded:
+                    plan_identity = manifest.get("plan_sha256")
+                    if plan_identity is None and isinstance(manifest.get("plan"), dict):
+                        plan_identity = manifest["plan"].get("sha256")
+                    if plan_identity != experiment.get("plan_sha256"):
+                        evidence_errors.append("complete-plan manifest plan identity is missing or mismatched")
+                    exit_coverage = manifest.get("exit_coverage")
+                    if exit_coverage is None and isinstance(manifest.get("complete_plan"), dict):
+                        exit_coverage = manifest["complete_plan"].get("exit_coverage")
+                    if isinstance(exit_coverage, dict):
+                        exit_coverage = exit_coverage.get("coverage")
+                    risk_ledger = manifest.get("risk_ledger")
+                    risk_coverage = (
+                        risk_ledger.get("coverage")
+                        if isinstance(risk_ledger, dict)
+                        else manifest.get("risk_ledger_coverage")
+                    )
+                    try:
+                        exit_coverage_value = float(exit_coverage)
+                    except (TypeError, ValueError):
+                        exit_coverage_value = 0.0
+                    try:
+                        risk_coverage_value = float(risk_coverage)
+                    except (TypeError, ValueError):
+                        risk_coverage_value = 0.0
+                    if not math.isfinite(exit_coverage_value) or exit_coverage_value < 1.0:
+                        evidence_errors.append("complete-plan exit coverage is incomplete")
+                    if not math.isfinite(risk_coverage_value) or risk_coverage_value < 1.0:
+                        evidence_errors.append("complete-plan risk-ledger coverage is incomplete")
                 annotations = {
                     key: experiment.get(key)
                     for key in ("cycle_id", "hypothesis_id", "candidate_path")
@@ -211,6 +248,11 @@ def validate_candidate(
                 )
                 if annotations:
                     manifest.update(annotations)
+                if evidence_errors and verdict == "PASS":
+                    verdict = "FAIL"
+                    manifest["verdict"] = "FAIL"
+                    manifest.setdefault("reasons", []).extend(evidence_errors)
+                if annotations or evidence_errors:
                     manifest_path.write_text(
                         json.dumps(manifest, default=str, indent=2, allow_nan=False) + "\n"
                     )
@@ -220,6 +262,16 @@ def validate_candidate(
                 manifest_artifacts = {
                     "backtest_artifacts": manifest.get("backtest_artifacts", []),
                     "oos_partitions": manifest.get("oos_partitions", []),
+                    "oos_consumption": manifest.get("oos_consumption", {}),
+                    "complete_plan": manifest.get("complete_plan", {}),
+                    "exit_reason_counts": manifest.get("exit_reason_counts", {}),
+                    "exit_coverage": manifest.get("exit_coverage", 0.0),
+                    "risk_ledger": manifest.get("risk_ledger", {}),
+                    "net_realized_r": manifest.get("net_realized_r"),
+                    "loss_overrun_p95": manifest.get("loss_overrun_p95"),
+                    "costs": manifest.get("costs", {}),
+                    "holding_duration": manifest.get("holding_duration", {}),
+                    "mae_mfe": manifest.get("mae_mfe", {}),
                 }
                 if isinstance(artifacts, dict):
                     artifacts = {**manifest_artifacts, **artifacts}
@@ -227,6 +279,9 @@ def validate_candidate(
                     artifacts = manifest_artifacts
             except (OSError, json.JSONDecodeError):
                 pass
+        if identity_bound and verdict == "PASS" and not manifest_loaded:
+            evidence_errors.append("complete-plan manifest evidence is missing")
+            verdict = "FAIL"
         state = _state_for(verdict)
         error_code = None if state != "RETRYABLE" else "unknown_verdict"
         return ResearchVerdict(
@@ -239,6 +294,7 @@ def validate_candidate(
             manifest_hash=manifest_hash,
             report_hash=report_hash,
             error_code=error_code,
+            details=tuple(evidence_errors),
         )
     except ValueError:
         raise

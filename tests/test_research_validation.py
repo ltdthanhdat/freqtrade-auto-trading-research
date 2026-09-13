@@ -67,6 +67,46 @@ def test_validation_wrapper_maps_runner_verdicts(tmp_path, verdict, state):
     }
 
 
+def test_identity_bound_validation_requires_plan_hash(tmp_path):
+    values = experiment(tmp_path)
+    values["identity_bound"] = True
+    values["candidate_path"] = str(Path(values["candidate_path"]))
+    Path(values["candidate_path"]).write_text(
+        "from freqtrade.strategy import IStrategy\nclass CandidateA(IStrategy):\n    pass\n"
+    )
+    with pytest.raises(ValueError, match="plan_sha256"):
+        validate_candidate(values, collect_identity_fn=lambda *_: {}, run_validation_fn=lambda _: {})
+
+
+def test_complete_plan_pass_without_exit_or_risk_coverage_cannot_need_review(tmp_path):
+    values = experiment(tmp_path)
+    candidate = Path(values["candidate_path"])
+    candidate.write_text(
+        "from freqtrade.strategy import IStrategy\nclass CandidateA(IStrategy):\n    pass\n"
+    )
+    values.update({
+        "identity_bound": True,
+        "candidate_sha256": hashlib.sha256(candidate.read_bytes()).hexdigest(),
+        "plan_sha256": "p" * 64,
+    })
+    manifest = tmp_path / "manifest.json"
+    report = tmp_path / "report.md"
+    partitions = [{"kind": "WFO_OOS", "start_at": "2025-01-02T00:00:00Z", "end_at": "2025-01-03T00:00:00Z"}]
+    manifest.write_text(json.dumps({"verdict": "PASS", "oos_partitions": partitions}))
+    report.write_text("report\n")
+
+    result = validate_candidate(
+        values,
+        collect_identity_fn=lambda *_: {"config_sha256": "b" * 64, "snapshot_sha256": "c" * 64, "policy_sha256": "d" * 64},
+        run_validation_fn=lambda _args: {"verdict": "PASS", "manifest_path": manifest, "report_path": report},
+    )
+
+    assert result.verdict == "FAIL"
+    assert result.state == "REJECTED"
+    assert "exit coverage" in " ".join(result.details)
+    assert result.artifacts["oos_partitions"] == partitions
+
+
 def test_validation_wrapper_exposes_manifest_oos_partitions(tmp_path):
     manifest = tmp_path / "manifest.json"
     report = tmp_path / "report.md"

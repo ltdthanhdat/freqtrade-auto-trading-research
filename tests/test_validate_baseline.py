@@ -70,7 +70,7 @@ def _write_snapshot(datadir: Path, pairs: tuple[str, ...] = PAIRS, *, end="2025-
             ).to_feather(futures / f"{pair_name}-{timeframe}-futures.feather")
 
 
-def _trades(timerange: str, *, profit_abs=10.0, one_source=False):
+def _trades(timerange: str, *, profit_abs=10.0, one_source=False, complete_plan=False):
     start = pd.Timestamp(timerange.split("-")[0], tz="UTC")
     rows = []
     for index in range(4):
@@ -84,6 +84,19 @@ def _trades(timerange: str, *, profit_abs=10.0, one_source=False):
                 "stake_amount": 100.0,
                 "open_date": str(start + pd.Timedelta(hours=index + 1)),
                 "close_date": str(start + pd.Timedelta(hours=index + 2)),
+                **(
+                    {
+                        "exit_reason": "PROFIT_TARGET",
+                        "planned_loss": 2.0,
+                        "realized_r": profit_abs / 2.0,
+                        "fee_open": 0.10,
+                        "fee_close": 0.10,
+                        "mae": -0.01,
+                        "mfe": 0.03,
+                    }
+                    if complete_plan
+                    else {}
+                ),
             }
         )
     return rows
@@ -101,6 +114,7 @@ class FakeExecutor:
         artifact="one",
         malformed_trades=False,
         empty_trades=False,
+        complete_plan=False,
     ):
         self.commands: list[list[str]] = []
         self.profit_abs = profit_abs
@@ -111,6 +125,7 @@ class FakeExecutor:
         self.artifact = artifact
         self.malformed_trades = malformed_trades
         self.empty_trades = empty_trades
+        self.complete_plan = complete_plan
 
     def __call__(self, command, **_kwargs):
         self.commands.append(command)
@@ -150,7 +165,10 @@ class FakeExecutor:
                     else self.profit_abs
                 )
                 trades = _trades(
-                    timerange, profit_abs=profit_abs, one_source=self.one_source
+                    timerange,
+                    profit_abs=profit_abs,
+                    one_source=self.one_source,
+                    complete_plan=self.complete_plan,
                 )
                 if self.empty_trades:
                     trades = []
@@ -205,6 +223,27 @@ def make_args(tmp_path: Path, *, snapshot_end="2025-01-05") -> argparse.Namespac
         collect_identity(config, strategy_file, datadir, policy, args.strategy, strategy_path)
     )
     return args
+
+
+def test_complete_plan_manifest_reports_identity_and_risk_exit_diagnostics(tmp_path):
+    args = make_args(tmp_path)
+    args.plan_sha256 = "p" * 64
+    result = run_validation(args, executor=FakeExecutor(complete_plan=True))
+    manifest = json.loads(result.manifest_path.read_text())
+
+    assert result.verdict == "PASS"
+    assert manifest["plan"]["sha256"] == "p" * 64
+    assert manifest["validation_method"] == "expanding_window_frozen_candidate_oos"
+    assert manifest["walk_forward"]["selection"] == "frozen_candidate"
+    assert manifest["walk_forward"]["protocol"] == "expanding_window_oos"
+    assert manifest["parameter_fitting"] is False
+    assert manifest["risk_ledger"]["coverage"] == pytest.approx(1.0)
+    assert manifest["exit_reason_counts"]["PROFIT_TARGET"] == 12
+    assert manifest["net_realized_r"] > 0
+    assert manifest["costs"]["fees"] == pytest.approx(2.4)
+    assert manifest["holding_duration"]["count"] == 12
+    assert manifest["mae_mfe"]["mae"]["count"] == 12
+    assert manifest["oos_consumption"]["verified"] == manifest["oos_partitions"]
 
 
 def test_runner_persists_real_bootstrap_stress_and_attribution_summary(tmp_path):
