@@ -7,7 +7,14 @@ from dataclasses import asdict, dataclass, is_dataclass
 from pathlib import Path
 from typing import Any, Callable
 
-from scripts.validate_baseline import _combined_hash, _strategy_files, collect_identity, run_validation
+from research_runtime.candidates import validate_candidate_source
+from scripts.validate_baseline import (
+    REQUIRED_TIMEFRAMES,
+    _combined_hash,
+    _strategy_files,
+    collect_identity,
+    run_validation,
+)
 
 
 @dataclass(frozen=True)
@@ -58,6 +65,46 @@ def _state_for(verdict: str) -> str:
     }.get(verdict, "RETRYABLE")
 
 
+def _assert_experiment_metadata(experiment: dict[str, Any], identity: dict[str, Any]) -> None:
+    expected_pairs = experiment.get("pairs")
+    actual_pairs = identity.get("accepted_pairs")
+    if expected_pairs is not None and actual_pairs is not None and tuple(expected_pairs) != tuple(actual_pairs):
+        raise ValueError("experiment metadata pairs mismatch")
+
+    expected_strategy = experiment.get("strategy_name")
+    actual_strategy = identity.get("strategy")
+    if expected_strategy and actual_strategy and str(expected_strategy) != str(actual_strategy):
+        raise ValueError("experiment metadata strategy mismatch")
+
+    expected_path = experiment.get("strategy_path")
+    actual_path = identity.get("strategy_path")
+    if expected_path and actual_path and Path(str(expected_path)).resolve() != Path(str(actual_path)).resolve():
+        raise ValueError("experiment metadata strategy path mismatch")
+
+    expected_timeframes = experiment.get("timeframes")
+    if expected_timeframes is not None and set(expected_timeframes) != set(REQUIRED_TIMEFRAMES):
+        raise ValueError("experiment metadata timeframes mismatch")
+    expected_detail = experiment.get("timeframe_detail")
+    if expected_detail is not None and str(expected_detail) != "1m":
+        raise ValueError("experiment metadata timeframe detail mismatch")
+
+
+def _assert_candidate_identity(
+    candidate_file: Path,
+    strategy_name: str,
+    *,
+    expected_sha256: str | None,
+    identity_bound: bool,
+) -> str:
+    if not candidate_file.is_file():
+        raise ValueError("candidate path does not exist")
+    validate_candidate_source(candidate_file.read_text(), strategy_name, identity_bound=identity_bound)
+    digest = _sha256(candidate_file)
+    if expected_sha256 and digest != expected_sha256:
+        raise ValueError("candidate identity does not match experiment")
+    return digest or ""
+
+
 def validate_candidate(
     experiment: dict[str, Any],
     *,
@@ -70,14 +117,20 @@ def validate_candidate(
     if missing:
         raise ValueError(f"missing experiment identity hashes: {', '.join(missing)}")
     candidate_file = Path(experiment.get("candidate_path", "")).resolve()
-    if not candidate_file.is_file():
-        raise ValueError("candidate path does not exist")
     strategy_name = str(experiment.get("strategy_name", ""))
     strategy_path = Path(experiment.get("strategy_path") or candidate_file.parent)
     strategy_file = Path(experiment.get("strategy_file") or candidate_file)
     if strategy_path.suffix == ".py":
         strategy_file = strategy_path
         strategy_path = strategy_path.parent
+    identity_bound = bool(experiment.get("identity_bound") or experiment.get("plan_sha256"))
+    initial_candidate_sha256 = _assert_candidate_identity(
+        candidate_file,
+        strategy_name,
+        expected_sha256=str(experiment.get("candidate_sha256")) if experiment.get("candidate_sha256") else None,
+        identity_bound=identity_bound,
+    )
+    initial_strategy_files = _strategy_files(strategy_file, strategy_path)
     parent_strategy = str(experiment.get("parent_strategy", ""))
     if parent_strategy and parent_strategy != "fixture":
         parent_root = Path(experiment.get("parent_strategy_path") or "src/strategies")
@@ -117,6 +170,26 @@ def validate_candidate(
             expected = str(experiment[field])
             if identity.get(field) != expected:
                 raise ValueError(f"{field} does not match candidate identity")
+        _assert_experiment_metadata(experiment, identity)
+        expected_strategy_sha256 = experiment.get("strategy_sha256")
+        if expected_strategy_sha256 and identity.get("strategy_sha256") != expected_strategy_sha256:
+            raise ValueError("strategy identity does not match experiment metadata")
+        expected_dependencies = experiment.get("dependency_hashes")
+        if expected_dependencies is not None:
+            actual_dependencies = identity.get("strategy_files")
+            if not isinstance(expected_dependencies, dict) or actual_dependencies != expected_dependencies:
+                raise ValueError("dependency identity does not match experiment metadata")
+        current_candidate_sha256 = _assert_candidate_identity(
+            candidate_file,
+            strategy_name,
+            expected_sha256=str(experiment.get("candidate_sha256")) if experiment.get("candidate_sha256") else None,
+            identity_bound=identity_bound,
+        )
+        if current_candidate_sha256 != initial_candidate_sha256:
+            raise ValueError("candidate identity changed during validation")
+        current_strategy_files = _strategy_files(strategy_file, strategy_path)
+        if current_strategy_files != initial_strategy_files:
+            raise ValueError("dependency identity changed during validation")
         result = run_validation_fn(args)
         verdict = str(_result_value(result, "verdict", ""))
         manifest_path = _path_value(_result_value(result, "manifest_path"))

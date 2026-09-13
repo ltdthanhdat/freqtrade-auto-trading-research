@@ -1,4 +1,5 @@
 from argparse import Namespace
+import hashlib
 import json
 from pathlib import Path
 
@@ -94,6 +95,48 @@ def test_validation_wrapper_classifies_runner_exception_as_retryable(tmp_path):
     )
     assert result.state == "RETRYABLE"
     assert result.error_code == "validation_exception"
+
+
+def test_validation_rechecks_candidate_identity_before_runner(tmp_path):
+    values = experiment(tmp_path)
+    values["candidate_sha256"] = hashlib.sha256(Path(values["candidate_path"]).read_bytes()).hexdigest()
+    calls = []
+
+    def identity(*_args):
+        Path(values["candidate_path"]).write_text("class CandidateA:\n    changed = True\n")
+        return {"config_sha256": "b" * 64, "snapshot_sha256": "c" * 64, "policy_sha256": "d" * 64}
+
+    with pytest.raises(ValueError, match="candidate identity"):
+        validate_candidate(values, collect_identity_fn=identity, run_validation_fn=lambda _args: calls.append(True))
+    assert calls == []
+
+
+def test_validation_rejects_experiment_metadata_mismatches(tmp_path):
+    values = experiment(tmp_path)
+    values.update({
+        "pairs": ["BTC/USDT:USDT"],
+        "timeframes": ["1m", "30m", "1h"],
+        "timeframe_detail": "1m",
+        "strategy_path": str(Path(values["candidate_path"]).parent),
+    })
+    identity = {
+        "config_sha256": "b" * 64,
+        "snapshot_sha256": "c" * 64,
+        "policy_sha256": "d" * 64,
+        "accepted_pairs": ("BTC/USDT:USDT",),
+        "strategy_path": str(Path(values["candidate_path"]).parent),
+        "strategy": "CandidateA",
+    }
+    for field, replacement in {
+        "pairs": ["ETH/USDT:USDT"],
+        "timeframes": ["30m"],
+        "timeframe_detail": "5m",
+        "strategy_path": str(tmp_path / "wrong"),
+    }.items():
+        changed = dict(values)
+        changed[field] = replacement
+        with pytest.raises(ValueError, match="experiment metadata"):
+            validate_candidate(changed, collect_identity_fn=lambda *_: identity, run_validation_fn=lambda _args: {})
 
 
 def test_validation_wrapper_rejects_missing_identity_hashes(tmp_path):

@@ -1,9 +1,38 @@
 import pytest
 
-from research_runtime.candidates import write_candidate
+from research_runtime.candidates import validate_candidate_source, write_candidate
 
 
 VALID_STRATEGY = "class CandidateA:\n    pass\n"
+
+
+def test_candidate_source_policy_requires_concrete_istrategy_for_identity_bound_candidates():
+    valid = "from freqtrade.strategy import IStrategy\nclass CandidateA(IStrategy):\n    pass\n"
+    module = validate_candidate_source(valid, "CandidateA", identity_bound=True)
+    assert module.__class__.__name__ == "Module"
+
+    with pytest.raises(ValueError, match="IStrategy"):
+        validate_candidate_source("class CandidateA:\n    pass\n", "CandidateA", identity_bound=True)
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "import subprocess\nclass CandidateA: pass\n",
+        "import socket\nclass CandidateA: pass\n",
+        "import requests\nclass CandidateA: pass\n",
+        "import sqlite3\nclass CandidateA: pass\n",
+        "import os\nclass CandidateA: pass\n",
+        "from pathlib import Path\nclass CandidateA: pass\n",
+        "from importlib import import_module\nclass CandidateA: pass\n",
+        "class CandidateA:\n    value = eval('1')\n",
+        "class CandidateA:\n    value = open('x')\n",
+        "class CandidateA:\n    def run(self, connection):\n        connection.execute('SELECT 1')\n",
+    ],
+)
+def test_candidate_source_policy_rejects_unsafe_operations(source):
+    with pytest.raises(ValueError, match="candidate policy"):
+        validate_candidate_source(source, "CandidateA", identity_bound=False)
 
 
 def test_candidate_writer_confines_output_and_hashes_source(tmp_path):

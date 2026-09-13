@@ -420,6 +420,8 @@ class ResearchService:
             validation_experiment = {
                 **existing,
                 "candidate_path": hypothesis["candidate_path"],
+                "candidate_sha256": hypothesis["candidate_sha256"],
+                "identity_bound": bool(hypothesis.get("plan_json")),
                 "cycle_id": cycle_id,
                 "hypothesis_id": hypothesis["id"],
             }
