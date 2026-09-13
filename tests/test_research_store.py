@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import sqlite3
 
 import pytest
 
@@ -6,7 +7,7 @@ from research_runtime.core import CycleStatus, HypothesisState
 from research_runtime.store import ResearchStore
 
 
-def test_store_creates_v2_tables_and_identity_columns(tmp_path):
+def test_store_creates_v3_tables_and_identity_columns(tmp_path):
     store = ResearchStore(tmp_path / "research.sqlite")
     with store.connect() as connection:
         tables = {
@@ -15,7 +16,7 @@ def test_store_creates_v2_tables_and_identity_columns(tmp_path):
                 "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
             )
         }
-        assert tables == {
+        assert {
             "cycles",
             "sources",
             "hypotheses",
@@ -24,10 +25,29 @@ def test_store_creates_v2_tables_and_identity_columns(tmp_path):
             "runs",
             "state_events",
             "validation_windows",
-        }
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
+            "cycle_sources",
+            "source_assessments",
+            "legacy_evidence_quarantine",
+            "comparison_cohorts",
+            "comparison_cohort_members",
+            "oos_partition_consumptions",
+        } <= tables
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
         cycle_columns = {row[1] for row in connection.execute("PRAGMA table_info(cycles)")}
-        assert {"dataset", "requested_timerange", "holdout_start", "holdout_end", "search_cohort"} <= cycle_columns
+        assert {
+            "dataset",
+            "requested_timerange",
+            "holdout_start",
+            "holdout_end",
+            "search_cohort",
+            "ranking_sealed_at",
+            "ranking_json",
+            "ranking_sha256",
+        } <= cycle_columns
+        hypothesis_columns = {row[1] for row in connection.execute("PRAGMA table_info(hypotheses)")}
+        assert {"approval_blocked_reason", "family_id", "plan_json", "plan_sha256"} <= hypothesis_columns
+        experiment_columns = {row[1] for row in connection.execute("PRAGMA table_info(experiments)")}
+        assert {"oos_partitions_json", "owner_id"} <= experiment_columns
         assert connection.execute("PRAGMA foreign_keys").fetchone()[0] == 1
 
 
@@ -113,6 +133,40 @@ def test_cycle_lease_excludes_live_worker_and_resumes_expired_lease(tmp_path):
     assert any(event["to_state"] == "INTERRUPTED" for event in events)
 
 
+def test_cross_cycle_source_reuse_adds_cycle_membership(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite")
+    first_cycle = store.start_or_resume_cycle({"now": "2026-09-11T08:00:00Z", "dataset": "a"})["cycle"]["id"]
+    store.set_cycle_status(first_cycle, CycleStatus.COMPLETED, "finish")
+    second_cycle = store.start_or_resume_cycle({"now": "2026-09-11T08:01:00Z", "dataset": "b"})["cycle"]["id"]
+    source = {
+        "provider": "fixture",
+        "canonical_url": "https://example.test/reused",
+        "title": "reused",
+        "excerpt": "evidence",
+        "retrieved_at": "2026-09-11T08:00:00Z",
+        "fingerprint": "reused-source",
+        "metadata": {"collector": "fixture"},
+    }
+
+    first = store.insert_source(first_cycle, source)
+    duplicate = store.insert_source(second_cycle, {**source, "retrieved_at": "2026-09-11T08:01:00Z"})
+
+    assert first["inserted"] is True
+    assert duplicate["inserted"] is False
+    assert duplicate["id"] == first["id"]
+    with store.connect() as connection:
+        memberships = connection.execute(
+            "SELECT cycle_id FROM cycle_sources WHERE source_id = ? ORDER BY cycle_id",
+            (first["id"],),
+        ).fetchall()
+        assert [row[0] for row in memberships] == sorted([first_cycle, second_cycle])
+        counts = connection.execute(
+            "SELECT id, source_count FROM cycles WHERE id IN (?, ?) ORDER BY id",
+            (first_cycle, second_cycle),
+        ).fetchall()
+        assert [row[1] for row in counts] == [1, 1]
+
+
 def test_source_deduplication_and_budget(tmp_path):
     store = ResearchStore(tmp_path / "research.sqlite")
     cycle_id = store.start_or_resume_cycle("2026-09-11T08:00:00Z")["cycle"]["id"]
@@ -137,6 +191,42 @@ def test_source_deduplication_and_budget(tmp_path):
         store.insert_source(cycle_id, {**source, "canonical_url": f"https://example.test/{index}", "doi": None, "fingerprint": f"fp-{index}"})
     with pytest.raises(ValueError, match="source budget"):
         store.insert_source(cycle_id, {**source, "canonical_url": "https://example.test/overflow", "doi": None, "fingerprint": "fp-overflow"})
+
+
+def test_source_facts_and_assessments_are_immutable(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite")
+    cycle_id = store.start_or_resume_cycle("2026-09-11T08:00:00Z")["cycle"]["id"]
+    source_id = store.insert_source(
+        cycle_id,
+        {
+            "provider": "fixture",
+            "canonical_url": "https://example.test/immutable",
+            "title": "immutable",
+            "excerpt": "evidence",
+            "retrieved_at": "2026-09-11T08:00:00Z",
+            "fingerprint": "immutable-source",
+            "metadata": {"full_text_available": False},
+        },
+    )["id"]
+    with pytest.raises(sqlite3.IntegrityError):
+        with store.connect() as connection:
+            connection.execute("UPDATE sources SET title = 'forged' WHERE id = ?", (source_id,))
+    with pytest.raises(sqlite3.IntegrityError):
+        with store.connect() as connection:
+            connection.execute("DELETE FROM sources WHERE id = ?", (source_id,))
+
+    store.insert_source_assessment(
+        cycle_id,
+        source_id,
+        {"relevance": "direct", "asset": "crypto", "timeframe": "30m", "mechanism": "continuation"},
+        actor="runtime",
+    )
+    with pytest.raises(sqlite3.IntegrityError):
+        with store.connect() as connection:
+            connection.execute("DELETE FROM source_assessments")
+    with pytest.raises(sqlite3.IntegrityError):
+        with store.connect() as connection:
+            connection.execute("UPDATE source_assessments SET relevance = 'indirect'")
 
 
 def test_hypothesis_budget_and_legal_transition_are_append_only(tmp_path):
@@ -168,6 +258,115 @@ def test_hypothesis_budget_and_legal_transition_are_append_only(tmp_path):
     with pytest.raises(ValueError, match="illegal transition"):
         store.transition_hypothesis("H-0", HypothesisState.APPROVED_FOR_DRY_RUN, "local_user", "skip")
     assert store.events(cycle_id) == events_before
+
+
+def make_v2_integrity_fixture(path):
+    connection = sqlite3.connect(path)
+    connection.executescript(
+        """
+        PRAGMA foreign_keys = ON;
+        CREATE TABLE cycles (
+          id TEXT PRIMARY KEY, status TEXT NOT NULL, stage TEXT NOT NULL,
+          source_count INTEGER NOT NULL DEFAULT 0, hypothesis_count INTEGER NOT NULL DEFAULT 0,
+          candidate_count INTEGER NOT NULL DEFAULT 0, lease_until TEXT, created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL, dataset TEXT, requested_timerange TEXT, policy_sha256 TEXT,
+          search_cohort TEXT, holdout_start TEXT, holdout_end TEXT
+        );
+        CREATE TABLE sources (
+          id TEXT PRIMARY KEY, cycle_id TEXT NOT NULL REFERENCES cycles(id), provider TEXT NOT NULL,
+          canonical_url TEXT, doi TEXT, title TEXT NOT NULL, excerpt TEXT NOT NULL, license TEXT,
+          retrieved_at TEXT NOT NULL, fingerprint TEXT NOT NULL UNIQUE, metadata_json TEXT NOT NULL,
+          UNIQUE(provider, canonical_url), UNIQUE(doi)
+        );
+        CREATE TABLE hypotheses (
+          id TEXT PRIMARY KEY, cycle_id TEXT NOT NULL REFERENCES cycles(id), thesis TEXT NOT NULL,
+          mechanism TEXT NOT NULL, market_scope TEXT NOT NULL, required_data_json TEXT NOT NULL,
+          falsifier TEXT NOT NULL, evidence_quality INTEGER NOT NULL, reproducibility INTEGER NOT NULL,
+          ohlcv_transferability INTEGER NOT NULL, novelty INTEGER NOT NULL, falsifiability INTEGER NOT NULL,
+          total_score INTEGER NOT NULL, state TEXT NOT NULL, candidate_path TEXT,
+          candidate_sha256 TEXT, metadata_json TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+        );
+        CREATE TABLE hypothesis_sources (
+          hypothesis_id TEXT NOT NULL REFERENCES hypotheses(id), source_id TEXT NOT NULL REFERENCES sources(id),
+          stance TEXT NOT NULL, note TEXT NOT NULL, PRIMARY KEY(hypothesis_id, source_id, stance)
+        );
+        CREATE TABLE experiments (
+          id TEXT PRIMARY KEY, cycle_id TEXT NOT NULL REFERENCES cycles(id), hypothesis_id TEXT NOT NULL REFERENCES hypotheses(id),
+          parent_strategy TEXT NOT NULL, parent_sha256 TEXT NOT NULL, changed_variable TEXT NOT NULL,
+          config_path TEXT NOT NULL, config_sha256 TEXT NOT NULL, pairs_json TEXT NOT NULL, timeframes_json TEXT NOT NULL,
+          timeframe_detail TEXT NOT NULL, snapshot_path TEXT NOT NULL, snapshot_sha256 TEXT NOT NULL,
+          policy_path TEXT NOT NULL, policy_sha256 TEXT NOT NULL, strategy_name TEXT NOT NULL, strategy_path TEXT NOT NULL,
+          start_at TEXT NOT NULL, end_at TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL
+        );
+        CREATE TABLE runs (
+          id TEXT PRIMARY KEY, experiment_id TEXT NOT NULL REFERENCES experiments(id), kind TEXT NOT NULL,
+          status TEXT NOT NULL, verdict TEXT, metrics_json TEXT NOT NULL, artifact_manifest_json TEXT NOT NULL,
+          error_code TEXT, created_at TEXT NOT NULL, completed_at TEXT
+        );
+        CREATE TABLE state_events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT, entity_type TEXT NOT NULL, entity_id TEXT NOT NULL,
+          from_state TEXT, to_state TEXT NOT NULL, actor TEXT NOT NULL, reason TEXT NOT NULL,
+          cycle_id TEXT NOT NULL REFERENCES cycles(id), run_id TEXT REFERENCES runs(id),
+          payload_json TEXT NOT NULL, created_at TEXT NOT NULL
+        );
+        CREATE TABLE validation_windows (
+          id INTEGER PRIMARY KEY AUTOINCREMENT, cycle_id TEXT NOT NULL REFERENCES cycles(id),
+          dataset TEXT NOT NULL, requested_timerange TEXT NOT NULL, policy_sha256 TEXT NOT NULL,
+          verdict TEXT NOT NULL, created_at TEXT NOT NULL,
+          UNIQUE(dataset, requested_timerange, policy_sha256, cycle_id)
+        );
+        PRAGMA user_version = 2;
+        """
+    )
+    cycle_values = ("C-v2", "COMPLETED", "DONE", 3, 1, 0, None, "2026-09-11T08:00:00Z", "2026-09-11T08:00:00Z", "dataset", "20260101-20260901", "policy", "cohort", None, None)
+    connection.execute(
+        "INSERT INTO cycles VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", cycle_values
+    )
+    connection.execute(
+        "INSERT INTO cycles VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ("C-other", "COMPLETED", "DONE", 1, 0, 0, None, "2026-09-11T08:00:00Z", "2026-09-11T08:00:00Z", "dataset", "20260101-20260901", "policy", "cohort", None, None),
+    )
+    sources = [
+        ("S-one", "C-v2", "fixture", "https://example.test/one", None, "one", "one", None, "2026-09-11T08:00:00Z", "fp-one", "{}"),
+        ("S-two", "C-v2", "fixture", "https://example.test/two", None, "two", "two", None, "2026-09-11T08:00:00Z", "fp-two", "{}"),
+        ("S-other", "C-other", "fixture", "https://example.test/other", None, "other", "other", None, "2026-09-11T08:00:00Z", "fp-other", "{}"),
+    ]
+    connection.executemany("INSERT INTO sources VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", sources)
+    scores = (20, 20, 15, 5, 10, 70)
+    connection.execute(
+        "INSERT INTO hypotheses VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ("H-v2", "C-v2", "thesis", "mechanism", "crypto", '["OHLCV"]', "falsifier", *scores, "SCORED", None, None, "{}", "2026-09-11T08:00:00Z", "2026-09-11T08:00:00Z"),
+    )
+    connection.executemany(
+        "INSERT INTO hypothesis_sources VALUES (?, ?, ?, ?)",
+        [("H-v2", "S-one", "SUPPORT", "overlap support"), ("H-v2", "S-one", "CONTRADICT", "overlap contradiction"), ("H-v2", "S-two", "SUPPORT", "same cycle"), ("H-v2", "S-other", "SUPPORT", "cross cycle")],
+    )
+    connection.commit()
+    connection.close()
+
+
+def test_v2_migration_preserves_rows_and_quarantines_unsafe_links(tmp_path):
+    path = tmp_path / "v2.sqlite"
+    make_v2_integrity_fixture(path)
+
+    store = ResearchStore(path)
+
+    with store.connect() as connection:
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert connection.execute("SELECT COUNT(*) FROM sources").fetchone()[0] == 3
+        assert connection.execute("SELECT COUNT(*) FROM hypotheses").fetchone()[0] == 1
+        assert connection.execute("SELECT COUNT(*) FROM cycle_sources").fetchone()[0] == 3
+        assert connection.execute("SELECT COUNT(*) FROM hypothesis_sources").fetchone()[0] == 1
+        assert connection.execute("SELECT COUNT(*) FROM legacy_evidence_quarantine").fetchone()[0] == 3
+        blocked = connection.execute(
+            "SELECT approval_blocked_reason FROM hypotheses WHERE id = 'H-v2'"
+        ).fetchone()[0]
+        assert blocked
+        quarantined = connection.execute(
+            "SELECT original_row_json, original_sha256, reason FROM legacy_evidence_quarantine ORDER BY id"
+        ).fetchall()
+        assert all(row[0] and len(row[1]) == 64 and row[2] for row in quarantined)
+    assert store.integrity_report() == {"integrity_check": "ok", "foreign_key_errors": []}
 
 
 def test_review_requires_actor_and_reason(tmp_path):

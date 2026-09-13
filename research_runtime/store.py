@@ -19,7 +19,7 @@ from .core import (
 )
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 SOURCE_BUDGET = 100
 HYPOTHESIS_BUDGET = 3
 CANDIDATE_BUDGET = 1
@@ -206,9 +206,14 @@ class ResearchStore:
             version = connection.execute("PRAGMA user_version").fetchone()[0]
             if version == 0:
                 connection.executescript(SCHEMA)
+                self._migrate_v2(connection)
                 connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
             elif version == 1:
                 self._migrate_v1(connection)
+                self._migrate_v2(connection)
+                connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+            elif version == 2:
+                self._migrate_v2(connection)
                 connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
             elif version != SCHEMA_VERSION:
                 raise RuntimeError(f"unsupported research schema version: {version}")
@@ -232,6 +237,226 @@ class ResearchStore:
               created_at TEXT NOT NULL,
               UNIQUE(dataset, requested_timerange, policy_sha256, cycle_id)
             )
+            """
+        )
+
+    @staticmethod
+    def _migrate_v2(connection: sqlite3.Connection) -> None:
+        cycle_columns = {row[1] for row in connection.execute("PRAGMA table_info(cycles)")}
+        for name in ("ranking_sealed_at", "ranking_json", "ranking_sha256"):
+            if name not in cycle_columns:
+                connection.execute(f"ALTER TABLE cycles ADD COLUMN {name} TEXT")
+
+        hypothesis_columns = {row[1] for row in connection.execute("PRAGMA table_info(hypotheses)")}
+        for name in ("family_id", "plan_json", "plan_sha256", "approval_blocked_reason"):
+            if name not in hypothesis_columns:
+                connection.execute(f"ALTER TABLE hypotheses ADD COLUMN {name} TEXT")
+
+        experiment_columns = {row[1] for row in connection.execute("PRAGMA table_info(experiments)")}
+        if "oos_partitions_json" not in experiment_columns:
+            connection.execute("ALTER TABLE experiments ADD COLUMN oos_partitions_json TEXT NOT NULL DEFAULT '[]'")
+        if "owner_id" not in experiment_columns:
+            connection.execute("ALTER TABLE experiments ADD COLUMN owner_id TEXT")
+
+        connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS cycle_sources (
+              cycle_id TEXT NOT NULL REFERENCES cycles(id),
+              source_id TEXT NOT NULL REFERENCES sources(id),
+              observed_at TEXT NOT NULL,
+              PRIMARY KEY (cycle_id, source_id)
+            );
+            CREATE TABLE IF NOT EXISTS source_assessments (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              cycle_id TEXT NOT NULL,
+              source_id TEXT NOT NULL,
+              relevance TEXT,
+              asset TEXT,
+              timeframe TEXT,
+              mechanism TEXT,
+              assessment_json TEXT NOT NULL CHECK(json_valid(assessment_json)),
+              actor TEXT NOT NULL,
+              created_at TEXT NOT NULL,
+              FOREIGN KEY (cycle_id, source_id)
+                REFERENCES cycle_sources(cycle_id, source_id)
+            );
+            CREATE TABLE IF NOT EXISTS legacy_evidence_quarantine (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              hypothesis_id TEXT,
+              source_id TEXT,
+              legacy_stance TEXT,
+              legacy_note TEXT,
+              reason TEXT NOT NULL,
+              original_row_json TEXT NOT NULL CHECK(json_valid(original_row_json)),
+              original_sha256 TEXT NOT NULL,
+              quarantined_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS comparison_cohorts (
+              id TEXT PRIMARY KEY,
+              dataset TEXT NOT NULL,
+              snapshot_sha256 TEXT NOT NULL,
+              comparison_start_at TEXT NOT NULL,
+              comparison_end_at TEXT NOT NULL,
+              holdout_start_at TEXT NOT NULL,
+              holdout_end_at TEXT NOT NULL,
+              selection_rule_json TEXT NOT NULL CHECK(json_valid(selection_rule_json)),
+              manifest_sha256 TEXT NOT NULL,
+              status TEXT NOT NULL CHECK(status IN ('SEALED', 'SELECTED', 'CLOSED')),
+              created_at TEXT NOT NULL,
+              sealed_at TEXT NOT NULL,
+              CHECK(comparison_start_at < comparison_end_at),
+              CHECK(holdout_start_at < holdout_end_at)
+            );
+            CREATE TABLE IF NOT EXISTS comparison_cohort_members (
+              cohort_id TEXT NOT NULL REFERENCES comparison_cohorts(id),
+              cycle_id TEXT NOT NULL REFERENCES cycles(id),
+              hypothesis_id TEXT NOT NULL REFERENCES hypotheses(id),
+              candidate_sha256 TEXT NOT NULL,
+              plan_sha256 TEXT NOT NULL,
+              PRIMARY KEY (cohort_id, candidate_sha256),
+              UNIQUE (cohort_id, cycle_id, hypothesis_id)
+            );
+            CREATE TABLE IF NOT EXISTS oos_partition_consumptions (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              dataset TEXT NOT NULL,
+              snapshot_sha256 TEXT NOT NULL,
+              kind TEXT NOT NULL CHECK(kind IN ('WFO_OOS', 'HOLDOUT', 'COMPARISON_OOS')),
+              start_at TEXT NOT NULL,
+              end_at TEXT NOT NULL,
+              owner_id TEXT NOT NULL,
+              cycle_id TEXT NOT NULL REFERENCES cycles(id),
+              experiment_id TEXT NOT NULL REFERENCES experiments(id),
+              run_id TEXT NOT NULL REFERENCES runs(id),
+              verdict TEXT NOT NULL,
+              consumed_at TEXT NOT NULL,
+              CHECK(start_at < end_at),
+              UNIQUE(snapshot_sha256, kind, start_at, end_at, owner_id)
+            );
+            """
+        )
+
+        connection.execute(
+            "INSERT OR IGNORE INTO cycle_sources (cycle_id, source_id, observed_at) "
+            "SELECT cycle_id, id, retrieved_at FROM sources"
+        )
+        connection.execute(
+            "UPDATE cycles SET source_count = "
+            "(SELECT COUNT(*) FROM cycle_sources WHERE cycle_sources.cycle_id = cycles.id)"
+        )
+
+        source_link_columns = {row[1] for row in connection.execute("PRAGMA table_info(hypothesis_sources)")}
+        legacy_table = "hypothesis_sources_legacy_v2"
+        if "evidence_json" not in source_link_columns:
+            if not any(row[0] == legacy_table for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")):
+                connection.execute("ALTER TABLE hypothesis_sources RENAME TO hypothesis_sources_legacy_v2")
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS hypothesis_sources (
+                  hypothesis_id TEXT NOT NULL REFERENCES hypotheses(id),
+                  source_id TEXT NOT NULL REFERENCES sources(id),
+                  stance TEXT NOT NULL CHECK(stance IN ('SUPPORT', 'CONTRADICT')),
+                  note TEXT NOT NULL,
+                  evidence_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(evidence_json)),
+                  PRIMARY KEY(hypothesis_id, source_id)
+                )
+                """
+            )
+            affected: set[str] = set()
+            if any(row[0] == legacy_table for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")):
+                legacy_rows = [
+                    dict(row)
+                    for row in connection.execute(f"SELECT rowid AS legacy_rowid, * FROM {legacy_table} ORDER BY rowid ASC")
+                ]
+                grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
+                reasons: dict[int, str] = {}
+                for original in legacy_rows:
+                    hypothesis_id = original.get("hypothesis_id")
+                    source_id = original.get("source_id")
+                    hypothesis = connection.execute(
+                        "SELECT cycle_id FROM hypotheses WHERE id = ?", (hypothesis_id,)
+                    ).fetchone()
+                    source = connection.execute(
+                        "SELECT id FROM sources WHERE id = ?", (source_id,)
+                    ).fetchone()
+                    if hypothesis is None or source is None:
+                        reasons[original["legacy_rowid"]] = "unknown hypothesis or source"
+                    elif connection.execute(
+                        "SELECT 1 FROM cycle_sources WHERE cycle_id = ? AND source_id = ?",
+                        (hypothesis["cycle_id"], source_id),
+                    ).fetchone() is None:
+                        reasons[original["legacy_rowid"]] = "cross-cycle or missing cycle provenance"
+                    elif original.get("stance") not in {"SUPPORT", "CONTRADICT"}:
+                        reasons[original["legacy_rowid"]] = "invalid stance"
+                    else:
+                        grouped.setdefault((str(hypothesis_id), str(source_id)), []).append(original)
+                for key, rows in grouped.items():
+                    if len(rows) > 1:
+                        for original in rows:
+                            reasons[original["legacy_rowid"]] = "duplicate or conflicting stance"
+                for original in legacy_rows:
+                    hypothesis_id = original.get("hypothesis_id")
+                    source_id = original.get("source_id")
+                    reason = reasons.get(original["legacy_rowid"])
+                    if reason is None:
+                        connection.execute(
+                            "INSERT INTO hypothesis_sources (hypothesis_id, source_id, stance, note, evidence_json) VALUES (?, ?, ?, ?, '{}')",
+                            (hypothesis_id, source_id, original["stance"], str(original.get("note") or "")),
+                        )
+                        continue
+                    if hypothesis_id:
+                        affected.add(str(hypothesis_id))
+                    original_json = canonical_json(original)
+                    connection.execute(
+                        "INSERT INTO legacy_evidence_quarantine (hypothesis_id, source_id, legacy_stance, legacy_note, reason, original_row_json, original_sha256, quarantined_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        (
+                            hypothesis_id,
+                            source_id,
+                            original.get("stance"),
+                            original.get("note"),
+                            reason,
+                            original_json,
+                            hashlib.sha256(original_json.encode("utf-8")).hexdigest(),
+                            _timestamp(None),
+                        ),
+                    )
+                for hypothesis_id in affected:
+                    connection.execute(
+                        "UPDATE hypotheses SET approval_blocked_reason = COALESCE(approval_blocked_reason, ?) WHERE id = ?",
+                        ("legacy evidence quarantined during schema migration", hypothesis_id),
+                    )
+
+        connection.executescript(
+            """
+            CREATE TRIGGER IF NOT EXISTS immutable_sources_update
+            BEFORE UPDATE ON sources
+            BEGIN
+              SELECT RAISE(ABORT, 'source facts are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS immutable_sources_delete
+            BEFORE DELETE ON sources
+            BEGIN
+              SELECT RAISE(ABORT, 'source facts are immutable');
+            END;
+            CREATE TRIGGER IF NOT EXISTS immutable_source_assessments_update
+            BEFORE UPDATE ON source_assessments
+            BEGIN
+              SELECT RAISE(ABORT, 'source assessments are append-only');
+            END;
+            CREATE TRIGGER IF NOT EXISTS immutable_source_assessments_delete
+            BEFORE DELETE ON source_assessments
+            BEGIN
+              SELECT RAISE(ABORT, 'source assessments are append-only');
+            END;
+            CREATE TRIGGER IF NOT EXISTS immutable_oos_consumptions_update
+            BEFORE UPDATE ON oos_partition_consumptions
+            BEGIN
+              SELECT RAISE(ABORT, 'OOS consumptions are append-only');
+            END;
+            CREATE TRIGGER IF NOT EXISTS immutable_oos_consumptions_delete
+            BEFORE DELETE ON oos_partition_consumptions
+            BEGIN
+              SELECT RAISE(ABORT, 'OOS consumptions are append-only');
+            END;
             """
         )
 
@@ -485,15 +710,30 @@ class ResearchStore:
         metadata_json = _json_text(data.get("metadata", {}), "metadata")
         with self.connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
+            cycle = connection.execute("SELECT * FROM cycles WHERE id = ?", (cycle_id,)).fetchone()
+            if cycle is None:
+                raise ValueError(f"unknown cycle: {cycle_id}")
             existing = connection.execute(
                 "SELECT * FROM sources WHERE fingerprint = ? OR (? IS NOT NULL AND doi = ?) OR (? IS NOT NULL AND canonical_url = ?) LIMIT 1",
                 (fingerprint, doi, doi, canonical_url, canonical_url),
             ).fetchone()
             if existing is not None:
+                membership = connection.execute(
+                    "SELECT 1 FROM cycle_sources WHERE cycle_id = ? AND source_id = ?",
+                    (cycle_id, existing["id"]),
+                ).fetchone()
+                if membership is None:
+                    if cycle["source_count"] >= SOURCE_BUDGET:
+                        raise ValueError("source budget exhausted")
+                    connection.execute(
+                        "INSERT INTO cycle_sources (cycle_id, source_id, observed_at) VALUES (?, ?, ?)",
+                        (cycle_id, existing["id"], retrieved_at),
+                    )
+                    connection.execute(
+                        "UPDATE cycles SET source_count = source_count + 1, updated_at = ? WHERE id = ?",
+                        (retrieved_at, cycle_id),
+                    )
                 return {"id": existing["id"], "inserted": False, "duplicate_of": existing["id"]}
-            cycle = connection.execute("SELECT * FROM cycles WHERE id = ?", (cycle_id,)).fetchone()
-            if cycle is None:
-                raise ValueError(f"unknown cycle: {cycle_id}")
             if cycle["source_count"] >= SOURCE_BUDGET:
                 raise ValueError("source budget exhausted")
             source_id = f"S-{fingerprint[:24]}"
@@ -520,13 +760,77 @@ class ResearchStore:
                     (fingerprint, doi, doi, canonical_url, canonical_url),
                 ).fetchone()
                 if existing is not None:
+                    membership = connection.execute(
+                        "SELECT 1 FROM cycle_sources WHERE cycle_id = ? AND source_id = ?",
+                        (cycle_id, existing["id"]),
+                    ).fetchone()
+                    if membership is None:
+                        connection.execute(
+                            "INSERT INTO cycle_sources (cycle_id, source_id, observed_at) VALUES (?, ?, ?)",
+                            (cycle_id, existing["id"], retrieved_at),
+                        )
+                        connection.execute(
+                            "UPDATE cycles SET source_count = source_count + 1, updated_at = ? WHERE id = ?",
+                            (retrieved_at, cycle_id),
+                        )
                     return {"id": existing["id"], "inserted": False, "duplicate_of": existing["id"]}
                 raise ValueError("source violates uniqueness constraints") from exc
+            connection.execute(
+                "INSERT INTO cycle_sources (cycle_id, source_id, observed_at) VALUES (?, ?, ?)",
+                (cycle_id, source_id, retrieved_at),
+            )
             connection.execute(
                 "UPDATE cycles SET source_count = source_count + 1, updated_at = ? WHERE id = ?",
                 (retrieved_at, cycle_id),
             )
             return {"id": source_id, "inserted": True, "duplicate_of": None}
+
+    def insert_source_assessment(
+        self,
+        cycle_id: str,
+        source_id: str,
+        assessment: dict[str, Any],
+        *,
+        actor: str,
+        created_at: datetime | str | None = None,
+    ) -> int:
+        if not actor or not actor.strip():
+            raise ValueError("actor is required")
+        if not isinstance(assessment, dict):
+            raise ValueError("assessment must be an object")
+        assessment_json = _json_text(assessment, "assessment")
+        timestamp = _timestamp(created_at)
+        with self.connect() as connection:
+            membership = connection.execute(
+                "SELECT 1 FROM cycle_sources WHERE cycle_id = ? AND source_id = ?",
+                (cycle_id, source_id),
+            ).fetchone()
+            if membership is None:
+                raise ValueError("source is not observed by cycle")
+            columns = {row[1] for row in connection.execute("PRAGMA table_info(cycles)")}
+            if "ranking_sealed_at" in columns and connection.execute(
+                "SELECT ranking_sealed_at FROM cycles WHERE id = ?", (cycle_id,)
+            ).fetchone()[0] is not None:
+                raise ValueError("source assessment is blocked after ranking seal")
+            cursor = connection.execute(
+                """
+                INSERT INTO source_assessments
+                    (cycle_id, source_id, relevance, asset, timeframe, mechanism, assessment_json, actor, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    cycle_id,
+                    source_id,
+                    assessment.get("relevance"),
+                    assessment.get("asset"),
+                    assessment.get("timeframe"),
+                    assessment.get("mechanism"),
+                    assessment_json,
+                    actor.strip(),
+                    timestamp,
+                ),
+            )
+            return int(cursor.lastrowid)
 
     def insert_hypothesis(self, cycle_id: str, hypothesis: dict[str, Any]) -> dict[str, Any]:
         scores = hypothesis.get("scores", hypothesis)
