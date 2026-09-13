@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import sqlite3
@@ -1088,22 +1089,86 @@ class ResearchStore:
         with self.connect() as connection:
             return _row(connection.execute("SELECT * FROM sources WHERE id = ?", (source_id,)).fetchone())
 
-    def update_source_metadata(self, source_id: str, patch: dict[str, Any]) -> None:
-        with self.connect() as connection:
-            row = connection.execute("SELECT metadata_json FROM sources WHERE id = ?", (source_id,)).fetchone()
-            if row is None:
-                raise ValueError(f"unknown source: {source_id}")
+    def list_source_views(
+        self, cycle_id: str, *, limit: int = 25, after: str | None = None
+    ) -> dict[str, Any]:
+        if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 100:
+            raise ValueError("limit must be between 1 and 100")
+        cursor_values: tuple[str, str] | None = None
+        if after:
             try:
-                metadata = json.loads(row["metadata_json"])
-            except json.JSONDecodeError as exc:
-                raise ValueError(f"invalid stored source metadata: {source_id}") from exc
-            if not isinstance(metadata, dict):
-                raise ValueError(f"invalid stored source metadata: {source_id}")
-            metadata.update(patch)
-            connection.execute(
-                "UPDATE sources SET metadata_json = ? WHERE id = ?",
-                (canonical_json(metadata), source_id),
-            )
+                decoded = base64.urlsafe_b64decode(str(after).encode("ascii") + b"===").decode("utf-8")
+                parsed = json.loads(decoded)
+                if not isinstance(parsed, list) or len(parsed) != 2:
+                    raise ValueError
+                cursor_values = (str(parsed[0]), str(parsed[1]))
+            except (ValueError, TypeError, UnicodeDecodeError, json.JSONDecodeError, base64.binascii.Error) as exc:
+                raise ValueError("invalid source view cursor") from exc
+        with self.connect() as connection:
+            cycle = connection.execute("SELECT id FROM cycles WHERE id = ?", (cycle_id,)).fetchone()
+            if cycle is None:
+                raise ValueError(f"unknown cycle: {cycle_id}")
+            query = """
+                SELECT s.*, cs.observed_at AS cycle_observed_at
+                FROM cycle_sources cs
+                JOIN sources s ON s.id = cs.source_id
+                WHERE cs.cycle_id = ?
+            """
+            args: list[Any] = [cycle_id]
+            if cursor_values is not None:
+                query += " AND (cs.observed_at > ? OR (cs.observed_at = ? AND s.id > ?))"
+                args.extend([cursor_values[0], cursor_values[0], cursor_values[1]])
+            query += " ORDER BY cs.observed_at ASC, s.id ASC LIMIT ?"
+            args.append(limit)
+            rows = connection.execute(query, args).fetchall()
+            views: list[dict[str, Any]] = []
+            for row in rows:
+                try:
+                    metadata = json.loads(row["metadata_json"])
+                except json.JSONDecodeError as exc:
+                    raise ValueError(f"invalid stored source metadata: {row['id']}") from exc
+                if not isinstance(metadata, dict):
+                    raise ValueError(f"invalid stored source metadata: {row['id']}")
+                assessment_rows = connection.execute(
+                    "SELECT assessment_json FROM source_assessments WHERE cycle_id = ? AND source_id = ? ORDER BY created_at DESC, id DESC",
+                    (cycle_id, row["id"]),
+                ).fetchall()
+                assessment = None
+                if assessment_rows:
+                    try:
+                        assessment = json.loads(assessment_rows[0]["assessment_json"])
+                    except json.JSONDecodeError as exc:
+                        raise ValueError(f"invalid stored source assessment: {row['id']}") from exc
+                views.append(
+                    {
+                        "source_id": row["id"],
+                        "id": row["id"],
+                        "provider": row["provider"],
+                        "title": row["title"],
+                        "excerpt": row["excerpt"][:4000],
+                        "canonical_url": row["canonical_url"],
+                        "doi": row["doi"],
+                        "retrieved_at": row["retrieved_at"],
+                        "cycle_observed_at": row["cycle_observed_at"],
+                        "collector_metadata": metadata,
+                        "collector_metadata_sha256": hashlib.sha256(
+                            row["metadata_json"].encode("utf-8")
+                        ).hexdigest(),
+                        "assessment": assessment,
+                        "assessment_count": len(assessment_rows),
+                    }
+                )
+            next_cursor = None
+            if len(rows) == limit and rows:
+                last = rows[-1]
+                encoded = json.dumps(
+                    [last["cycle_observed_at"], last["id"]], separators=(",", ":")
+                ).encode("utf-8")
+                next_cursor = base64.urlsafe_b64encode(encoded).decode("ascii").rstrip("=")
+            return {"sources": views, "next_cursor": next_cursor}
+
+    def update_source_metadata(self, source_id: str, patch: dict[str, Any]) -> None:
+        raise ValueError("source metadata is immutable; use source assessment")
 
     def find_hypothesis_by_mechanism(self, cycle_id: str, mechanism: str) -> dict[str, Any] | None:
         normalized = " ".join(mechanism.casefold().split())

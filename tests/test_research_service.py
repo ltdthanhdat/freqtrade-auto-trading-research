@@ -134,6 +134,77 @@ def test_collect_sources_does_not_request_more_than_remaining_budget(tmp_path):
     assert called is False
 
 
+def test_source_views_are_cycle_scoped_bounded_and_assessment_aware(tmp_path):
+    service, cycle_id, source_id = make_service(tmp_path)
+    long_excerpt = "x" * 5001
+    service.store.insert_source(
+        cycle_id,
+        {
+            "provider": "fixture",
+            "canonical_url": "https://example.test/long",
+            "title": "long source",
+            "excerpt": long_excerpt,
+            "retrieved_at": "2026-09-11T07:59:00Z",
+            "fingerprint": "long-source",
+            "metadata": {"collector_fact": "kept"},
+        },
+    )
+    service.store.insert_source_assessment(
+        cycle_id,
+        source_id,
+        {"relevance": "indirect", "asset": "crypto", "timeframe": "30m", "mechanism": "old"},
+        actor="runtime",
+        created_at="2026-09-11T08:00:01Z",
+    )
+    service.store.insert_source_assessment(
+        cycle_id,
+        source_id,
+        {"relevance": "direct", "asset": "crypto", "timeframe": "30m", "mechanism": "new"},
+        actor="runtime",
+        created_at="2026-09-11T08:00:02Z",
+    )
+
+    result = service.call("list_source_views", {"cycle_id": cycle_id, "limit": 2})
+
+    assert len(result["sources"]) == 2
+    long_view = next(item for item in result["sources"] if item["title"] == "long source")
+    assert len(long_view["excerpt"]) == 4000
+    view = next(item for item in result["sources"] if item["title"] == "source")
+    assert view["collector_metadata"] == {"full_text": True}
+    assert len(view["collector_metadata_sha256"]) == 64
+    assert view["assessment"] == {
+        "relevance": "direct",
+        "asset": "crypto",
+        "timeframe": "30m",
+        "mechanism": "new",
+    }
+    assert view["assessment_count"] == 2
+    assert result["next_cursor"]
+
+
+def test_record_source_assessment_cannot_mutate_collector_facts(tmp_path):
+    service, cycle_id, source_id = make_service(tmp_path)
+
+    with pytest.raises(ValueError, match="immutable collector facts"):
+        service.record_source_assessment(
+            {
+                "cycle_id": cycle_id,
+                "source_id": source_id,
+                "assessment": {
+                    "relevance": "direct",
+                    "asset": "crypto",
+                    "timeframe": "30m",
+                    "mechanism": "continuation",
+                    "full_text_available": True,
+                    "canonical_url": "https://forged.example",
+                },
+            }
+        )
+
+    source = service.store.get_source(source_id)
+    assert source["metadata_json"] == '{"full_text":true}'
+
+
 def test_collect_sources_persists_records_and_duplicates_separately(tmp_path):
     store = ResearchStore(tmp_path / "research.sqlite")
     cycle_id = store.start_or_resume_cycle("2026-09-11T08:00:00Z")["cycle"]["id"]

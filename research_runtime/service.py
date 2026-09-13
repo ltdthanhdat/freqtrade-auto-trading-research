@@ -22,6 +22,7 @@ class ResearchService:
             "holdout_start", "holdout_end",
         },
         "load_context": {"cycle_id"},
+        "list_source_views": {"cycle_id", "limit", "after"},
         "collect_sources": {"cycle_id", "provider", "query", "limit"},
         "write_candidate": {"cycle_id", "hypothesis_id", "strategy_name", "source"},
         "start_validation": {
@@ -53,6 +54,7 @@ class ResearchService:
     REQUIRED_FIELDS = {
         "start_or_resume_cycle": set(),
         "load_context": {"cycle_id"},
+        "list_source_views": {"cycle_id"},
         "collect_sources": {"cycle_id", "provider", "query", "limit"},
         "write_candidate": {"cycle_id", "hypothesis_id", "strategy_name", "source"},
         "start_validation": {"cycle_id", "hypothesis_id"},
@@ -127,6 +129,10 @@ class ResearchService:
             },
         }
 
+    def list_source_views(self, payload: dict[str, Any]) -> dict[str, Any]:
+        values = {key: payload[key] for key in ("limit", "after") if key in payload}
+        return self.store.list_source_views(payload["cycle_id"], **values)
+
     def collect_sources(self, payload: dict[str, Any]) -> dict[str, Any]:
         cycle_id = payload["cycle_id"]
         cycle = self.store.get_cycle(cycle_id)
@@ -195,15 +201,24 @@ class ResearchService:
 
     def record_source_assessment(self, payload: dict[str, Any]) -> dict[str, Any]:
         source_id = payload["source_id"]
+        cycle_id = payload["cycle_id"]
         source = self.store.get_source(source_id)
-        if source is None or source["cycle_id"] != payload["cycle_id"]:
+        if source is None:
             raise ValueError(f"unknown source: {source_id}")
+        with self.store.connect() as connection:
+            observed = connection.execute(
+                "SELECT 1 FROM cycle_sources WHERE cycle_id = ? AND source_id = ?",
+                (cycle_id, source_id),
+            ).fetchone()
+        if observed is None:
+            raise ValueError(f"source provenance missing: {source_id}")
         assessment = payload["assessment"]
-        cycle = self.store.get_cycle(payload["cycle_id"])
+        cycle = self.store.get_cycle(cycle_id)
         if cycle is not None and cycle.get("search_cohort") and not isinstance(assessment, dict):
             raise ValueError(
                 "structured source assessment required: relevance, asset, timeframe, mechanism"
             )
+        normalized = assessment if isinstance(assessment, dict) else {"assessment": assessment}
         if isinstance(assessment, dict):
             missing = [key for key in ("relevance", "asset", "timeframe", "mechanism") if not assessment.get(key)]
             if missing:
@@ -212,9 +227,13 @@ class ResearchService:
                 "direct", "directly_relevant", "relevant", "indirect", "contradicting", "falsifier", "irrelevant"
             }:
                 raise ValueError("invalid source assessment relevance")
-        self.store.update_source_metadata(
-            source_id, assessment if isinstance(assessment, dict) else {"assessment": assessment}
-        )
+            immutable = {
+                "provider", "canonical_url", "doi", "title", "excerpt", "license", "retrieved_at",
+                "fingerprint", "full_text", "full_text_available", "collector_metadata",
+            }
+            if immutable.intersection(assessment):
+                raise ValueError("immutable collector facts cannot be assessed")
+        self.store.insert_source_assessment(cycle_id, source_id, normalized, actor="runtime")
         return {"source_id": source_id, "recorded": True}
 
     def write_candidate(self, payload: dict[str, Any]) -> dict[str, Any]:
