@@ -25,8 +25,14 @@ test("runtime uses the project Python environment", () => {
 test("runtime tool documents its supported operations", () => {
   assert.match(
     source,
-    /valid operations: start_or_resume_cycle, load_context, collect_sources, record_source_assessment, propose_hypothesis, write_candidate, start_validation, record_interpretation, finalize_cycle/,
+    /valid operations: start_or_resume_cycle, load_context, .*collect_sources, record_source_assessment, .*propose_hypothesis, .*write_candidate, start_validation, record_interpretation, finalize_cycle/,
   );
+});
+
+test("research command does not message the agent without the lease", () => {
+  assert.match(source, /response\.acquired\s*===\s*false/);
+  assert.match(source, /return/);
+  assert.match(source, /sendUserMessage/);
 });
 
 test("research command carries the prepared snapshot into the cycle", () => {
@@ -40,8 +46,17 @@ test("research command avoids the rate-limited provider", () => {
   assert.match(source, /do not use semantic_scholar/);
 });
 
+test("research command requires sealed ranking and bounded evidence", () => {
+  assert.match(source, /list_source_views/);
+  assert.match(source, /seal_hypothesis_ranking/);
+  assert.match(source, /complete.*exit|exit.*evidence/i);
+  assert.match(source, /OOS.*consum|consum.*OOS/i);
+  assert.match(source, /no post-OOS tuning/i);
+});
+
 test("research command requires structured source assessments", () => {
   assert.match(source, /assessment.*relevance.*asset.*timeframe.*mechanism/);
   assert.match(source, /full_text_available/);
-  assert.match(source, /assessment:\s*\{\s*relevance/);
+  assert.doesNotMatch(source, /full_text_available\s*:\s*true/);
+  assert.match(source, /assessment.*relevance.*asset.*timeframe.*mechanism/);
 });

@@ -42,6 +42,28 @@ def test_supervisor_is_bounded_and_retries_only_incomplete_cycles(tmp_path):
     )
 
 
+def test_supervisor_does_not_launch_pi_without_lease(tmp_path):
+    calls = []
+
+    class FakeStore:
+        def __init__(self, _path):
+            pass
+
+        def start_or_resume_cycle(self, _payload):
+            return {"cycle": {"id": "C-1"}, "acquired": False}
+
+    result = run_research_loop(
+        db_path=tmp_path / "research.sqlite",
+        dataset="accepted",
+        timerange="20260124-20260911",
+        store_factory=FakeStore,
+        command_runner=lambda *args, **kwargs: calls.append((args, kwargs)),
+    )
+
+    assert result == {"cycles_started": 0, "stopped_reason": "lease_not_acquired"}
+    assert calls == []
+
+
 def test_supervisor_stops_after_one_cycle_limit(tmp_path):
     class FakeStore:
         def __init__(self, _path):

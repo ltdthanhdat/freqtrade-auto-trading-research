@@ -62,6 +62,61 @@ def seeded_store(tmp_path):
             store.transition_hypothesis(identifier, HypothesisState.IMPLEMENTING, "runtime", "implement")
             store.transition_hypothesis(identifier, HypothesisState.TESTING, "runtime", "testing")
             store.transition_hypothesis(identifier, state, "runtime", "validation")
+    artifact_root = tmp_path / "artifacts"
+    candidate = artifact_root / cycle_id / "candidate" / "Strategy.py"
+    candidate.parent.mkdir(parents=True)
+    candidate.write_text("class Strategy: pass\n")
+    candidate_digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
+    with store.connect() as connection:
+        connection.execute(
+            "UPDATE hypotheses SET candidate_path = ?, candidate_sha256 = ? WHERE id = ?",
+            (str(candidate), candidate_digest, "H-READY"),
+        )
+    manifest = artifact_root / cycle_id / "validation" / "manifest.json"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(json.dumps({
+        "verdict": "PASS",
+        "cycle_id": cycle_id,
+        "hypothesis_id": "H-READY",
+        "candidate_sha256": candidate_digest,
+        "holdout": {"available": True},
+        "walk_forward": {"enabled": True},
+    }) + "\n")
+    manifest_digest = hashlib.sha256(manifest.read_bytes()).hexdigest()
+    store.insert_experiment({
+        "id": "EXP-READY",
+        "cycle_id": cycle_id,
+        "hypothesis_id": "H-READY",
+        "parent_strategy": "parent",
+        "parent_sha256": "a" * 64,
+        "changed_variable": "variable",
+        "config_path": "config.json",
+        "config_sha256": "b" * 64,
+        "pairs": [],
+        "timeframes": ["30m"],
+        "timeframe_detail": "1m",
+        "snapshot_path": "snapshot",
+        "snapshot_sha256": "c" * 64,
+        "policy_path": "policy.json",
+        "policy_sha256": "d" * 64,
+        "strategy_name": "Strategy",
+        "strategy_path": str(candidate.parent),
+        "start_at": "2026-09-01T00:00:00Z",
+        "end_at": "2026-09-11T00:00:00Z",
+        "status": "PASS",
+    })
+    store.record_run({
+        "id": "RUN-READY",
+        "experiment_id": "EXP-READY",
+        "kind": "validation",
+        "status": "NEEDS_REVIEW",
+        "verdict": "PASS",
+        "metrics": {},
+        "artifact_manifest": {
+            "manifest_path": str(manifest),
+            "manifest_sha256": manifest_digest,
+        },
+    })
     store.add_hypothesis_source("H-READY", "S-fingerprint-1", "SUPPORT", "explicit rules")
     return store
 
@@ -84,6 +139,15 @@ def test_dashboard_exposes_cycle_and_event_history(seeded_store, tmp_path):
     model = DashboardReadModel(seeded_store.path, tmp_path / "artifacts")
     assert model.cycles()[0]["id"] == model.overview()["current_cycle"]["id"]
     assert model.events(model.cycles()[0]["id"])[0]["cycle_id"] == model.cycles()[0]["id"]
+
+
+def test_review_requires_verified_pass_bundle(seeded_store, tmp_path):
+    with seeded_store.connect() as connection:
+        connection.execute("DELETE FROM runs WHERE id = 'RUN-READY'")
+    with pytest.raises(ValueError, match="review bundle"):
+        DashboardReadModel(seeded_store.path, tmp_path / "artifacts").record_review(
+            "H-READY", "approve", "looks stable"
+        )
 
 
 def test_review_requires_needs_review_state_and_uses_store_transition(seeded_store, tmp_path):

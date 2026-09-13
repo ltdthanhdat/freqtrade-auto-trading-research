@@ -1,4 +1,5 @@
 from dataclasses import asdict
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -12,7 +13,7 @@ from scripts.validation_core import ValidationStateStore
 PAIRS = ("PLAY/USDT:USDT", "BIO/USDT:USDT")
 
 
-def _setup(tmp_path: Path, *, verdict="PASS", dry_run=True):
+def _setup(tmp_path: Path, *, verdict="PASS", dry_run=True, bundle=True):
     tmp_path.mkdir(parents=True, exist_ok=True)
     strategy_path = tmp_path / "strategies"
     strategy_path.mkdir()
@@ -55,10 +56,17 @@ def _setup(tmp_path: Path, *, verdict="PASS", dry_run=True):
     candidate.write_text("class Strategy: pass\n")
     import hashlib
     digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
+    plan_json = json.dumps({"schema_version": 1}, sort_keys=True, separators=(",", ":"))
+    plan_sha256 = hashlib.sha256(plan_json.encode()).hexdigest()
     hypothesis = store.insert_hypothesis(
         cycle["id"],
         {"id": "H-gate", "thesis": "x", "mechanism": "y", "market_scope": "x", "required_data": ["OHLCV"], "falsifier": "z", "scores": {"evidence_quality": 1, "reproducibility": 1, "ohlcv_transferability": 1, "novelty": 1, "falsifiability": 1}},
     )
+    with store.connect() as connection:
+        connection.execute(
+            "UPDATE hypotheses SET plan_json = ?, plan_sha256 = ? WHERE id = ?",
+            (plan_json, plan_sha256, hypothesis["id"]),
+        )
     store.set_candidate(hypothesis["id"], candidate, digest)
     store.transition_hypothesis(hypothesis["id"], HypothesisState.QUEUED, "runtime", "queue")
     store.transition_hypothesis(hypothesis["id"], HypothesisState.IMPLEMENTING, "runtime", "implement")
@@ -66,7 +74,65 @@ def _setup(tmp_path: Path, *, verdict="PASS", dry_run=True):
     store.transition_hypothesis(hypothesis["id"], HypothesisState.NEEDS_REVIEW, "runtime", "validation")
     store.transition_hypothesis(hypothesis["id"], HypothesisState.APPROVED_FOR_DRY_RUN, "local_user", "approved")
     manifest = tmp_path / "manifest.json"
-    manifest.write_text(json.dumps({**asdict(identity), "verdict": verdict, "cycle_id": cycle["id"], "hypothesis_id": "H-gate", "candidate_path": str(candidate), "candidate_sha256": digest, "holdout": {"available": True}, "walk_forward": {"enabled": True}}))
+    partition = {"kind": "WFO_OOS", "start_at": "2025-01-01T00:00:00Z", "end_at": "2025-01-02T00:00:00Z"}
+    manifest.write_text(json.dumps({
+        **asdict(identity),
+        "verdict": verdict,
+        "cycle_id": cycle["id"],
+        "hypothesis_id": "H-gate",
+        "candidate_path": str(candidate),
+        "candidate_sha256": digest,
+        "plan_sha256": plan_sha256,
+        "experiment_id": "EXP-gate",
+        "run_id": "RUN-gate",
+        "oos_partitions": [partition],
+        "holdout": {"available": True},
+        "walk_forward": {"enabled": True},
+    }))
+    if not bundle:
+        return config, policy, strategy_path, manifest
+    store.insert_experiment({
+        "id": "EXP-gate",
+        "cycle_id": cycle["id"],
+        "hypothesis_id": "H-gate",
+        "parent_strategy": "fixture",
+        "parent_sha256": "a" * 64,
+        "changed_variable": "complete-plan",
+        "config_path": str(config),
+        "config_sha256": identity.config_sha256,
+        "pairs": list(PAIRS),
+        "timeframes": ["1m", "30m", "1h"],
+        "timeframe_detail": "1m",
+        "snapshot_path": str(snapshot),
+        "snapshot_sha256": identity.snapshot_sha256,
+        "policy_path": str(policy),
+        "policy_sha256": identity.policy_sha256,
+        "strategy_name": "Strategy",
+        "strategy_path": str(strategy_path),
+        "start_at": "2025-01-01T00:00:00Z",
+        "end_at": "2025-01-03T00:00:00Z",
+        "status": "PASS",
+        "oos_partitions": [partition],
+    })
+    manifest_sha256 = hashlib.sha256(manifest.read_bytes()).hexdigest()
+    store.record_run({
+        "id": "RUN-gate",
+        "experiment_id": "EXP-gate",
+        "kind": "validation",
+        "status": "NEEDS_REVIEW",
+        "verdict": "PASS",
+        "metrics": {},
+        "artifact_manifest": {"manifest_path": str(manifest), "manifest_sha256": manifest_sha256},
+    })
+    store.consume_partitions(
+        dataset="fixture",
+        snapshot_sha256=identity.snapshot_sha256,
+        cycle_id=cycle["id"],
+        experiment_id="EXP-gate",
+        run_id="RUN-gate",
+        verdict="PASS",
+        partitions=[partition],
+    )
     return config, policy, strategy_path, manifest
 
 
@@ -94,6 +160,19 @@ def _make_gate(config, policy, strategy_path, manifest):
         capture_output=True,
         text=True,
     )
+
+
+def test_validate_manifest_requires_linked_pass_bundle(tmp_path):
+    config, policy, strategy_path, manifest = _setup(tmp_path, bundle=False)
+    errors = __import__("scripts.validate_manifest", fromlist=["validate_manifest"]).validate_manifest(
+        manifest,
+        config,
+        policy,
+        "Strategy",
+        strategy_path,
+        research_db=manifest.parent / "research.sqlite",
+    )
+    assert any("linked PASS" in error or "run" in error for error in errors)
 
 
 def test_make_gate_accepts_only_matching_pass_identity(tmp_path):

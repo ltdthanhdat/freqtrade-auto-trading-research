@@ -51,7 +51,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "strategy_research_runtime",
     label: "Strategy research runtime",
-    description: "Call one validated Python research-runtime operation; valid operations: start_or_resume_cycle, load_context, collect_sources, record_source_assessment, propose_hypothesis, write_candidate, start_validation, record_interpretation, finalize_cycle. State and files stay behind the typed boundary.",
+    description: "Call one validated Python research-runtime operation; valid operations: start_or_resume_cycle, load_context, list_source_views, collect_sources, record_source_assessment, propose_hypothesis, seal_hypothesis_ranking, write_candidate, start_validation, record_interpretation, finalize_cycle. State and files stay behind the typed boundary.",
     promptSnippet: "Run a bounded strategy research runtime operation",
     parameters: Type.Object({
       tool: Type.String(),
@@ -83,9 +83,10 @@ export default function (pi: ExtensionAPI) {
         search_cohort: "openalex|arxiv|crossref",
       });
       updateStatus(ctx, response);
+      if (response.acquired === false) return;
       pi.setActiveTools(["strategy_research_runtime"]);
       pi.sendUserMessage(
-        `Run exactly one bounded research cycle through strategy_research_runtime. ${researchDataContext()} Load context, collect at most four sources each from openalex, arxiv, and crossref (do not use semantic_scholar), then record structured source assessments. For every source call record_source_assessment with an object exactly like assessment: {relevance: "direct|indirect|contradicting", asset: "crypto", timeframe: "30m/1h", mechanism: "...", full_text_available: true, falsifier_only: false}; never pass a free-text string. Every proposed hypothesis must use required_data exactly ["OHLCV"], cite at least one direct supporting source and one direct/contradicting source, and state a falsifier. If that evidence is unavailable, keep it out of candidate generation. Propose at most three hypotheses, write and validate one candidate, record interpretation, finalize, then stop. Use only the documented runtime operations; if a provider returns a retryable error, record it and continue with another provider. Do not start trading, alter the parent strategy/config/policy, or tune after a failed validation.`,
+        `Run exactly one bounded research cycle through strategy_research_runtime. ${researchDataContext()} Load context and list_source_views before reasoning. Collect at most four sources each from openalex, arxiv, and crossref (do not use semantic_scholar), then record structured source assessments as objects with relevance, asset, timeframe, and mechanism. Treat full_text_available as immutable collector data; never self-attest or modify collector facts. Every proposed hypothesis must use required_data exactly ["OHLCV"], include complete exit-plan evidence for the stop, profit, time, trailing, and regime semantics, cite at least one direct supporting source and one direct/contradicting source, and state a falsifier. If that evidence is unavailable, keep it out of candidate generation. Propose at most three hypotheses, seal_hypothesis_ranking, write and validate one candidate, consume and record every conclusive OOS result, record interpretation, finalize, then stop. Use only the documented runtime operations; if a provider returns a retryable error, record it and continue with another provider. Do not start trading, alter the parent strategy/config/policy, or perform no post-OOS tuning after a failed validation.`,
       );
     },
   });

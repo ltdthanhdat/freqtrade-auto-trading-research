@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import hashlib
 import json
 import mimetypes
@@ -113,6 +114,7 @@ class DashboardReadModel:
             target.append(source)
         item["supporting_sources"] = supporting
         item["contradicting_sources"] = contradicting
+        item["review_bundle"] = self._review_bundle(connection, row)
         return item
 
     def experiments(self) -> list[dict[str, Any]]:
@@ -165,6 +167,121 @@ class DashboardReadModel:
                 result.append(item)
             return result
 
+    @staticmethod
+    def _partition_key(value: Any) -> tuple[str, str, str] | None:
+        if not isinstance(value, dict):
+            return None
+        kind = value.get("kind")
+        start_at = value.get("start_at")
+        end_at = value.get("end_at")
+        if not all(isinstance(item, str) and item for item in (kind, start_at, end_at)):
+            return None
+        try:
+            normalized = []
+            for item in (start_at, end_at):
+                normalized.append(
+                    datetime.fromisoformat(item.replace("Z", "+00:00"))
+                    .astimezone(timezone.utc)
+                    .isoformat(timespec="seconds")
+                    .replace("+00:00", "Z")
+                )
+        except ValueError:
+            return None
+        return str(kind), normalized[0], normalized[1]
+
+    def _review_bundle(self, connection: sqlite3.Connection, row: sqlite3.Row) -> dict[str, Any] | None:
+        hypothesis = dict(row)
+        if hypothesis.get("state") != HypothesisState.NEEDS_REVIEW:
+            return None
+        candidate_relative = self._safe_artifact(
+            hypothesis.get("candidate_path"), hypothesis.get("candidate_sha256")
+        )
+        if candidate_relative is None:
+            return None
+        experiment = connection.execute(
+            "SELECT * FROM experiments WHERE hypothesis_id = ? ORDER BY created_at DESC, id DESC LIMIT 1",
+            (hypothesis["id"],),
+        ).fetchone()
+        if experiment is None:
+            return None
+        run = connection.execute(
+            "SELECT * FROM runs WHERE experiment_id = ? ORDER BY created_at DESC, id DESC LIMIT 1",
+            (experiment["id"],),
+        ).fetchone()
+        if run is None or run["verdict"] != "PASS" or run["status"] not in {"PASS", "NEEDS_REVIEW"}:
+            return None
+        try:
+            artifacts = _decode(run["artifact_manifest_json"], "runs.artifact_manifest_json")
+        except ValueError:
+            return None
+        manifest_path = artifacts.get("manifest_path") if isinstance(artifacts, dict) else None
+        manifest_sha256 = artifacts.get("manifest_sha256") if isinstance(artifacts, dict) else None
+        for entry in self._manifest_entries(artifacts):
+            if manifest_path is None or entry["path"] == manifest_path:
+                manifest_path = entry["path"]
+                manifest_sha256 = entry["sha256"]
+                break
+        manifest_relative = self._safe_artifact(manifest_path, manifest_sha256)
+        if manifest_relative is None:
+            return None
+        try:
+            manifest = json.loads((self.artifact_root / manifest_relative).read_text())
+        except (OSError, json.JSONDecodeError):
+            return None
+        if not isinstance(manifest, dict):
+            return None
+        if manifest.get("verdict") != "PASS" or manifest.get("research_only") is True:
+            return None
+        if manifest.get("cycle_id") != hypothesis.get("cycle_id"):
+            return None
+        if manifest.get("hypothesis_id") != hypothesis.get("id"):
+            return None
+        if manifest.get("candidate_sha256") != hypothesis.get("candidate_sha256"):
+            return None
+        if hypothesis.get("plan_sha256") and manifest.get("plan_sha256") != hypothesis.get("plan_sha256"):
+            return None
+        if manifest.get("holdout", {}).get("available") is not True:
+            return None
+        if manifest.get("walk_forward", {}).get("enabled") is not True:
+            return None
+        try:
+            planned = json.loads(experiment["oos_partitions_json"] or "[]")
+        except json.JSONDecodeError:
+            return None
+        observed = manifest.get("oos_partitions", [])
+        if not isinstance(planned, list) or not isinstance(observed, list):
+            return None
+        planned_keys = {self._partition_key(item) for item in planned}
+        observed_keys = {self._partition_key(item) for item in observed}
+        if None in planned_keys or None in observed_keys or planned_keys != observed_keys:
+            return None
+        if hypothesis.get("plan_json") and not observed_keys:
+            return None
+        for kind, start_at, end_at in observed_keys:
+            if connection.execute(
+                """
+                SELECT 1 FROM oos_partition_consumptions
+                WHERE snapshot_sha256 = ? AND kind = ? AND start_at = ? AND end_at = ?
+                  AND run_id = ? AND verdict = 'PASS'
+                """,
+                (experiment["snapshot_sha256"], kind, start_at, end_at, run["id"]),
+            ).fetchone() is None:
+                return None
+        return {
+            "cycle_id": hypothesis["cycle_id"],
+            "hypothesis_id": hypothesis["id"],
+            "candidate_sha256": hypothesis["candidate_sha256"],
+            "plan_sha256": hypothesis.get("plan_sha256"),
+            "experiment_id": experiment["id"],
+            "run_id": run["id"],
+            "verdict": run["verdict"],
+            "manifest_path": manifest_relative,
+            "manifest_sha256": _sha256(self.artifact_root / manifest_relative),
+            "oos_partitions": observed,
+            "holdout": manifest["holdout"],
+            "allowed_actions": ["approve", "reject"],
+        }
+
     def review_queue(self) -> list[dict[str, Any]]:
         return [item for item in self.hypotheses() if item["state"] == HypothesisState.NEEDS_REVIEW]
 
@@ -182,6 +299,13 @@ class DashboardReadModel:
             raise ValueError(f"unknown hypothesis: {hypothesis_id}")
         if hypothesis["state"] != HypothesisState.NEEDS_REVIEW:
             raise ValueError(f"illegal transition: {hypothesis['state']} -> {target}")
+        if action == "approve":
+            with self.connect_readonly() as connection:
+                row = connection.execute(
+                    "SELECT * FROM hypotheses WHERE id = ?", (hypothesis_id,)
+                ).fetchone()
+                if row is None or self._review_bundle(connection, row) is None:
+                    raise ValueError("hash-verified PASS review bundle is required")
         result = store.transition_hypothesis(
             hypothesis_id,
             target,

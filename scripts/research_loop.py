@@ -46,6 +46,9 @@ def run_research_loop(
                 "search_cohort": "openalex|arxiv|crossref",
             }
         )
+        if started_cycle.get("acquired") is False:
+            stopped_reason = "lease_not_acquired"
+            break
         started += 1
         try:
             result = command_runner(
