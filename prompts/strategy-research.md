@@ -1,42 +1,100 @@
 # Bounded strategy research cycle
 
-Use only the `strategy_research_runtime` tool for this cycle. Do not use shell,
-SQL, arbitrary file writes, or automated TradingView acquisition.
+Run exactly one bounded strategy research cycle through `strategy_research_runtime` for `cycle_id={{CYCLE_ID}}`.
 
-1. The `research-data` preflight has already seeded and checked the snapshot.
-   Use its reported datadir and timerange; do not silently switch datasets.
-   Call `start_or_resume_cycle`, then `load_context` and the bounded
-   `list_source_views` operation before reasoning.
-2. Collect a bounded set of sources from the supported providers. Keep source
-   provenance, retrieval time, and contradictions; do not retry a provider more
-   than the runtime allows. Prefer only `openalex`, `arxiv`, and `crossref`,
-   with at most four results per provider; if one returns a retryable error,
-   record it and continue with another provider. Treat `full_text_available`
-   and all collector metadata as immutable facts: never self-attest or alter
-   them. Do not use shell, SQL, arbitrary file writes, or TradingView.
-3. Assess source quality and propose no more than three structured hypotheses.
-   Each hypothesis is one complete frozen trading plan: `entry_plan`, exact
-   `exit_designs` with protective stop, profit, time, trailing, and regime
-   components (use explicit `type: NONE` when absent), exit precedence,
-   `sizing_plan`, `cost_model`, `development_protocol`,
-   `outer_acceptance_policy`, falsifiers, and role-specific claim-level
-   evidence for entry, stop, and each exit. Use `required_data` exactly `["OHLCV"]`;
-   unsupported data stays backlog.
-4. Seal the ranking with `seal_hypothesis_ranking`. Implement only the
-   highest-scoring eligible hypothesis with `write_candidate`; write at most
-   one candidate. Never tune a failed candidate, run a parameter sweep, or
-   perform post-OOS tuning; the plan is frozen once OOS begins.
-5. Call `start_validation` exactly once for that candidate. The runtime runs the
-   frozen correctness, expanding-window frozen-candidate OOS, stress, bootstrap,
-   and complete-plan risk/exit evidence checks. Record and consume every
-   conclusive OOS partition; do not use comparison OOS until a sealed cohort
-   contains all three family candidates, and only its selected winner may use
-   the sealed holdout.
-6. Record a concise interpretation with `record_interpretation`, then call
-   `finalize_cycle` with the resulting status. Stop at `NEEDS_REVIEW`,
-   `INCONCLUSIVE`, `REJECTED`, `INCOMPLETE`, or `FAILED`. There is no automatic promotion;
-   do not start dry-run or live trading.
+The supervisor already acquired this cycle lease. Use the prepared identity below:
 
-The runtime owns state, artifacts, validation commands, and retry limits. Do not
-start any trading process or alter the parent strategy, configuration, snapshot,
-or validation policy during the cycle.
+{{VALIDATION_CONTEXT}}
+
+Use only the `strategy_research_runtime` tool for this cycle. Do not call
+`start_or_resume_cycle`; first call `load_context` and the bounded
+`list_source_views` operation before reasoning. Do not include `hypothesis_id`
+in a `propose_hypothesis` payload. Do not use shell, SQL, arbitrary
+file writes, automated TradingView acquisition, Freqtrade trade commands,
+dry-run, live worker, promotion, or changes to the parent strategy, config,
+policy, or snapshot.
+
+## Sources and assessments
+
+Collect a bounded set of sources from the supported providers. Reuse existing
+current-cycle assessments and assess only sources missing a structured
+assessment. Prefer only openalex, arxiv, and crossref, with at most four
+results per provider. do not use semantic_scholar. The `collect_sources` payload
+is exactly `{cycle_id, provider, query, limit}`: use integer `limit`,
+not `max_results`. A provider HTTP 429 is recorded by the runtime; do not loop
+on that provider. If one provider returns a retryable error, record it and
+continue with another provider. Keep collector facts, including
+`full_text_available`, immutable.
+
+The `record_source_assessment` payload is exactly
+`{cycle_id, source_id, assessment: {relevance, asset, timeframe, mechanism}}`.
+Assess source quality without changing collector facts. Use claim-level
+provenance for every source used by a hypothesis.
+
+## Hypotheses and plans
+
+Propose at most three distinct hypotheses. The `propose_hypothesis` payload
+fields are top-level: `cycle_id`, `thesis`, `mechanism`, `market_scope`,
+`required_data`, `falsifier`, `scores`, `supporting_source_ids`,
+`contradicting_source_ids`, `trading_plan`, and `evidence_links`. Use
+`required_data` exactly `["OHLCV"]`; unsupported data stays in backlog. Do not
+put plan fields at the top level.
+
+Every identity-bound hypothesis needs a complete frozen trading plan with
+`schema_version=1`, `required_data=["OHLCV"]`, and `entry_plan` and `sizing_plan`
+fields including: `signal_definition`, `confirmation`,
+`timestamp_semantics`, `order_assumption`, `validity_window`, and non-empty
+`sizing_plan`,
+`duplicate_signal_policy`, and `pre_fill_invalidation`; one or two exact
+`exit_designs`; non-empty `sizing_plan`, `cost_model`,
+`development_protocol`, and `outer_acceptance_policy`; falsifiers; and an
+`evidence_map` covering `entry`, `stop`, and `profit_exit`.
+
+Each exit design must specify `protective_stop`, `profit_exit`, `time_exit`,
+`trailing_exit`, `regime_exit`, `exit_precedence`, `gap_behavior`,
+`stop_update_policy`, and `emergency_behavior`. Use explicit `type: NONE`
+when a component is absent, and never use ranges. Do not cite entry evidence
+as proof of stop or profit claims.
+
+Use `supporting_source_ids` and `contradicting_source_ids` only from this
+cycle, with no overlap. `evidence_links` must cover every cited source exactly
+once. Each item is `{source_id, stance, note, evidence}`, and evidence has
+unique allowed roles plus `supported_claim`, `transfer_assumption`, and
+`limitations`. Supporting links must cover `ENTRY_SUPPORT`, `STOP_SUPPORT`,
+and `PROFIT_EXIT_SUPPORT`; use role-specific claim-level evidence. A
+contradicting link must use `CONTRADICTION` or
+`FALSIFIER`. If complete claim-level evidence is unavailable, do not create a
+candidate.
+
+## Candidate and validation
+
+After proposals, call `seal_hypothesis_ranking`. Write exactly one
+AST-policy-v1-safe candidate for the sealed highest-scoring eligible rank-1
+hypothesis with `write_candidate`; it must contain one class named
+`strategy_name` inheriting `IStrategy`. Do not write a second candidate, tune a
+candidate, expand pairs, or run parameter sweeps. Do not run a parameter sweep. Do not call
+`create_evaluation_cohort`: this cycle has one candidate budget and no
+three-member comparison cohort.
+
+Call `start_validation` exactly once for that candidate with the fixed
+experiment identity below, `wfo=true`, the listed `WFO_OOS` partitions, and
+`timeframe_detail='1m'`. Its payload is exactly
+`{cycle_id, hypothesis_id, experiment: {id, parent_strategy, parent_sha256,
+changed_variable, config_path, config_sha256, pairs, timeframes,
+timeframe_detail, snapshot_path, snapshot_sha256, policy_path, policy_sha256,
+strategy_name, strategy_path, strategy_file, start_at, end_at, runs_dir,
+artifact_root, wfo, oos_partitions}}`; all experiment fields are nested under
+`experiment`, with no `max_results` or other unknown fields. Use parent
+strategy `SMC_FVG_Context30m_Freqtrade`. Use parent strategy
+'SMC_FVG_Context30m_Freqtrade'.
+
+The sealed holdout is the cycle's recorded holdout interval. Never use it in
+development, OOS validation, tuning, or selection. never use it in development, OOS validation, tuning, or selection. WFO and OOS evidence must be consumed exactly once by the runtime. WFO/OOS consumption is exactly once. Record the returned interpretation
+with `record_interpretation` and call `finalize_cycle` with the
+runtime-required terminal status. A PASS remains `NEEDS_REVIEW` and never
+authorizes trading. Stop after finalization; there is no post-OOS tuning. There is no automatic promotion.
+
+The runtime owns state, artifacts, validation commands, and retry limits. The
+prompt is not a safety boundary: if identity, plan, evidence, candidate
+contract, artifacts, or approval is missing, fail closed and do not claim a
+result. Do not start any worker, demo, live, dry-run, or trading process.

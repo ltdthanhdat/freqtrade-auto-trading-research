@@ -42,21 +42,18 @@ test("research command carries the prepared snapshot into the cycle", () => {
   assert.match(source, /data preflight completed successfully/);
 });
 
-test("research command avoids the rate-limited provider", () => {
-  assert.match(source, /openalex, arxiv, and crossref/);
-  assert.match(source, /do not use semantic_scholar/);
-});
-
-test("research command requires sealed ranking and bounded evidence", () => {
-  assert.match(source, /list_source_views/);
-  assert.match(source, /seal_hypothesis_ranking/);
-  assert.match(source, /complete.*exit|exit.*evidence/i);
-  assert.match(source, /OOS.*consum|consum.*OOS/i);
-  assert.match(source, /no post-OOS tuning/i);
-  assert.match(source, /entry_plan.*sizing_plan|sizing_plan.*entry_plan/i);
-  assert.match(source, /role-specific claim-level evidence/i);
-  assert.match(source, /shell.*SQL|SQL.*shell/i);
-  assert.match(source, /parameter sweeps/i);
+test("canonical prompt contains the bounded research protocol", () => {
+  assert.match(prompt, /openalex, arxiv, and crossref/);
+  assert.match(prompt, /do not use semantic_scholar/);
+  assert.match(prompt, /list_source_views/);
+  assert.match(prompt, /seal_hypothesis_ranking/);
+  assert.match(prompt, /complete.*exit|exit.*evidence/i);
+  assert.match(prompt, /OOS.*consum|consum.*OOS/i);
+  assert.match(prompt, /no post-OOS tuning/i);
+  assert.match(prompt, /entry_plan.*sizing_plan|sizing_plan.*entry_plan/i);
+  assert.match(prompt, /role-specific claim-level evidence/i);
+  assert.match(prompt, /shell.*SQL|SQL.*shell/i);
+  assert.match(prompt, /parameter sweeps/i);
 });
 
 test("research prompt requires the complete sealed protocol", () => {
@@ -86,9 +83,18 @@ test("research prompt requires the complete sealed protocol", () => {
   assert.match(prompt, /no automatic promotion|automatic.*promotion/i);
 });
 
-test("research command requires structured source assessments", () => {
-  assert.match(source, /assessment.*relevance.*asset.*timeframe.*mechanism/);
-  assert.match(source, /full_text_available/);
-  assert.doesNotMatch(source, /full_text_available\s*:\s*true/);
-  assert.match(source, /assessment.*relevance.*asset.*timeframe.*mechanism/);
+test("canonical prompt requires structured source assessments", () => {
+  assert.match(prompt, /assessment.*relevance.*asset.*timeframe.*mechanism/);
+  assert.match(prompt, /full_text_available/);
+  assert.doesNotMatch(prompt, /full_text_available\s*:\s*true/);
+  assert.match(prompt, /assessment.*relevance.*asset.*timeframe.*mechanism/);
+});
+
+test("runtime and manual command use the canonical prompt and explicit paths", () => {
+  assert.match(source, /RESEARCH_DB/);
+  assert.match(source, /RESEARCH_ARTIFACT_ROOT/);
+  assert.match(source, /readFileSync\(new URL\("\.\.\/\.\.\/prompts\/strategy-research\.md", import\.meta\.url\), "utf8"\)/);
+  assert.match(source, /\{\{CYCLE_ID\}\}/);
+  assert.match(source, /\{\{VALIDATION_CONTEXT\}\}/);
+  assert.doesNotMatch(source, /Run exactly one bounded research cycle through strategy_research_runtime\./);
 });

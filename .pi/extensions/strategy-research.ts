@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { Type } from "@earendil-works/pi-ai";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
@@ -10,7 +11,12 @@ type RuntimeResponse = {
 };
 
 export function invokeRuntime(tool: string, payload: Record<string, unknown>): RuntimeResponse {
-  const result = spawnSync("uv", ["run", "python", "-m", "research_runtime.cli"], {
+  const result = spawnSync("uv", ["run", "python", "-m", "research_runtime.cli",
+    ...(process.env.RESEARCH_DB ? ["--db", process.env.RESEARCH_DB] : []),
+    ...(process.env.RESEARCH_ARTIFACT_ROOT
+      ? ["--artifacts", process.env.RESEARCH_ARTIFACT_ROOT]
+      : []),
+  ], {
     input: `${JSON.stringify({ tool, payload })}\n`,
     encoding: "utf8",
   });
@@ -45,6 +51,16 @@ function researchDataContext(): string {
   const timerange = process.env.RESEARCH_TIMERANGE ?? "20260124-20260911";
   const relative = dataset.startsWith("snapshots/") ? dataset : `snapshots/${dataset}`;
   return `The data preflight completed successfully. Use datadir user_data/data/${relative} and frozen timerange ${timerange}.`;
+}
+
+function canonicalResearchPrompt(cycleId: string, validationContext: string): string {
+  const template = readFileSync(new URL("../../prompts/strategy-research.md", import.meta.url), "utf8");
+  const rendered = template
+    .replace("{{CYCLE_ID}}", cycleId)
+    .replace("{{VALIDATION_CONTEXT}}", validationContext);
+  const unresolved = rendered.match(/{{[A-Z0-9_]+}}/);
+  if (unresolved) throw new Error(`unresolved prompt token: ${unresolved[0]}`);
+  return rendered;
 }
 
 export default function (pi: ExtensionAPI) {
@@ -85,9 +101,7 @@ export default function (pi: ExtensionAPI) {
       updateStatus(ctx, response);
       if (response.acquired === false) return;
       pi.setActiveTools(["strategy_research_runtime"]);
-      pi.sendUserMessage(
-        `Run exactly one bounded research cycle through strategy_research_runtime. ${researchDataContext()} Load context and list_source_views before reasoning. Collect at most four sources each from openalex, arxiv, and crossref (do not use semantic_scholar), then record structured source assessments as objects with relevance, asset, timeframe, and mechanism. Treat full_text_available as immutable collector data; never self-attest or modify collector facts. Every proposed hypothesis must use required_data exactly ["OHLCV"] and declare a complete plan: entry_plan, exact exit designs for protective stop/profit/time/trailing/regime (explicit type NONE when absent), exit precedence, sizing_plan, cost_model, development_protocol, outer_acceptance_policy, falsifiers, and role-specific claim-level evidence. If that evidence is unavailable, keep it out of candidate generation. Propose at most three hypotheses, seal_hypothesis_ranking, write exactly one candidate, and call start_validation exactly once. Consume and record every conclusive OOS result, record interpretation, finalize, then stop. Use only the documented runtime operations; do not use shell, SQL, arbitrary file writes, or trading. If a provider returns a retryable error, record it and continue with another provider. Do not alter the parent strategy/config/policy, perform parameter sweeps, or tune after OOS; there is no post-OOS tuning after a failed validation.`,
-      );
+      pi.sendUserMessage(canonicalResearchPrompt(response.cycle?.id ?? "", researchDataContext()));
     },
   });
 }

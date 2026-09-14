@@ -1,8 +1,50 @@
 import argparse
+from pathlib import Path
 import subprocess
 
+import pytest
+
+from research_runtime.prompt import load_research_prompt, render_research_prompt
 from scripts import research_loop
 from scripts.research_loop import run_research_loop
+
+
+def test_prompt_loader_returns_stable_sha256(tmp_path: Path):
+    path = tmp_path / "strategy-research.md"
+    path.write_text("cycle={{CYCLE_ID}}\ncontext={{VALIDATION_CONTEXT}}\n", encoding="utf-8")
+
+    template, digest = load_research_prompt(path)
+
+    assert template.startswith("cycle={{CYCLE_ID}}")
+    assert len(digest) == 64
+    assert digest == load_research_prompt(path)[1]
+
+
+def test_prompt_renderer_replaces_only_known_tokens():
+    rendered = render_research_prompt(
+        "cycle={{CYCLE_ID}}\ncontext={{VALIDATION_CONTEXT}}\n",
+        cycle_id="C-1",
+        validation_context="snapshot_sha256=abc",
+    )
+
+    assert rendered == "cycle=C-1\ncontext=snapshot_sha256=abc\n"
+
+
+def test_prompt_renderer_rejects_unresolved_tokens():
+    with pytest.raises(ValueError, match="unresolved prompt token"):
+        render_research_prompt("{{CYCLE_ID}} {{UNKNOWN}}", cycle_id="C-1", validation_context="x")
+
+
+def test_supervisor_prompt_uses_canonical_template_and_cycle_identity():
+    prompt = research_loop._research_prompt(
+        cycle={"id": "C-1", "holdout_start": "", "holdout_end": ""},
+        dataset="accepted",
+        timerange="20260124-20260911",
+    )
+
+    assert "cycle_id=C-1" in prompt
+    assert "required_data" in prompt
+    assert "role-specific claim-level evidence" in prompt
 
 
 def test_supervisor_is_bounded_and_retries_only_incomplete_cycles(tmp_path):
@@ -44,15 +86,18 @@ def test_supervisor_is_bounded_and_retries_only_incomplete_cycles(tmp_path):
         and command[command.index("--mode") + 1] == "json"
         and "supporting_source_ids" in command[-1]
         and "contradicting_source_ids" in command[-1]
-        and "Do not include hypothesis_id" in command[-1]
-        and "parent_strategy 'SMC_FVG_Context30m_Freqtrade'" in command[-1]
-        and "timeframe_detail '1m'" in command[-1]
+        and "Do not include" in command[-1]
+        and "hypothesis_id" in command[-1]
+        and "Use parent strategy" in command[-1]
+        and "SMC_FVG_Context30m_Freqtrade" in command[-1]
+        and "timeframe_detail='1m'" in command[-1]
         and "sealed holdout" in command[-1]
         and "never use it in development, OOS validation, tuning, or selection" in command[-1]
         and "WFO" in command[-1]
-        and "collect_sources payload" in command[-1]
-        and "limit, not max_results" in command[-1]
-        and "all experiment fields are nested under experiment" in command[-1]
+        and "collect_sources` payload" in command[-1]
+        and "limit" in command[-1]
+        and "not `max_results`" in command[-1]
+        and "all experiment fields are nested under" in command[-1]
         for command, _kwargs in calls
     )
 

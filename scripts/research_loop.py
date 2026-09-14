@@ -11,6 +11,7 @@ import subprocess
 from threading import Thread
 from typing import Callable, Type
 
+from research_runtime.prompt import load_research_prompt, render_research_prompt
 from research_runtime.store import ResearchStore
 
 
@@ -99,28 +100,21 @@ def _validation_prompt_context(
     return "\n".join(context)
 
 
-def _research_prompt(*, cycle: dict[str, object], dataset: str, timerange: str) -> str:
-    cycle_id = cycle["id"]
+def _research_prompt(
+    *,
+    cycle: dict[str, object],
+    dataset: str,
+    timerange: str,
+    template: str | None = None,
+) -> str:
+    if template is None:
+        template, _ = load_research_prompt()
     identity = _validation_prompt_context(dataset=dataset, timerange=timerange, cycle=cycle)
-    return f"""Run exactly one bounded strategy research cycle through strategy_research_runtime for cycle_id={cycle_id}.
-
-The supervisor already acquired this cycle lease. Do not call start_or_resume_cycle. First call load_context and list_source_views for this cycle. Use only the strategy_research_runtime tool: no shell, SQL, arbitrary file writes, TradingView, Freqtrade trade, dry-run, live worker, promotion, or changes to the parent strategy/config/policy/snapshot.
-
-Use the prepared dataset and requested timerange below. Reuse existing current-cycle assessments; assess only sources that are missing a structured assessment. Collect at most four sources per provider from openalex, arxiv, and crossref (never semantic_scholar). The collect_sources payload is exactly {{cycle_id, provider, query, limit}}: use integer limit, not max_results. A provider HTTP 429 is recorded by the runtime; do not loop on that provider. Keep collector facts, including full_text_available, immutable. The record_source_assessment payload is exactly {{cycle_id, source_id, assessment: {{relevance, asset, timeframe, mechanism}}}}.
-
-Propose at most three distinct hypotheses. The propose_hypothesis payload fields are top-level: cycle_id, thesis, mechanism, market_scope, required_data, falsifier, scores, supporting_source_ids, contradicting_source_ids, trading_plan, and evidence_links. Use required_data exactly [\"OHLCV\"]. Do not put plan fields at the top level. Every identity-bound hypothesis needs a complete trading_plan with schema_version=1, required_data=[\"OHLCV\"], entry_plan fields signal_definition/confirmation/timestamp_semantics/order_assumption/validity_window/duplicate_signal_policy/pre_fill_invalidation, one or two exit_designs, non-empty sizing_plan/cost_model/development_protocol/outer_acceptance_policy, falsifiers, and evidence_map entries entry/stop/profit_exit. Each exit design must specify protective_stop, profit_exit, time_exit, trailing_exit, regime_exit, exit_precedence, gap_behavior, stop_update_policy, and emergency_behavior; use type NONE explicitly when a component is absent, and never use ranges.
-
-Use supporting_source_ids and contradicting_source_ids only from this cycle, with no overlap. evidence_links must cover every cited source exactly once; each item is {{source_id, stance, note, evidence}}, and evidence has unique allowed roles plus supported_claim, transfer_assumption, and limitations. Cover ENTRY_SUPPORT, STOP_SUPPORT, and PROFIT_EXIT_SUPPORT on supporting links, and CONTRADICTION or FALSIFIER on a contradicting link. Do not cite entry evidence as proof of stop/profit claims. If complete claim-level evidence is unavailable, do not create the candidate.
-
-After proposals, call seal_hypothesis_ranking. Write exactly one AST-policy-v1-safe candidate for the sealed highest-scoring eligible rank-1 hypothesis; it must be one class named strategy_name and inherit IStrategy. Do not write a second candidate or tune a candidate. Do not call create_evaluation_cohort: this cycle has one candidate budget and no three-member comparison cohort.
-
-Call start_validation exactly once for that candidate with the fixed experiment identity below, WFO=true, the listed WFO_OOS partitions, and timeframe_detail '1m'. Its payload is {{cycle_id, hypothesis_id, experiment: {{id, parent_strategy, parent_sha256, changed_variable, config_path, config_sha256, pairs, timeframes, timeframe_detail, snapshot_path, snapshot_sha256, policy_path, policy_sha256, strategy_name, strategy_path, strategy_file, start_at, end_at, runs_dir, artifact_root, wfo, oos_partitions}}}}; all experiment fields are nested under experiment, and do not pass max_results or other unknown fields. For start_validation use parent_strategy 'SMC_FVG_Context30m_Freqtrade'. The sealed holdout is {cycle.get('holdout_start')} through {cycle.get('holdout_end')}; never use it in development, OOS validation, tuning, or selection. Record the returned interpretation with record_interpretation and finalize_cycle with the runtime-required terminal status. A PASS remains NEEDS_REVIEW and never authorizes trading.
-
-Fixed validation identity:
-{identity}
-
-WFO and OOS evidence must be consumed exactly once by the runtime. Stop after finalization; no post-OOS tuning.
-"""
+    return render_research_prompt(
+        template,
+        cycle_id=str(cycle["id"]),
+        validation_context=identity,
+    )
 
 
 def _append_log(log_path: Path, text: str) -> None:
@@ -188,6 +182,7 @@ def run_research_loop(
         raise ValueError("max_cycles must be between 1 and 10")
     if not isinstance(cycle_timeout, int) or isinstance(cycle_timeout, bool) or not 30 <= cycle_timeout <= 3600:
         raise ValueError("cycle_timeout must be between 30 and 3600 seconds")
+    prompt_template, prompt_sha256 = load_research_prompt()
     store = store_factory(db_path)
     log_path = log_path or DEFAULT_LOG_PATH
     env = {**os.environ, "RESEARCH_DATASET": dataset, "RESEARCH_TIMERANGE": timerange}
@@ -202,6 +197,7 @@ def run_research_loop(
                 "dataset": dataset,
                 "requested_timerange": timerange,
                 "policy_sha256": policy_sha256,
+                "prompt_sha256": prompt_sha256,
                 "search_cohort": "openalex|arxiv|crossref",
             }
         )
@@ -225,7 +221,10 @@ def run_research_loop(
             "--no-builtin-tools",
             "--",
             _research_prompt(
-                cycle=started_cycle["cycle"], dataset=dataset, timerange=timerange
+                cycle=started_cycle["cycle"],
+                dataset=dataset,
+                timerange=timerange,
+                template=prompt_template,
             ),
         ]
         _append_log(log_path, f"\n[supervisor] starting cycle {started_cycle['cycle']['id']} with model {model}")
