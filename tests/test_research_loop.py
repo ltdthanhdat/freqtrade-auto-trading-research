@@ -1,4 +1,5 @@
 import argparse
+import json
 from pathlib import Path
 import subprocess
 
@@ -6,6 +7,7 @@ import pytest
 
 from research_runtime.prompt import load_research_prompt, render_research_prompt
 from scripts import research_loop
+from scripts.run_summary import read_run_summary
 from scripts.research_loop import run_research_loop
 
 
@@ -102,6 +104,66 @@ def test_supervisor_is_bounded_and_retries_only_incomplete_cycles(tmp_path):
     )
 
 
+def test_supervisor_writes_terminal_summary_when_lease_is_not_acquired(tmp_path):
+    class FakeStore:
+        def __init__(self, _path):
+            pass
+
+        def start_or_resume_cycle(self, _payload):
+            return {"cycle": {"id": "C-1", "status": "RUNNING"}, "acquired": False}
+
+    result = run_research_loop(
+        db_path=tmp_path / "research.sqlite",
+        dataset="accepted",
+        timerange="20260124-20260911",
+        run_key="scheduled__run-1",
+        summary_root=tmp_path / "artifacts",
+        store_factory=FakeStore,
+        command_runner=lambda *_args, **_kwargs: pytest.fail("Pi must not launch"),
+    )
+
+    assert result["cycle_status"] == "INCOMPLETE"
+    summary = read_run_summary(tmp_path / "artifacts", "scheduled__run-1")
+    assert summary["status"] == "INCOMPLETE"
+    assert summary["completed_at"] is not None
+
+
+def test_supervisor_carries_run_and_sealed_snapshot_identity(tmp_path):
+    manifest = tmp_path / "snapshot-readiness.json"
+    manifest.write_text(json.dumps({"snapshot_sha256": "a" * 64}), encoding="utf-8")
+    payloads = []
+    commands = []
+
+    class FakeStore:
+        def __init__(self, _path):
+            pass
+
+        def start_or_resume_cycle(self, payload):
+            payloads.append(payload)
+            return {"cycle": {"id": "C-1", "status": "INCOMPLETE"}, "acquired": True}
+
+        def list_cycles(self, limit=1):
+            return [{"id": "C-1", "status": "INCOMPLETE"}]
+
+    run_research_loop(
+        db_path=tmp_path / "research.sqlite",
+        dataset="accepted",
+        timerange="20260124-20260911",
+        run_key="scheduled__run-1",
+        snapshot_manifest=manifest,
+        command_runner=lambda command, **_kwargs: commands.append(command) or argparse.Namespace(returncode=0),
+        store_factory=FakeStore,
+        log_path=tmp_path / "research.log",
+    )
+
+    assert payloads[0]["airflow_run_key"] == "scheduled__run-1"
+    assert payloads[0]["lease_owner"] == "scheduled__run-1"
+    assert payloads[0]["snapshot_sha256"] == "a" * 64
+    assert payloads[0]["snapshot_manifest_path"] == str(manifest)
+    assert f"snapshot_manifest={manifest}" in commands[0][-1]
+    assert "sealed_snapshot_sha256=" + "a" * 64 in commands[0][-1]
+
+
 def test_supervisor_does_not_launch_pi_without_lease(tmp_path):
     calls = []
 
@@ -120,7 +182,9 @@ def test_supervisor_does_not_launch_pi_without_lease(tmp_path):
         command_runner=lambda *args, **kwargs: calls.append((args, kwargs)),
     )
 
-    assert result == {"cycles_started": 0, "stopped_reason": "lease_not_acquired"}
+    assert result["cycles_started"] == 0
+    assert result["stopped_reason"] == "lease_not_acquired"
+    assert result["cycle_status"] == "INCOMPLETE"
     assert calls == []
 
 

@@ -26,7 +26,7 @@ test("runtime uses the project Python environment", () => {
 test("runtime tool documents its supported operations", () => {
   assert.match(
     source,
-    /valid operations: start_or_resume_cycle, load_context, .*collect_sources, record_source_assessment, .*propose_hypothesis, .*write_candidate, start_validation, record_interpretation, finalize_cycle/,
+    /valid operations: start_or_resume_cycle, heartbeat_cycle, reconcile_cycle, load_context, .*collect_sources, record_source_assessment, .*propose_hypothesis, .*write_candidate, start_validation, record_interpretation, finalize_cycle/,
   );
 });
 

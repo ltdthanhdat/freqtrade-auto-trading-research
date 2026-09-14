@@ -1407,13 +1407,14 @@ class ResearchStore:
     def _insert_run(connection: sqlite3.Connection, run: dict[str, Any]) -> dict[str, Any]:
         now = _timestamp(run.get("created_at"))
         run_id = str(run.get("id") or f"RUN-{uuid.uuid4().hex[:12]}")
+        completed_at = _timestamp(run["completed_at"]) if run.get("completed_at") else now
         connection.execute(
             "INSERT INTO runs (id, experiment_id, kind, status, verdict, metrics_json, artifact_manifest_json, error_code, created_at, completed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 run_id, run["experiment_id"], run["kind"], run["status"], run.get("verdict"),
                 _json_text(run.get("metrics", {}), "metrics"),
                 _json_text(run.get("artifact_manifest", {}), "artifact_manifest"),
-                run.get("error_code"), now, _timestamp(run["completed_at"]) if run.get("completed_at") else None,
+                run.get("error_code"), now, completed_at,
             ),
         )
         return dict(connection.execute("SELECT * FROM runs WHERE id = ?", (run_id,)).fetchone())

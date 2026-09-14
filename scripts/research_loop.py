@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
@@ -13,6 +14,7 @@ from typing import Callable, Type
 
 from research_runtime.prompt import load_research_prompt, render_research_prompt
 from research_runtime.store import ResearchStore
+from scripts.run_summary import write_run_summary
 
 
 CommandRunner = Callable[..., object]
@@ -21,7 +23,11 @@ DEFAULT_LOG_PATH = Path("user_data/research-artifacts/research-supervisor.log")
 
 
 def _validation_prompt_context(
-    *, dataset: str, timerange: str, cycle: dict[str, object]
+    *,
+    dataset: str,
+    timerange: str,
+    cycle: dict[str, object],
+    snapshot_manifest: Path | None = None,
 ) -> str:
     """Describe immutable validation identities already present in the workspace."""
     dataset_path = Path(dataset)
@@ -38,6 +44,14 @@ def _validation_prompt_context(
         "policy_path=config/validation.baseline.json",
         f"snapshot_path=user_data/data/{dataset_path.as_posix()}",
     ]
+    if snapshot_manifest is not None:
+        context.append(f"snapshot_manifest={snapshot_manifest}")
+        try:
+            manifest = json.loads(snapshot_manifest.read_text(encoding="utf-8"))
+            if isinstance(manifest, dict) and manifest.get("snapshot_sha256"):
+                context.append(f"sealed_snapshot_sha256={manifest['snapshot_sha256']}")
+        except (OSError, json.JSONDecodeError):
+            context.append("sealed_snapshot_sha256=unavailable")
     try:
         import pandas as pd
 
@@ -106,10 +120,16 @@ def _research_prompt(
     dataset: str,
     timerange: str,
     template: str | None = None,
+    snapshot_manifest: Path | None = None,
 ) -> str:
     if template is None:
         template, _ = load_research_prompt()
-    identity = _validation_prompt_context(dataset=dataset, timerange=timerange, cycle=cycle)
+    identity = _validation_prompt_context(
+        dataset=dataset,
+        timerange=timerange,
+        cycle=cycle,
+        snapshot_manifest=snapshot_manifest,
+    )
     return render_research_prompt(
         template,
         cycle_id=str(cycle["id"]),
@@ -167,6 +187,85 @@ def _stream_command(
     return subprocess.CompletedProcess(command, process.returncode, "".join(output), "")
 
 
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def _snapshot_identity(snapshot_manifest: Path | None) -> str | None:
+    if snapshot_manifest is None:
+        return None
+    if not snapshot_manifest.is_file():
+        raise ValueError(f"snapshot manifest is missing: {snapshot_manifest}")
+    try:
+        payload = json.loads(snapshot_manifest.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"snapshot manifest is unreadable: {snapshot_manifest}") from exc
+    if not isinstance(payload, dict) or not payload.get("snapshot_sha256"):
+        raise ValueError(f"snapshot manifest has no snapshot_sha256: {snapshot_manifest}")
+    return str(payload["snapshot_sha256"])
+
+
+def _cycle_for(store: ResearchStore, cycle_id: str | None) -> dict[str, object] | None:
+    if cycle_id:
+        getter = getattr(store, "get_cycle", None)
+        if callable(getter):
+            cycle = getter(cycle_id)
+            if cycle is not None:
+                return cycle
+    cycles = store.list_cycles(limit=1)
+    return cycles[0] if cycles else None
+
+
+def _persist_terminal_summary(
+    *,
+    summary_root: Path | None,
+    run_key: str | None,
+    started_at: str,
+    cycle: dict[str, object] | None,
+    stopped_reason: str,
+    error: str | None = None,
+    snapshot_sha256: str | None = None,
+    snapshot_manifest: Path | None = None,
+    returncode: int | None = None,
+    log_path: Path | None = None,
+) -> None:
+    if summary_root is None or not run_key:
+        return
+    cycle_status = str(cycle.get("status")) if cycle else "INCOMPLETE"
+    status = cycle_status if cycle_status in {"COMPLETED", "NEEDS_REVIEW", "FAILED", "INCOMPLETE"} else "INCOMPLETE"
+    payload: dict[str, object] = {
+        "status": status,
+        "phase": "finalize_cycle" if cycle_status in {"COMPLETED", "NEEDS_REVIEW", "FAILED"} else "research",
+        "started_at": started_at,
+        "completed_at": _now(),
+        "stopped_reason": stopped_reason,
+        "cycle_status": cycle_status,
+        "last_phase": cycle.get("stage") if cycle else "acquire_cycle",
+        "returncode": returncode,
+        "snapshot_sha256": snapshot_sha256,
+        "snapshot_manifest_path": str(snapshot_manifest) if snapshot_manifest else None,
+    }
+    if cycle:
+        payload.update(
+            {
+                "cycle_id": cycle.get("id"),
+                "snapshot_sha256": cycle.get("snapshot_sha256") or snapshot_sha256,
+                "snapshot_manifest_path": cycle.get("snapshot_manifest_path") or (
+                    str(snapshot_manifest) if snapshot_manifest else None
+                ),
+            }
+        )
+    if error:
+        payload["error"] = error
+    try:
+        write_run_summary(summary_root, run_key, payload)
+    except (OSError, ValueError) as exc:
+        # A reporting failure must not replace the research result. Keep it in
+        # the supervisor log when one is available and let the caller retain
+        # the persisted cycle status.
+        _append_log(log_path or DEFAULT_LOG_PATH, f"[supervisor] run summary write failed: {exc}")
+
+
 def run_research_loop(
     *,
     db_path: Path,
@@ -177,32 +276,66 @@ def run_research_loop(
     command_runner: CommandRunner | None = None,
     store_factory: StoreFactory = ResearchStore,
     log_path: Path | None = None,
+    run_key: str | None = None,
+    summary_root: Path | None = None,
+    snapshot_manifest: Path | None = None,
 ) -> dict[str, object]:
     if not isinstance(max_cycles, int) or isinstance(max_cycles, bool) or not 1 <= max_cycles <= 10:
         raise ValueError("max_cycles must be between 1 and 10")
     if not isinstance(cycle_timeout, int) or isinstance(cycle_timeout, bool) or not 30 <= cycle_timeout <= 3600:
         raise ValueError("cycle_timeout must be between 30 and 3600 seconds")
+    if summary_root is not None:
+        summary_root = Path(summary_root)
+    if snapshot_manifest is not None:
+        snapshot_manifest = Path(snapshot_manifest)
+    run_started_at = _now()
+    snapshot_sha256 = _snapshot_identity(snapshot_manifest)
     prompt_template, prompt_sha256 = load_research_prompt()
     store = store_factory(db_path)
     log_path = log_path or DEFAULT_LOG_PATH
     env = {**os.environ, "RESEARCH_DATASET": dataset, "RESEARCH_TIMERANGE": timerange}
+    if run_key:
+        env["RESEARCH_RUN_KEY"] = run_key
+    if snapshot_manifest is not None:
+        env["RESEARCH_SNAPSHOT_MANIFEST"] = str(snapshot_manifest)
     model = env.get("RESEARCH_MODEL", "openai-codex/gpt-5.6-luna")
     policy_path = Path("config/validation.baseline.json")
     policy_sha256 = hashlib.sha256(policy_path.read_bytes()).hexdigest() if policy_path.is_file() else None
     started = 0
     stopped_reason = "max_cycles"
+    last_cycle: dict[str, object] | None = None
+    error: str | None = None
+    returncode: int | None = None
     for _ in range(max_cycles):
-        started_cycle = store.start_or_resume_cycle(
-            {
-                "dataset": dataset,
-                "requested_timerange": timerange,
-                "policy_sha256": policy_sha256,
-                "prompt_sha256": prompt_sha256,
-                "search_cohort": "openalex|arxiv|crossref",
-            }
-        )
+        identity: dict[str, object] = {
+            "dataset": dataset,
+            "requested_timerange": timerange,
+            "policy_sha256": policy_sha256,
+            "prompt_sha256": prompt_sha256,
+            "search_cohort": "openalex|arxiv|crossref",
+            "lease_owner": run_key or "runtime-local",
+        }
+        if run_key:
+            identity["airflow_run_key"] = run_key
+        if snapshot_manifest is not None:
+            identity["snapshot_manifest_path"] = str(snapshot_manifest)
+            identity["snapshot_sha256"] = snapshot_sha256
+        try:
+            started_cycle = store.start_or_resume_cycle(identity)
+        except (OSError, ValueError, RuntimeError, KeyError) as exc:
+            stopped_reason = "acquire_error"
+            error = str(exc)
+            break
+        candidate_cycle = started_cycle.get("cycle")
+        if isinstance(candidate_cycle, dict):
+            last_cycle = candidate_cycle
         if started_cycle.get("acquired") is False:
+            if isinstance(candidate_cycle, dict):
+                last_cycle = {**candidate_cycle, "status": "INCOMPLETE"}
             stopped_reason = "lease_not_acquired"
+            break
+        if not isinstance(candidate_cycle, dict) or not candidate_cycle.get("id"):
+            stopped_reason = "no_cycle"
             break
         started += 1
         command = [
@@ -221,13 +354,14 @@ def run_research_loop(
             "--no-builtin-tools",
             "--",
             _research_prompt(
-                cycle=started_cycle["cycle"],
+                cycle=candidate_cycle,
                 dataset=dataset,
                 timerange=timerange,
                 template=prompt_template,
+                snapshot_manifest=snapshot_manifest,
             ),
         ]
-        _append_log(log_path, f"\n[supervisor] starting cycle {started_cycle['cycle']['id']} with model {model}")
+        _append_log(log_path, f"\n[supervisor] starting cycle {candidate_cycle['id']} with model {model}")
         try:
             if command_runner is None:
                 result = _stream_command(
@@ -246,28 +380,38 @@ def run_research_loop(
                 _append_log(log_path, getattr(result, "stderr", ""))
         except subprocess.TimeoutExpired:
             store.set_cycle_status(
-                started_cycle["cycle"]["id"],
+                candidate_cycle["id"],
                 "INCOMPLETE",
                 f"supervisor timeout; see {log_path}",
             )
+            last_cycle = _cycle_for(store, str(candidate_cycle["id"])) or {
+                **candidate_cycle,
+                "status": "INCOMPLETE",
+            }
             stopped_reason = "timeout"
             break
         except KeyboardInterrupt:
-            store.set_cycle_status(started_cycle["cycle"]["id"], "INCOMPLETE", "supervisor interrupted")
+            store.set_cycle_status(candidate_cycle["id"], "INCOMPLETE", "supervisor interrupted")
+            last_cycle = _cycle_for(store, str(candidate_cycle["id"])) or {
+                **candidate_cycle,
+                "status": "INCOMPLETE",
+            }
             stopped_reason = "interrupted"
             break
-        cycles = store.list_cycles(limit=1)
-        if not cycles:
+        current = _cycle_for(store, str(candidate_cycle["id"]))
+        if current is None:
             stopped_reason = "no_cycle"
             break
-        status = str(cycles[0]["status"])
+        last_cycle = current
+        status = str(current["status"])
         if status in {"NEEDS_REVIEW", "COMPLETED", "FAILED"}:
             stopped_reason = status
             break
-        if getattr(result, "returncode", 1) != 0 and status not in {"INCOMPLETE", "INTERRUPTED", "RUNNING"}:
+        returncode = getattr(result, "returncode", 1)
+        if returncode != 0 and status not in {"INCOMPLETE", "INTERRUPTED", "RUNNING"}:
             stopped_reason = "command_failed"
             break
-        if getattr(result, "returncode", 1) != 0 and status == "RUNNING":
+        if returncode != 0 and status == "RUNNING":
             output = "\n".join(
                 value
                 for value in (
@@ -278,11 +422,36 @@ def run_research_loop(
             ).strip()
             detail = output[-500:] if output else "no output"
             store.set_cycle_status(
-                cycles[0]["id"], "INCOMPLETE", f"Pi exited before finalizing cycle: {detail}"
+                current["id"], "INCOMPLETE", f"Pi exited before finalizing cycle: {detail}"
             )
+            last_cycle = _cycle_for(store, str(current["id"])) or {
+                **current,
+                "status": "INCOMPLETE",
+            }
             stopped_reason = "command_failed"
+            error = detail
             break
-    return {"cycles_started": started, "stopped_reason": stopped_reason}
+    if last_cycle is None:
+        last_cycle = _cycle_for(store, None)
+    cycle_status = str(last_cycle["status"]) if last_cycle and last_cycle.get("status") else "INCOMPLETE"
+    result = {
+        "cycles_started": started,
+        "stopped_reason": stopped_reason,
+        "cycle_status": cycle_status,
+    }
+    _persist_terminal_summary(
+        summary_root=summary_root,
+        run_key=run_key,
+        started_at=run_started_at,
+        cycle=last_cycle,
+        stopped_reason=stopped_reason,
+        error=error,
+        snapshot_sha256=snapshot_sha256,
+        snapshot_manifest=snapshot_manifest,
+        returncode=returncode,
+        log_path=log_path,
+    )
+    return result
 
 
 def parse_args() -> argparse.Namespace:
@@ -292,13 +461,27 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--timerange", default=os.environ.get("RESEARCH_TIMERANGE", "20260124-20260911"))
     parser.add_argument("--max-cycles", type=int, default=1)
     parser.add_argument("--cycle-timeout", type=int, default=300)
+    parser.add_argument("--run-key", default=os.environ.get("RESEARCH_RUN_KEY"))
+    parser.add_argument(
+        "--artifacts",
+        dest="summary_root",
+        type=Path,
+        default=Path(os.environ.get("RESEARCH_ARTIFACT_ROOT", "user_data/research-artifacts")),
+    )
+    parser.add_argument(
+        "--snapshot-manifest",
+        type=Path,
+        default=Path(os.environ["RESEARCH_SNAPSHOT_MANIFEST"])
+        if os.environ.get("RESEARCH_SNAPSHOT_MANIFEST")
+        else None,
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     result = run_research_loop(**vars(parse_args()))
     print(f"research supervisor: {result['cycles_started']} cycle(s), stopped={result['stopped_reason']}")
-    return 0 if result["stopped_reason"] in {"NEEDS_REVIEW", "COMPLETED", "max_cycles"} else 1
+    return 0 if result.get("cycle_status") in {"NEEDS_REVIEW", "COMPLETED", "FAILED"} else 1
 
 
 if __name__ == "__main__":
