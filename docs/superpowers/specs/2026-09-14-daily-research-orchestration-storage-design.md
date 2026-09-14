@@ -240,13 +240,13 @@ The recent candidate failure where Freqtrade reported `` `populate_exit_trend` m
 
 ## Reports and durable evidence
 
-Every Airflow DAG run must leave a terminal machine-readable summary, even when preparation or container execution fails:
+Every Airflow DAG run must leave a terminal machine-readable summary, even when preparation or container execution fails. The summary is keyed by the Airflow run identity because preflight can fail before a research cycle exists:
 
 ```text
-user_data/research-artifacts/<cycle-id>/run-summary.json
+user_data/research-artifacts/runs/<airflow-run-key>/run-summary.json
 ```
 
-The summary records the Airflow DAG run identity, cycle identity, snapshot identity/hash, image identity, start/finish timestamps, last phase, observed container/task result, runtime status, and report references.
+The summary records the Airflow DAG run identity, optional cycle identity, snapshot identity/hash, image identity, start/finish timestamps, last phase, observed container/task result, runtime status, and report references. Validation artifacts remain keyed by `cycle-id` and `experiment-id`.
 
 If validation starts, the existing validation evidence remains under:
 
