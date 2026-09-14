@@ -11,7 +11,7 @@ from freqtrade.persistence import Order, Trade
 from freqtrade.strategy import IStrategy, stoploss_from_absolute
 from pandas import DataFrame
 
-from src.strategies.risk import RiskInputs, calculate_risk
+from src.smc_risk import RiskInputs, calculate_risk
 
 
 class FVG:

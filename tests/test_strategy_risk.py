@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from src.strategies.SMC_FVG_Confirmation_Freqtrade import SMC_FVG_Confirmation_Freqtrade
-from src.strategies.risk import RiskInputs, calculate_risk
+from src.smc_risk import RiskInputs, calculate_risk
 
 
 def inputs(**overrides):
