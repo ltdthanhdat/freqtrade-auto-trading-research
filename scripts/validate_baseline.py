@@ -42,6 +42,10 @@ REQUIRED_TIMEFRAMES = {
     "1h": pd.Timedelta(hours=1),
 }
 RESULT_PATTERN = "backtest-result-*.zip"
+SMC_STRATEGY_NAMES = {
+    "SMC_FVG_Confirmation_Freqtrade",
+    "SMC_FVG_Context30m_Freqtrade",
+}
 
 
 @dataclass(frozen=True)
@@ -153,6 +157,44 @@ def _combined_hash(files: dict[str, str]) -> str:
     return digest.hexdigest()
 
 
+def _validate_strategy_load_gate(strategy: str, config_values: dict[str, object]) -> None:
+    if strategy not in SMC_STRATEGY_NAMES:
+        return
+    from src.strategies.SMC_FVG_Confirmation_Freqtrade import (
+        SMC_FVG_Confirmation_Freqtrade,
+    )
+    from src.strategies.SMC_FVG_Context30m_Freqtrade import SMC_FVG_Context30m_Freqtrade
+
+    strategy_class = (
+        SMC_FVG_Context30m_Freqtrade
+        if strategy == "SMC_FVG_Context30m_Freqtrade"
+        else SMC_FVG_Confirmation_Freqtrade
+    )
+    strategy_class.validate_smc_config(config_values)
+
+
+def _strategy_contract_metadata(identity: ValidationIdentity | None) -> dict[str, object]:
+    if identity is None or identity.strategy not in SMC_STRATEGY_NAMES:
+        return {}
+    from src.strategies.SMC_FVG_Confirmation_Freqtrade import (
+        SMC_FVG_Confirmation_Freqtrade,
+    )
+    from src.strategies.SMC_FVG_Context30m_Freqtrade import SMC_FVG_Context30m_Freqtrade
+
+    strategy_class = (
+        SMC_FVG_Context30m_Freqtrade
+        if identity.strategy == "SMC_FVG_Context30m_Freqtrade"
+        else SMC_FVG_Confirmation_Freqtrade
+    )
+    return {
+        "strategy_name": identity.strategy,
+        "config_sha256": identity.config_sha256,
+        "risk_formula_version": strategy_class.RISK_FORMULA_VERSION,
+        "plan_version": strategy_class.EXIT_PLAN_VERSION,
+        "exit_plan_version": strategy_class.EXIT_PLAN_VERSION,
+    }
+
+
 def collect_identity(
     config: Path,
     strategy_file: Path,
@@ -162,6 +204,7 @@ def collect_identity(
     strategy_path: Path,
 ) -> ValidationIdentity:
     config_values = _effective_config(config)
+    _validate_strategy_load_gate(strategy, config_values)
     json.loads(policy.read_text())
     files = _strategy_files(strategy_file, strategy_path)
     commit = subprocess.run(
@@ -758,6 +801,7 @@ def _write_result(
     )
     manifest = {
         **(asdict(identity) if identity else {}),
+        "strategy_contract": _strategy_contract_metadata(identity),
         "validation_method": "expanding_window_frozen_candidate_oos",
         "selection": "frozen_candidate",
         "parameter_fitting": False,

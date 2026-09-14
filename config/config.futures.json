@@ -15,6 +15,11 @@
     "smc_risk_per_trade": 0.05,
     "smc_capital_cap": 0.25,
     "smc_leverage": 5,
+    "smc_entry_fee_rate": 0.001,
+    "smc_exit_fee_rate": 0.001,
+    "smc_entry_slippage_rate": 0.0005,
+    "smc_stop_slippage_rate": 0.0005,
+    "smc_missing_stoploss_roi": -0.10,
 
     "entry_pricing": {
         "price_side": "other",

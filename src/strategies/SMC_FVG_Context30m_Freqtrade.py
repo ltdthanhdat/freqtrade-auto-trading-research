@@ -9,7 +9,8 @@ from src.strategies.SMC_FVG_Confirmation_Freqtrade import FVG, SMC_FVG_Confirmat
 
 class SMC_FVG_Context30m_Freqtrade(SMC_FVG_Confirmation_Freqtrade):
     timeframe = "30m"
-    startup_candle_count = 8
+    startup_candle_count = 64
+    FVG_MAX_AGE_CANDLES = 48
 
     def __init__(self, config: dict):
         if "candle_type_def" not in config:
@@ -20,8 +21,8 @@ class SMC_FVG_Context30m_Freqtrade(SMC_FVG_Confirmation_Freqtrade):
     def protections(self) -> list[dict[str, int | str]]:
         return [{"method": "CooldownPeriod", "stop_duration_candles": 1}]
 
-    @staticmethod
-    def _annotate_active_bearish_fvg(dataframe: DataFrame) -> DataFrame:
+    @classmethod
+    def _annotate_active_bearish_fvg(cls, dataframe: DataFrame) -> DataFrame:
         rows = dataframe.reset_index(drop=True).copy()
         active_bearish: list[FVG] = []
         has_bearish_fvg: list[int] = []
@@ -44,7 +45,11 @@ class SMC_FVG_Context30m_Freqtrade(SMC_FVG_Confirmation_Freqtrade):
                 active_bearish.append(current_fvg)
 
             current_high = float(row["high"])
-            active_bearish = [fvg for fvg in active_bearish if current_high < fvg.top]
+            active_bearish = [
+                fvg
+                for fvg in active_bearish
+                if i - fvg.bar_index < cls.FVG_MAX_AGE_CANDLES and current_high < fvg.top
+            ]
             has_bearish_fvg.append(1 if active_bearish else 0)
 
         rows["has_bearish_fvg"] = has_bearish_fvg

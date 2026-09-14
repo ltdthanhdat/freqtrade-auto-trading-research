@@ -1,4 +1,6 @@
+import json
 import sqlite3
+from pathlib import Path
 
 import pytest
 
@@ -38,6 +40,7 @@ def test_review_approved_reopen_appends_history_and_updates_current_state(tmp_pa
 
 
 def test_strategy_declares_one_candle_cooldown():
-    assert SMC_FVG_Context30m_Freqtrade({}).protections == [
+    config = json.loads(Path("config/config.futures.json").read_text())
+    assert SMC_FVG_Context30m_Freqtrade(config).protections == [
         {"method": "CooldownPeriod", "stop_duration_candles": 1}
     ]
