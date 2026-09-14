@@ -9,7 +9,7 @@ from research_runtime.core import CycleStatus, HypothesisState
 from research_runtime.store import ResearchStore
 
 
-def test_store_creates_v3_tables_and_identity_columns(tmp_path):
+def test_store_creates_v4_tables_and_identity_columns(tmp_path):
     store = ResearchStore(tmp_path / "research.sqlite")
     with store.connect() as connection:
         tables = {
@@ -34,7 +34,7 @@ def test_store_creates_v3_tables_and_identity_columns(tmp_path):
             "comparison_cohort_members",
             "oos_partition_consumptions",
         } <= tables
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
         cycle_columns = {row[1] for row in connection.execute("PRAGMA table_info(cycles)")}
         assert {
             "dataset",
@@ -45,6 +45,15 @@ def test_store_creates_v3_tables_and_identity_columns(tmp_path):
             "ranking_sealed_at",
             "ranking_json",
             "ranking_sha256",
+            "lease_owner",
+            "lease_heartbeat_at",
+            "recovery_attempts",
+            "completed_at",
+            "last_error_code",
+            "snapshot_sha256",
+            "snapshot_manifest_path",
+            "prompt_sha256",
+            "airflow_run_key",
         } <= cycle_columns
         hypothesis_columns = {row[1] for row in connection.execute("PRAGMA table_info(hypotheses)")}
         assert {"approval_blocked_reason", "family_id", "plan_json", "plan_sha256"} <= hypothesis_columns
@@ -73,6 +82,27 @@ def test_cycle_identity_is_persisted_and_terminal_transitions_are_checked(tmp_pa
     assert store.set_cycle_status(cycle_id, CycleStatus.NEEDS_REVIEW, "review") ["stage"] == "REVIEW"
     with pytest.raises(ValueError, match="illegal cycle transition"):
         store.set_cycle_status(cycle_id, CycleStatus.RUNNING, "reopen")
+
+
+def test_cycle_identity_includes_run_snapshot_and_prompt_hashes(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite")
+    values = {
+        "now": "2026-09-14T07:00:00Z",
+        "dataset": "snapshots/daily/run-1",
+        "requested_timerange": "20260118-20260915",
+        "snapshot_sha256": "a" * 64,
+        "snapshot_manifest_path": "runs/run-1/snapshot-readiness.json",
+        "prompt_sha256": "b" * 64,
+        "airflow_run_key": "run-1",
+        "lease_owner": "run-1",
+    }
+    created = store.start_or_resume_cycle(values)
+    cycle = created["cycle"]
+
+    assert cycle["airflow_run_key"] == "run-1"
+    assert store.find_cycle_by_airflow_run_key("run-1")["id"] == cycle["id"]
+    with pytest.raises(ValueError, match="cycle identity mismatch: prompt_sha256"):
+        store.start_or_resume_cycle({**values, "prompt_sha256": "c" * 64})
 
 
 def test_record_run_keeps_retry_attempts_append_only(tmp_path):
@@ -354,7 +384,7 @@ def test_v2_migration_preserves_rows_and_quarantines_unsafe_links(tmp_path):
     store = ResearchStore(path)
 
     with store.connect() as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
         assert connection.execute("SELECT COUNT(*) FROM sources").fetchone()[0] == 3
         assert connection.execute("SELECT COUNT(*) FROM hypotheses").fetchone()[0] == 1
         assert connection.execute("SELECT COUNT(*) FROM cycle_sources").fetchone()[0] == 3
@@ -560,3 +590,85 @@ def test_review_requires_actor_and_reason(tmp_path):
         store.transition_hypothesis("H-review", HypothesisState.IMPLEMENTING, "", "queue")
     with pytest.raises(ValueError, match="reason"):
         store.transition_hypothesis("H-review", HypothesisState.IMPLEMENTING, "runtime", " ")
+
+
+def test_v3_database_migrates_to_v4_and_preserves_cycle_rows(tmp_path):
+    path = tmp_path / "research.sqlite"
+    make_v2_integrity_fixture(path)
+    with sqlite3.connect(path) as connection:
+        connection.execute("PRAGMA user_version = 3")
+
+    store = ResearchStore(path)
+    result = store.start_or_resume_cycle("2026-09-14T07:00:00Z")
+    cycle_id = result["cycle"]["id"]
+
+    reopened = ResearchStore(path)
+    cycle = reopened.get_cycle(cycle_id)
+
+    assert cycle["id"] == cycle_id
+    assert cycle["recovery_attempts"] == 0
+    assert reopened.integrity_report() == {"integrity_check": "ok", "foreign_key_errors": []}
+
+
+def test_heartbeat_requires_the_current_lease_owner(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite", lease_seconds=60)
+    cycle = store.start_or_resume_cycle(
+        {"now": "2026-09-14T07:00:00Z", "lease_owner": "dag-a"}
+    )["cycle"]
+
+    with pytest.raises(ValueError, match="lease owner"):
+        store.heartbeat_cycle(cycle["id"], lease_owner="dag-b", now="2026-09-14T07:00:10Z")
+
+    updated = store.heartbeat_cycle(
+        cycle["id"], lease_owner="dag-a", now="2026-09-14T07:00:10Z"
+    )
+    assert updated["lease_heartbeat_at"] == "2026-09-14T07:00:10Z"
+
+
+def test_recovery_budget_allows_one_resume_only(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite", lease_seconds=60)
+    first = store.start_or_resume_cycle(
+        {"now": "2026-09-14T07:00:00Z", "lease_owner": "dag-a"}
+    )
+    cycle_id = first["cycle"]["id"]
+
+    store.reconcile_cycle(
+        cycle_id,
+        observed_status="FAILED",
+        reason="container disappeared",
+        now="2026-09-14T09:00:00Z",
+        lease_owner="dag-a",
+    )
+    resumed = store.start_or_resume_cycle(
+        {"now": "2026-09-14T09:01:00Z", "lease_owner": "dag-a"}
+    )
+    assert resumed["acquired"] is True
+    assert resumed["cycle"]["recovery_attempts"] == 1
+    assert resumed["cycle"]["completed_at"] is None
+
+    store.reconcile_cycle(
+        cycle_id,
+        observed_status="FAILED",
+        reason="second container disappeared",
+        now="2026-09-14T11:00:00Z",
+        lease_owner="dag-a",
+    )
+    blocked = store.start_or_resume_cycle(
+        {"now": "2026-09-14T11:01:00Z", "lease_owner": "dag-a"}
+    )
+    assert blocked["acquired"] is False
+    assert blocked["blocked_reason"] == "recovery_budget_exhausted"
+
+
+def test_needs_review_cycle_blocks_automatic_new_cycle(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite")
+    cycle_id = store.start_or_resume_cycle("2026-09-14T07:00:00Z")["cycle"]["id"]
+    store.set_cycle_status(cycle_id, "NEEDS_REVIEW", "validation passed")
+
+    blocked = store.start_or_resume_cycle(
+        {"now": "2026-09-15T07:00:00Z", "dataset": "snapshots/daily-2"}
+    )
+
+    assert blocked["acquired"] is False
+    assert blocked["cycle"]["id"] == cycle_id
+    assert blocked["blocked_reason"] == "review_required"

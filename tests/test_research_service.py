@@ -802,3 +802,42 @@ def test_retryable_validation_creates_a_new_attempt(tmp_path):
     runs = service.store.list_runs(second["experiment_id"])
     assert len(runs) == 2
     assert runs[0]["id"] != runs[1]["id"]
+
+
+def test_service_dispatches_heartbeat_and_reconciliation_operations(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite", lease_seconds=60)
+    cycle = store.start_or_resume_cycle(
+        {"now": "2026-09-14T07:00:00Z", "lease_owner": "dag-a"}
+    )["cycle"]
+    service = ResearchService(store, tmp_path / "artifacts")
+
+    heartbeat = service.call(
+        "heartbeat_cycle",
+        {
+            "cycle_id": cycle["id"],
+            "lease_owner": "dag-a",
+            "now": "2026-09-14T07:00:10Z",
+        },
+    )
+    assert heartbeat["lease_heartbeat_at"] == "2026-09-14T07:00:10Z"
+
+    reconciled = service.call(
+        "reconcile_cycle",
+        {
+            "cycle_id": cycle["id"],
+            "observed_status": "TIMEOUT",
+            "reason": "container timed out",
+            "observed_task_id": "run_research",
+            "observed_container_id": "container-id",
+            "lease_owner": "dag-a",
+            "now": "2026-09-14T07:01:10Z",
+        },
+    )
+    assert reconciled["action"] == "RECONCILED"
+    assert reconciled["cycle"]["status"] == CycleStatus.INCOMPLETE
+
+    with pytest.raises(ValueError, match="unknown fields"):
+        service.call(
+            "heartbeat_cycle",
+            {"cycle_id": cycle["id"], "lease_owner": "dag-a", "unexpected": True},
+        )

@@ -20,7 +20,13 @@ class ResearchService:
     OPERATION_FIELDS = {
         "start_or_resume_cycle": {
             "now", "dataset", "requested_timerange", "policy_sha256", "search_cohort",
-            "holdout_start", "holdout_end",
+            "holdout_start", "holdout_end", "lease_owner", "airflow_run_key",
+            "snapshot_sha256", "snapshot_manifest_path", "prompt_sha256",
+        },
+        "heartbeat_cycle": {"cycle_id", "lease_owner", "now"},
+        "reconcile_cycle": {
+            "cycle_id", "observed_status", "reason", "observed_task_id",
+            "observed_container_id", "lease_owner", "now",
         },
         "load_context": {"cycle_id"},
         "list_source_views": {"cycle_id", "limit", "after"},
@@ -59,6 +65,8 @@ class ResearchService:
 
     REQUIRED_FIELDS = {
         "start_or_resume_cycle": set(),
+        "heartbeat_cycle": {"cycle_id", "lease_owner"},
+        "reconcile_cycle": {"cycle_id", "observed_status", "reason"},
         "load_context": {"cycle_id"},
         "list_source_views": {"cycle_id"},
         "seal_hypothesis_ranking": {"cycle_id"},
@@ -115,6 +123,24 @@ class ResearchService:
             if policy_path.is_file():
                 values["policy_sha256"] = hashlib.sha256(policy_path.read_bytes()).hexdigest()
         return self.store.start_or_resume_cycle(values)
+
+    def heartbeat_cycle(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self.store.heartbeat_cycle(
+            payload["cycle_id"],
+            lease_owner=payload["lease_owner"],
+            now=payload.get("now"),
+        )
+
+    def reconcile_cycle(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self.store.reconcile_cycle(
+            payload["cycle_id"],
+            observed_status=payload["observed_status"],
+            reason=payload["reason"],
+            observed_task_id=payload.get("observed_task_id"),
+            observed_container_id=payload.get("observed_container_id"),
+            lease_owner=payload.get("lease_owner"),
+            now=payload.get("now"),
+        )
 
     def load_context(self, payload: dict[str, Any]) -> dict[str, Any]:
         cycle_id = payload["cycle_id"]
