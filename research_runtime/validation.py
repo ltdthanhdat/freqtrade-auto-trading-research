@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from research_runtime.candidates import validate_candidate_source
+from research_runtime.freqtrade_preflight import CandidatePreflightResult, preflight_candidate
 from scripts.validate_baseline import (
     REQUIRED_TIMEFRAMES,
     _combined_hash,
@@ -106,11 +107,63 @@ def _assert_candidate_identity(
     return digest or ""
 
 
+def _write_preflight_artifacts(
+    experiment: dict[str, Any],
+    root: Path,
+    candidate_file: Path,
+    strategy_name: str,
+    strategy_path: Path,
+    candidate_sha256: str,
+    preflight: CandidatePreflightResult,
+) -> tuple[Path, Path, str, str, dict[str, Any]]:
+    run_id = str(experiment.get("id") or "validation")
+    if not run_id or Path(run_id).name != run_id:
+        raise ValueError("invalid validation run id")
+    run_dir = Path(experiment.get("runs_dir") or root / "validation") / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = run_dir / "preflight.json"
+    report_path = run_dir / "report.md"
+    payload: dict[str, Any] = {
+        "candidate_path": str(candidate_file),
+        "candidate_sha256": candidate_sha256,
+        "strategy_name": strategy_name,
+        "strategy_path": str(strategy_path),
+        "config_path": str(experiment.get("config_path", "")),
+        "config_sha256": experiment.get("config_sha256"),
+        "error_code": "candidate_preflight",
+        "details": list(preflight.details),
+        "passed": False,
+        "oos_partitions": [],
+        "oos_consumption": {"status": "not_allocated"},
+    }
+    manifest_path.write_text(json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+    report_path.write_text(
+        "# Candidate preflight\n\n"
+        "Verdict: `FAIL`\n\n"
+        + "\n".join(f"- {detail}" for detail in preflight.details)
+        + "\n",
+        encoding="utf-8",
+    )
+    manifest_hash = _sha256(manifest_path) or ""
+    report_hash = _sha256(report_path) or ""
+    artifacts = {
+        "preflight": payload,
+        "oos_partitions": [],
+        "oos_consumption": {"status": "not_allocated"},
+        "manifest_path": str(manifest_path),
+        "report_path": str(report_path),
+        "manifest_sha256": manifest_hash,
+        "report_sha256": report_hash,
+    }
+    return manifest_path, report_path, manifest_hash, report_hash, artifacts
+
+
 def validate_candidate(
     experiment: dict[str, Any],
     *,
     artifact_root: str | Path | None = None,
     collect_identity_fn: Callable[..., Any] = collect_identity,
+    preflight_fn: Callable[..., CandidatePreflightResult] = preflight_candidate,
     run_validation_fn: Callable[..., Any] = run_validation,
 ) -> ResearchVerdict:
     required_hashes = ("parent_sha256", "config_sha256", "snapshot_sha256", "policy_sha256")
@@ -195,6 +248,41 @@ def validate_candidate(
         current_strategy_files = _strategy_files(strategy_file, strategy_path)
         if current_strategy_files != initial_strategy_files:
             raise ValueError("dependency identity changed during validation")
+        preflight = preflight_fn(
+            config_path=args.config,
+            strategy_name=strategy_name,
+            strategy_path=strategy_path,
+        )
+        if not isinstance(preflight, CandidatePreflightResult):
+            raise ValueError("candidate preflight returned an invalid result")
+        if not preflight.passed:
+            (
+                preflight_manifest_path,
+                preflight_report_path,
+                preflight_manifest_hash,
+                preflight_report_hash,
+                preflight_artifacts,
+            ) = _write_preflight_artifacts(
+                experiment,
+                root,
+                candidate_file,
+                strategy_name,
+                strategy_path,
+                initial_candidate_sha256,
+                preflight,
+            )
+            return ResearchVerdict(
+                verdict="FAIL",
+                state="REJECTED",
+                metrics={},
+                artifacts=preflight_artifacts,
+                manifest_path=preflight_manifest_path,
+                report_path=preflight_report_path,
+                manifest_hash=preflight_manifest_hash,
+                report_hash=preflight_report_hash,
+                error_code="candidate_preflight",
+                details=preflight.details,
+            )
         result = run_validation_fn(args)
         verdict = str(_result_value(result, "verdict", ""))
         manifest_path = _path_value(_result_value(result, "manifest_path"))
