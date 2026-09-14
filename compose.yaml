@@ -78,6 +78,8 @@ services:
       RESEARCH_ROOT: ${RESEARCH_ROOT:-/workspace}
       RESEARCH_DATASET: ${RESEARCH_DATASET:-snapshots/fresh_outer_oos_2026q3}
       RESEARCH_TIMERANGE: ${RESEARCH_TIMERANGE:-20260124-20260914}
+      RESEARCH_RUN_KEY: ${RESEARCH_RUN_KEY:-local-research}
+      RESEARCH_SNAPSHOT_MANIFEST: ${RESEARCH_ROOT:-/workspace}/user_data/research-artifacts/runs/${RESEARCH_RUN_KEY:-local-research}/snapshot-readiness.json
       RESEARCH_MODEL: ${RESEARCH_MODEL:-openai-codex/gpt-5.6-luna}
       MAX_CYCLES: ${MAX_CYCLES:-1}
       RESEARCH_TIMEOUT: ${RESEARCH_TIMEOUT:-2400}
@@ -89,7 +91,7 @@ services:
       - ./:${RESEARCH_ROOT:-/workspace}:ro
       - ./user_data/research.sqlite:${RESEARCH_ROOT:-/workspace}/user_data/research.sqlite
       - ./user_data/research-artifacts:${RESEARCH_ROOT:-/workspace}/user_data/research-artifacts
-      - ./user_data/data/snapshots:${RESEARCH_ROOT:-/workspace}/user_data/data/snapshots:ro
+      - ${RESEARCH_SNAPSHOT_ROOT:-./user_data/data/snapshots}:${RESEARCH_ROOT:-/workspace}/user_data/data/snapshots:ro
       - ${CODEX_HOME:-${HOME}/.codex}:/home/ftuser/.codex:ro
       - ${PI_AGENT_DIR:-${HOME}/.pi/agent}:/pi/agent-source:ro
       - ${PI_WEB_SEARCH_CONFIG:-${HOME}/.pi/web-search.json}:/pi/web-search.json:ro
@@ -99,9 +101,69 @@ services:
       - ${RESEARCH_ROOT:-/workspace}/user_data/research.sqlite
       - --dataset
       - ${RESEARCH_DATASET:-snapshots/fresh_outer_oos_2026q3}
+      - --run-key
+      - ${RESEARCH_RUN_KEY:-local-research}
+      - --artifacts
+      - ${RESEARCH_ROOT:-/workspace}/user_data/research-artifacts
+      - --snapshot-manifest
+      - ${RESEARCH_ROOT:-/workspace}/user_data/research-artifacts/runs/${RESEARCH_RUN_KEY:-local-research}/snapshot-readiness.json
       - --timerange
       - ${RESEARCH_TIMERANGE:-20260124-20260914}
       - --max-cycles
       - ${MAX_CYCLES:-1}
       - --cycle-timeout
       - ${RESEARCH_TIMEOUT:-2400}
+
+  research-data-prep:
+    build:
+      context: .
+      dockerfile: Dockerfile.research
+    profiles: ["research"]
+    working_dir: /workspace
+    read_only: true
+    stdin_open: false
+    tty: false
+    network_mode: bridge
+    environment:
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      PYTHONPATH: /workspace
+      UV_NO_SYNC: "1"
+      UV_PROJECT_ENVIRONMENT: /opt/research-venv
+      RESEARCH_RUN_KEY: ${RESEARCH_RUN_KEY:-local-research}
+      RESEARCH_DATASET: ${RESEARCH_DATASET:-snapshots/fresh_outer_oos_2026q3}
+      RESEARCH_TIMERANGE: ${RESEARCH_TIMERANGE:-20260124-20260914}
+    tmpfs:
+      - /tmp:rw,mode=1777
+      - /home/ftuser/.cache:rw,uid=1000,gid=1000,mode=0700
+    volumes:
+      - ./:/workspace:ro
+      - ${RESEARCH_SNAPSHOT_WORK_ROOT:-./user_data/data}:/workspace/user_data/data:rw
+      - ${RESEARCH_ARTIFACT_ROOT:-./user_data/research-artifacts}:/workspace/user_data/research-artifacts:rw
+    entrypoint: ["/opt/research-venv/bin/python"]
+    command:
+      - -m
+      - scripts.prepare_research_data
+      - --config
+      - /workspace/config/config.futures.json
+      - --policy
+      - /workspace/config/validation.baseline.json
+      - --data-root
+      - /workspace/user_data/data
+      - --staging-root
+      - /workspace/user_data/data/.staging/${RESEARCH_RUN_KEY:-local-research}
+      - --dataset
+      - ${RESEARCH_DATASET:-snapshots/fresh_outer_oos_2026q3}
+      - --snapshot-id
+      - ${RESEARCH_DATASET:-snapshots/fresh_outer_oos_2026q3}
+      - --timeframes
+      - 30m
+      - 1h
+      - 1m
+      - --manifest
+      - /workspace/user_data/research-artifacts/runs/${RESEARCH_RUN_KEY:-local-research}/snapshot-readiness.json
+      - --run-key
+      - ${RESEARCH_RUN_KEY:-local-research}
+      - --summary-root
+      - /workspace/user_data/research-artifacts
+      - --timerange
+      - ${RESEARCH_TIMERANGE:-20260124-20260914}

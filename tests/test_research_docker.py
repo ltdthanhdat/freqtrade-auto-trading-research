@@ -16,6 +16,30 @@ def _service_block(compose: str, service: str) -> str:
     return match.group(0)
 
 
+def test_compose_separates_prep_write_mount_from_research_read_mount() -> None:
+    compose = (ROOT / "compose.yaml").read_text()
+    prep = compose[compose.index("  research-data-prep:") :]
+    research = compose[compose.index("  research:") : compose.index("  research-data-prep:")]
+
+    assert "scripts.prepare_research_data" in prep
+    assert "research-data-prep" in compose
+    assert "read_only: true" in research
+    assert "stdin_open: false" in research
+    assert "tty: false" in research
+    assert "network_mode: bridge" in research
+    assert "./user_data:/" not in research
+    assert "CODEX_HOME" not in prep
+    assert "PI_AGENT_DIR" not in prep
+    assert "RESEARCH_SNAPSHOT_WORK_ROOT" in prep
+    assert "RESEARCH_ARTIFACT_ROOT" in prep
+    assert "--timeframes" in prep
+    assert "30m" in prep and "1h" in prep and "1m" in prep
+    assert "--manifest" in prep
+    assert "--run-key" in prep
+    assert "--summary-root" in prep
+    assert "--snapshot-manifest" in research
+
+
 def test_research_service_is_opt_in_one_shot_and_persists_state() -> None:
     compose_path = ROOT / "compose.yaml"
     assert compose_path.is_file()

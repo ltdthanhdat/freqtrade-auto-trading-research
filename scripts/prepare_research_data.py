@@ -164,10 +164,13 @@ def prepare(
     snapshot_id: str | None = None,
     run_key: str | None = None,
     summary_root: Path | None = None,
+    timeframes: list[str] | tuple[str, ...] | None = None,
 ) -> dict[str, object]:
     started_at = _now()
     try:
         policy = ValidationPolicy.from_path(policy_path)
+        if timeframes is not None and list(timeframes) != REQUIRED_TIMEFRAMES:
+            raise ValueError("research snapshots require timeframes 30m, 1h, and 1m")
         if not policy.accepted_pairs:
             raise ValueError("validation policy has no accepted pairs")
         start, end = _timerange(timerange)
@@ -306,6 +309,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--snapshot-id")
     parser.add_argument("--run-key")
     parser.add_argument("--summary-root", type=Path)
+    parser.add_argument("--timeframes", nargs="+", default=list(REQUIRED_TIMEFRAMES))
     return parser.parse_args()
 
 
@@ -323,6 +327,7 @@ def main() -> int:
             snapshot_id=args.snapshot_id,
             run_key=args.run_key,
             summary_root=args.summary_root,
+            timeframes=args.timeframes,
         )
     except (OSError, RuntimeError, ValueError, subprocess.CalledProcessError) as exc:
         print(f"research data not ready: {exc}")

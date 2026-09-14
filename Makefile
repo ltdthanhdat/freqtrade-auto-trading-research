@@ -19,6 +19,12 @@ VALIDATION_MANIFEST ?=
 VALIDATION_POLICY ?= config/validation.baseline.json
 RESEARCH_DATASET ?= accepted_6pair_2026q3_full
 RESEARCH_TIMERANGE ?= 20260124-20260911
+RESEARCH_RUN_KEY ?= local-research
+RESEARCH_ARTIFACT_ROOT ?= user_data/research-artifacts
+DATA_ROOT ?= user_data/data
+SNAPSHOT_ID ?= $(RESEARCH_DATASET)
+STAGING_ROOT ?= $(DATA_ROOT)/.staging/$(RESEARCH_RUN_KEY)
+SNAPSHOT_MANIFEST ?= $(RESEARCH_ARTIFACT_ROOT)/runs/$(RESEARCH_RUN_KEY)/snapshot-readiness.json
 MAX_CYCLES ?= 1
 RESEARCH_TIMEOUT ?= 300
 RESEARCH_MODEL ?= openai-codex/gpt-5.6-luna
@@ -26,9 +32,9 @@ BASELINE ?= user_data/backtest_results/baseline.zip
 DB ?= user_data/tradesv3.demo.sqlite
 
 PAIR     ?= BTC/USDT:USDT
-SNAPSHOT_DATADIR := user_data/data/snapshots/$(DATASET)
+SNAPSHOT_DATADIR := $(DATA_ROOT)/snapshots/$(DATASET)
 
-.PHONY: help install seed seed-range seed-snapshot research-data list-data list-snapshot backtest backtest-snapshot validate-snapshot validate-pass monitor-decay plot plot-df dry-run demo live compose-demo compose-live compose-research list-strategies research-cycle research-loop research-dashboard clean clean-backtest-results
+.PHONY: help install seed seed-range seed-snapshot research-data list-data list-snapshot backtest backtest-snapshot validate-snapshot validate-pass monitor-decay plot plot-df dry-run demo live compose-demo compose-live compose-research compose-research-data list-strategies research-cycle research-loop research-dashboard clean clean-backtest-results
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -37,16 +43,16 @@ install: ## Install dependencies with uv
 	uv sync
 
 seed: install ## Seed active data with DAYS=<n>
-	$(PYTHON) -m scripts.seed_freqtrade_data --config $(CONFIG) --preset smc-basket --days $(DAYS)
+	$(PYTHON) -m scripts.seed_freqtrade_data --config $(CONFIG) --data-root $(DATA_ROOT) --preset smc-basket --days $(DAYS)
 
 seed-range: install ## Seed active data with TIMERANGE=<start-end>
-	$(PYTHON) -m scripts.seed_freqtrade_data --config $(CONFIG) --preset smc-basket --timerange $(TIMERANGE)
+	$(PYTHON) -m scripts.seed_freqtrade_data --config $(CONFIG) --data-root $(DATA_ROOT) --preset smc-basket --timerange $(TIMERANGE)
 
 seed-snapshot: install ## Seed snapshot data with DATASET=<name> DAYS=<n>
-	$(PYTHON) -m scripts.seed_freqtrade_data --config $(CONFIG) --dataset snapshots/$(DATASET) --preset smc-basket --days $(DAYS)
+	$(PYTHON) -m scripts.seed_freqtrade_data --config $(CONFIG) --data-root $(DATA_ROOT) --dataset snapshots/$(DATASET) --preset smc-basket --days $(DAYS)
 
 research-data: ## Seed and verify the snapshot used by research-cycle
-	$(PYTHON) -m scripts.prepare_research_data --config $(CONFIG) --policy $(VALIDATION_POLICY) --dataset $(RESEARCH_DATASET) --timerange $(RESEARCH_TIMERANGE)
+	$(PYTHON) -m scripts.prepare_research_data --config $(CONFIG) --policy $(VALIDATION_POLICY) --data-root $(DATA_ROOT) --staging-root $(STAGING_ROOT) --dataset $(RESEARCH_DATASET) --snapshot-id $(SNAPSHOT_ID) --manifest $(SNAPSHOT_MANIFEST) --run-key $(RESEARCH_RUN_KEY) --summary-root $(RESEARCH_ARTIFACT_ROOT) --timerange $(RESEARCH_TIMERANGE)
 
 # List downloaded data
 list-data: ## List downloaded market data
@@ -73,7 +79,7 @@ research-cycle: research-data ## Start or resume one bounded Pi research cycle
 	RESEARCH_DATASET=$(RESEARCH_DATASET) RESEARCH_TIMERANGE=$(RESEARCH_TIMERANGE) pi --approve --model openai-codex/gpt-5.6-luna --thinking max --no-builtin-tools
 
 research-loop: research-data ## Run a bounded supervisor that resumes interrupted research cycles
-	RESEARCH_MODEL=$(RESEARCH_MODEL) $(PYTHON) -m scripts.research_loop --db "$(RESEARCH_DB)" --dataset "$(RESEARCH_DATASET)" --timerange "$(RESEARCH_TIMERANGE)" --max-cycles "$(MAX_CYCLES)" --cycle-timeout "$(RESEARCH_TIMEOUT)"
+	RESEARCH_MODEL=$(RESEARCH_MODEL) $(PYTHON) -m scripts.research_loop --db "$(RESEARCH_DB)" --artifacts "$(RESEARCH_ARTIFACT_ROOT)" --run-key "$(RESEARCH_RUN_KEY)" --snapshot-manifest "$(SNAPSHOT_MANIFEST)" --dataset "$(RESEARCH_DATASET)" --timerange "$(RESEARCH_TIMERANGE)" --max-cycles "$(MAX_CYCLES)" --cycle-timeout "$(RESEARCH_TIMEOUT)"
 
 research-dashboard: ## Open the local research dashboard server
 	$(PYTHON) -m research_runtime.dashboard --db user_data/research.sqlite --artifacts user_data/research-artifacts --port 7400
@@ -105,7 +111,10 @@ compose-live: ## Run Binance live service via Docker Compose
 	docker compose up -d freqtrade-live
 
 compose-research: ## Run one bounded research cycle via Docker Compose
-	RESEARCH_ROOT="$(CURDIR)" docker compose --profile research run --rm research
+	RESEARCH_ROOT="$(CURDIR)" RESEARCH_SNAPSHOT_ROOT="$(CURDIR)/$(DATA_ROOT)/snapshots" RESEARCH_ARTIFACT_ROOT="$(CURDIR)/$(RESEARCH_ARTIFACT_ROOT)" RESEARCH_RUN_KEY="$(RESEARCH_RUN_KEY)" docker compose --profile research run --rm research
+
+compose-research-data: ## Prepare and seal one research snapshot via Docker Compose
+	RESEARCH_ROOT="$(CURDIR)" RESEARCH_SNAPSHOT_WORK_ROOT="$(CURDIR)/$(DATA_ROOT)" RESEARCH_ARTIFACT_ROOT="$(CURDIR)/$(RESEARCH_ARTIFACT_ROOT)" RESEARCH_RUN_KEY="$(RESEARCH_RUN_KEY)" docker compose --profile research run --rm research-data-prep
 
 list-strategies: ## List available strategies
 	$(FREQ) list-strategies --strategy-path $(SPATH)
