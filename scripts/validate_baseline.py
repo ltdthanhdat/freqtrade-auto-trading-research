@@ -22,6 +22,8 @@ from freqtrade.configuration.environment_vars import environment_vars_to_dict
 from freqtrade.configuration.load_config import load_from_files
 from freqtrade.misc import deep_merge_dicts
 
+from research_runtime.snapshots import directory_sha256
+
 from scripts.validation_core import (
     BootstrapSummary,
     Checks,
@@ -99,11 +101,7 @@ def _mapping_sha256(value: dict[str, object]) -> str:
 
 
 def _snapshot_sha256(datadir: Path) -> str:
-    digest = hashlib.sha256()
-    for path in sorted(candidate for candidate in datadir.rglob("*") if candidate.is_file()):
-        digest.update(path.relative_to(datadir).as_posix().encode())
-        digest.update(path.read_bytes())
-    return digest.hexdigest()
+    return directory_sha256(datadir)
 
 
 def _display_path(path: Path) -> str:

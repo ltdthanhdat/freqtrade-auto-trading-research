@@ -31,6 +31,11 @@ def parse_args() -> argparse.Namespace:
         help="Freqtrade config used to download data.",
     )
     parser.add_argument(
+        "--data-root",
+        default=str(DEFAULT_DATA_ROOT),
+        help="Root directory containing Freqtrade datasets.",
+    )
+    parser.add_argument(
         "--dataset",
         default=DEFAULT_DATASET,
         help="`active` to seed the default dataset, or a relative path under user_data/data. Example: snapshots/recent_selected.",
@@ -84,17 +89,24 @@ def resolve_pairs(args: argparse.Namespace) -> list[str]:
     raise ValueError("Could not resolve pair list.")
 
 
-def resolve_datadir(args: argparse.Namespace) -> Path:
+def resolve_datadir(
+    args: argparse.Namespace, data_root: Path = DEFAULT_DATA_ROOT
+) -> Path:
     if args.dataset == DEFAULT_DATASET:
-        return DEFAULT_DATA_ROOT / "binance"
+        return Path(data_root) / "binance"
     dataset = Path(args.dataset)
     if dataset.is_absolute() or ".." in dataset.parts:
-        raise ValueError("`--dataset` must be a relative path under user_data/data.")
-    return DEFAULT_DATA_ROOT / dataset
+        raise ValueError("`--dataset` must be a relative path under the data root.")
+    return Path(data_root) / dataset
 
 
-def build_command(args: argparse.Namespace, pairs: list[str]) -> list[str]:
-    datadir = resolve_datadir(args)
+def build_command(
+    args: argparse.Namespace,
+    pairs: list[str],
+    *,
+    data_root: Path = DEFAULT_DATA_ROOT,
+) -> list[str]:
+    datadir = resolve_datadir(args, data_root)
     command = [
         "uv",
         "run",
@@ -123,7 +135,7 @@ def build_command(args: argparse.Namespace, pairs: list[str]) -> list[str]:
 def main() -> None:
     args = parse_args()
     pairs = resolve_pairs(args)
-    command = build_command(args, pairs)
+    command = build_command(args, pairs, data_root=Path(args.data_root))
     subprocess.run(command, cwd=ROOT, check=True)
 
 
