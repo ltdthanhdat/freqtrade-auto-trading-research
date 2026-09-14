@@ -28,7 +28,7 @@ DB ?= user_data/tradesv3.demo.sqlite
 PAIR     ?= BTC/USDT:USDT
 SNAPSHOT_DATADIR := user_data/data/snapshots/$(DATASET)
 
-.PHONY: help install seed seed-range seed-snapshot research-data list-data list-snapshot backtest backtest-snapshot validate-snapshot validate-pass monitor-decay plot plot-df dry-run demo live compose-demo compose-live list-strategies research-cycle research-loop research-dashboard clean clean-backtest-results
+.PHONY: help install seed seed-range seed-snapshot research-data list-data list-snapshot backtest backtest-snapshot validate-snapshot validate-pass monitor-decay plot plot-df dry-run demo live compose-demo compose-live compose-research list-strategies research-cycle research-loop research-dashboard clean clean-backtest-results
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -103,6 +103,9 @@ compose-demo: ## Run Binance demo service via Docker Compose
 
 compose-live: ## Run Binance live service via Docker Compose
 	docker compose up -d freqtrade-live
+
+compose-research: ## Run one bounded research cycle via Docker Compose
+	RESEARCH_ROOT="$(CURDIR)" docker compose --profile research run --rm research
 
 list-strategies: ## List available strategies
 	$(FREQ) list-strategies --strategy-path $(SPATH)

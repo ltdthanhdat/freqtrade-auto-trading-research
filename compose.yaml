@@ -54,3 +54,54 @@ services:
       - /workspace/src/strategies
       - --logfile
       - /workspace/user_data/logs/freqtrade-live.log
+
+  research:
+    build:
+      context: .
+      dockerfile: Dockerfile.research
+    profiles: ["research"]
+    working_dir: ${RESEARCH_ROOT:-/workspace}
+    read_only: true
+    stdin_open: false
+    tty: false
+    network_mode: bridge
+    environment:
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      CODEX_HOME: /home/ftuser/.codex
+      PI_AGENT_SOURCE_DIR: /pi/agent-source
+      PI_WEB_SEARCH_CONFIG_SOURCE: /pi/web-search.json
+      PI_CODING_AGENT_DIR: /tmp/pi-agent
+      PI_WEB_ACCESS_EXTENSION: /opt/pi-extensions/node_modules/pi-web-access/index.ts
+      PYTHONPATH: ${RESEARCH_ROOT:-/workspace}
+      UV_NO_SYNC: "1"
+      UV_PROJECT_ENVIRONMENT: /opt/research-venv
+      RESEARCH_ROOT: ${RESEARCH_ROOT:-/workspace}
+      RESEARCH_DATASET: ${RESEARCH_DATASET:-snapshots/fresh_outer_oos_2026q3}
+      RESEARCH_TIMERANGE: ${RESEARCH_TIMERANGE:-20260124-20260914}
+      RESEARCH_MODEL: ${RESEARCH_MODEL:-openai-codex/gpt-5.6-luna}
+      MAX_CYCLES: ${MAX_CYCLES:-1}
+      RESEARCH_TIMEOUT: ${RESEARCH_TIMEOUT:-2400}
+    tmpfs:
+      - ${RESEARCH_ROOT:-/workspace}/user_data:rw,uid=1000,gid=1000,mode=0700
+      - /tmp:rw,mode=1777
+      - /home/ftuser/.cache:rw,uid=1000,gid=1000,mode=0700
+    volumes:
+      - ./:${RESEARCH_ROOT:-/workspace}:ro
+      - ./user_data/research.sqlite:${RESEARCH_ROOT:-/workspace}/user_data/research.sqlite
+      - ./user_data/research-artifacts:${RESEARCH_ROOT:-/workspace}/user_data/research-artifacts
+      - ./user_data/data/snapshots:${RESEARCH_ROOT:-/workspace}/user_data/data/snapshots:ro
+      - ${CODEX_HOME:-${HOME}/.codex}:/home/ftuser/.codex:ro
+      - ${PI_AGENT_DIR:-${HOME}/.pi/agent}:/pi/agent-source:ro
+      - ${PI_WEB_SEARCH_CONFIG:-${HOME}/.pi/web-search.json}:/pi/web-search.json:ro
+    entrypoint: ["/usr/local/bin/research-entrypoint"]
+    command:
+      - --db
+      - ${RESEARCH_ROOT:-/workspace}/user_data/research.sqlite
+      - --dataset
+      - ${RESEARCH_DATASET:-snapshots/fresh_outer_oos_2026q3}
+      - --timerange
+      - ${RESEARCH_TIMERANGE:-20260124-20260914}
+      - --max-cycles
+      - ${MAX_CYCLES:-1}
+      - --cycle-timeout
+      - ${RESEARCH_TIMEOUT:-2400}

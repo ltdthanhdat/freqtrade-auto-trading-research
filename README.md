@@ -119,6 +119,25 @@ docker compose up -d freqtrade-demo
 docker compose up -d freqtrade-live
 ```
 
+Run one bounded research cycle in an opt-in container (no scheduler):
+
+```bash
+docker compose --profile research build research
+docker compose --profile research run --rm research
+# or: make compose-research
+```
+
+The research service is one-shot and isolated: its root filesystem is read-only,
+worker trade databases/logs are not mounted, and only the research SQLite DB and
+research artifacts are writable. The prepared snapshot and host Codex/Pi auth
+(`~/.codex`, `~/.pi/agent`, and `~/.pi/web-search.json`) are read-only. The
+entrypoint copies the Pi agent mount into disposable `/tmp/pi-agent` storage and
+uses the image-local `pi-web-access` extension, so Pi never installs packages or
+writes to the host config. Override `CODEX_HOME`, `PI_AGENT_DIR`, or
+`PI_WEB_SEARCH_CONFIG` when needed. Use `make compose-research` so artifact paths
+remain valid on the host. Supervisor output is persisted at
+`user_data/research-artifacts/research-supervisor.log`.
+
 ## Seed data
 
 The seed script calls `freqtrade download-data` directly.
@@ -151,6 +170,7 @@ Make targets:
 - `make dry-run VALIDATION_MANIFEST=user_data/research-artifacts/validation/<run-id>/manifest.json`
 - `make research-cycle`
 - `make research-loop MAX_CYCLES=1`
+- `make compose-research`
 - `make research-dashboard`
 - `make demo`
 - `make live`

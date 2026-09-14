@@ -547,11 +547,38 @@ def test_start_validation_records_run_and_is_idempotent(tmp_path):
     result = service.start_validation({"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"]})
     replay = service.start_validation({"cycle_id": cycle_id, "hypothesis_id": hypothesis["id"]})
     assert calls[0]["candidate_path"] == hypothesis["candidate_path"]
+    assert calls[0]["plan_sha256"] == hypothesis.get("plan_sha256")
+    assert calls[0]["trading_plan"] is None
     assert result["state"] == HypothesisState.NEEDS_REVIEW
     assert replay["state"] == HypothesisState.NEEDS_REVIEW
     assert len(calls) == 1
     with service.store.connect() as connection:
         assert connection.execute("SELECT COUNT(*) FROM runs").fetchone()[0] == 1
+
+
+def test_identity_bound_validation_carries_frozen_plan_into_validator(tmp_path):
+    service, cycle_id, sources = make_identity_service(tmp_path)
+    hypothesis = prepare_identity_candidate(service, cycle_id, sources)
+    calls = []
+    service.validator = lambda experiment: calls.append(experiment) or {
+        "verdict": "FAIL",
+        "metrics": {},
+        "artifacts": {},
+    }
+
+    partitions = [{
+        "kind": "WFO_OOS",
+        "start_at": "2026-01-01T00:00:00Z",
+        "end_at": "2026-02-01T00:00:00Z",
+    }]
+    service.start_validation({
+        "cycle_id": cycle_id,
+        "hypothesis_id": hypothesis["id"],
+        "experiment": identity_experiment(partitions),
+    })
+
+    assert calls[0]["plan_sha256"] == hypothesis["plan_sha256"]
+    assert calls[0]["trading_plan"] == json.loads(hypothesis["plan_json"])
 
 
 def test_start_validation_does_not_promote_retryable_result(tmp_path):

@@ -427,11 +427,16 @@ class ResearchService:
             raise ValueError(f"hypothesis is not ready for validation: {hypothesis['state']}")
 
         try:
+            trading_plan = None
+            if hypothesis.get("plan_json"):
+                trading_plan = json.loads(hypothesis["plan_json"])
             validation_experiment = {
                 **existing,
                 "candidate_path": hypothesis["candidate_path"],
                 "candidate_sha256": hypothesis["candidate_sha256"],
                 "identity_bound": bool(hypothesis.get("plan_json")),
+                "plan_sha256": hypothesis.get("plan_sha256"),
+                "trading_plan": trading_plan,
                 "cycle_id": cycle_id,
                 "hypothesis_id": hypothesis["id"],
             }

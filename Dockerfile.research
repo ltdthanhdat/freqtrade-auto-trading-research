@@ -1,0 +1,41 @@
+FROM freqtradeorg/freqtrade:develop
+
+USER root
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl git make gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh \
+    && npm install --global @earendil-works/pi-coding-agent@0.85.1 \
+    && mkdir -p /opt/pi-extensions \
+    && npm install --prefix /opt/pi-extensions --omit=dev pi-web-access@0.28.0 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+RUN mkdir -p /workspace/user_data/data/snapshots /workspace/user_data/research-artifacts
+
+COPY scripts/research_container_entrypoint.sh /usr/local/bin/research-entrypoint
+RUN chmod 755 /usr/local/bin/research-entrypoint
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY pyproject.toml uv.lock ./
+RUN uv venv --system-site-packages /opt/research-venv \
+    && uv pip install --python /opt/research-venv/bin/python "plotly>=6.5.0"
+
+COPY . .
+
+ENV HOME=/home/ftuser \
+    CODEX_HOME=/home/ftuser/.codex \
+    PYTHONPATH=/workspace \
+    UV_NO_SYNC=1 \
+    UV_PROJECT_ENVIRONMENT=/opt/research-venv \
+    PI_WEB_ACCESS_EXTENSION=/opt/pi-extensions/node_modules/pi-web-access/index.ts \
+    PATH=/opt/research-venv/bin:/home/ftuser/.local/bin:$PATH
+
+USER ftuser
+
+ENTRYPOINT ["/usr/local/bin/research-entrypoint"]
+CMD ["--db", "/workspace/user_data/research.sqlite"]

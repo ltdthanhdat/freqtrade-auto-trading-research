@@ -1,0 +1,15 @@
+.env
+.env.*
+.git/
+.gitignore
+user_data/
+.venv/
+venv/
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.worktrees/
+docs/
