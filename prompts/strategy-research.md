@@ -72,9 +72,11 @@ cycle, with no overlap. For an identity-bound cycle, both
 `supporting_source_ids` and `contradicting_source_ids` must be non-empty; if
 necessary, collect and assess a source that challenges the hypothesis. The
 `evidence_links` list must cover every cited source exactly once. Each link is
-`{source_id, stance, note, evidence}`, where `evidence` is exactly an object
-with `roles` (a list), `supported_claim`, `transfer_assumption`, and
-`limitations`; do not wrap these fields in an `items` object. Supporting links
+`{source_id, stance, note, evidence}`, where `stance` is exactly `SUPPORT` for
+a supporting source or exactly `CONTRADICT` for a contradicting source; do not
+use lowercase or semantic alternatives. `evidence` is exactly an object with
+`roles` (a list), `supported_claim`, `transfer_assumption`, and `limitations`;
+do not wrap these fields in an `items` object. Supporting links
 must cover `ENTRY_SUPPORT`, `STOP_SUPPORT`, and `PROFIT_EXIT_SUPPORT`; use
 role-specific claim-level evidence. A contradicting link must use
 `CONTRADICTION` or `FALSIFIER`. If complete claim-level evidence is
