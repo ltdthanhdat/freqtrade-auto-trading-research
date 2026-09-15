@@ -285,7 +285,7 @@ def test_entry_only_evidence_cannot_authorize_complete_exit_plan(tmp_path):
         )
 
 
-def test_collect_sources_retries_temporary_provider_failure_and_records_error(tmp_path):
+def test_collect_sources_records_temporary_provider_failure_without_retrying(tmp_path):
     store = ResearchStore(tmp_path / "research.sqlite")
     cycle_id = store.start_or_resume_cycle("2026-09-11T08:00:00Z")["cycle"]["id"]
     attempts = []
@@ -298,15 +298,14 @@ def test_collect_sources_retries_temporary_provider_failure_and_records_error(tm
         store,
         tmp_path / "artifacts",
         collectors={"openalex": collector},
-        sleeper=lambda _seconds: None,
     )
     result = service.collect_sources(
         {"cycle_id": cycle_id, "provider": "openalex", "query": "RSI", "limit": 2}
     )
-    assert len(attempts) == 3
+    assert len(attempts) == 1
     assert result["accepted_ids"] == []
     assert result["duplicate_ids"] == []
-    assert result["provider_errors"][0]["code"] == "retry_exhausted"
+    assert result["provider_errors"][0]["code"] == "provider_error"
     assert any(event["reason"] == "source collection failed" for event in store.events(cycle_id))
 
 

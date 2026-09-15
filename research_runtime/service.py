@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import time
 from pathlib import Path
 from typing import Any, Callable
 
@@ -94,14 +93,12 @@ class ResearchService:
         artifact_root: str | Path,
         collectors: dict[str, Callable[..., Any]] | None = None,
         validator: Callable[..., Any] | None = None,
-        sleeper: Callable[[float], None] = time.sleep,
     ):
         self.store = store
         self.artifact_root = Path(artifact_root)
         self.artifact_root.mkdir(parents=True, exist_ok=True)
         self.collectors = COLLECTORS if collectors is None else collectors
         self.validator = validator
-        self.sleeper = sleeper
 
     def call(self, tool: str, payload: dict[str, Any]) -> dict[str, Any]:
         if tool not in self.OPERATION_FIELDS:
@@ -190,19 +187,10 @@ class ResearchService:
         if collector is None:
             raise ValueError(f"unsupported provider: {provider}")
 
-        records = None
-        for attempt in range(3):
-            try:
-                records = collector(query.strip(), limit)
-                break
-            except ProviderRetryableError as exc:
-                if attempt == 2:
-                    return self._provider_failure(cycle_id, provider, "retry_exhausted", exc, attempt + 1)
-                self.sleeper(float(attempt + 1))
-            except ProviderError as exc:
-                return self._provider_failure(cycle_id, provider, "provider_error", exc, attempt + 1)
-        if records is None:
-            return self._provider_failure(cycle_id, provider, "provider_error", RuntimeError("no result"), 3)
+        try:
+            records = collector(query.strip(), limit)
+        except (ProviderRetryableError, ProviderError) as exc:
+            return self._provider_failure(cycle_id, provider, "provider_error", exc, 1)
 
         accepted_ids: list[str] = []
         duplicate_ids: list[str] = []
