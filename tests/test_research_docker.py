@@ -58,8 +58,9 @@ def test_research_service_is_opt_in_one_shot_and_persists_state() -> None:
     assert "\n      - /home/ftuser\n" not in block
     assert "${RESEARCH_ROOT:-/workspace}/user_data" in block
     assert "RESEARCH_ROOT" in block
-    assert "- ./user_data/research.sqlite:${RESEARCH_ROOT" in block
-    assert "- ./user_data/research-artifacts:${RESEARCH_ROOT" in block
+    assert "RESEARCH_STATE_DIR" in block
+    assert "- /state/research" in block
+    assert "RESEARCH_ARTIFACT_ROOT" in block
     assert "./user_data:/workspace/user_data" not in block
     assert "- --db" in block
     assert "--max-cycles" in block
@@ -73,6 +74,18 @@ def test_research_service_is_opt_in_one_shot_and_persists_state() -> None:
     assert "PI_WEB_SEARCH_CONFIG_SOURCE" in block
     assert "/home/ftuser/.pi" not in block
     assert "/run/research-auth" not in block
+
+
+def test_research_uses_namespaced_state_and_not_repo_local_database() -> None:
+    compose = (ROOT / "compose.yaml").read_text()
+    research = compose[compose.index("  research:") :]
+
+    assert "RESEARCH_STATE_DIR" in research
+    assert "/state/research" in research
+    assert "--db" in research
+    assert "/state/research/research.sqlite" in research
+    assert "./user_data/research.sqlite" not in research
+    assert "./user_data:/" not in research
 
 
 def test_research_image_contains_pi_and_project_runtime() -> None:

@@ -76,6 +76,9 @@ services:
       UV_NO_SYNC: "1"
       UV_PROJECT_ENVIRONMENT: /opt/research-venv
       RESEARCH_ROOT: ${RESEARCH_ROOT:-/workspace}
+      RESEARCH_STATE_DIR: /state/research
+      RESEARCH_DB: /state/research/research.sqlite
+      RESEARCH_ARTIFACT_ROOT: ${RESEARCH_ROOT:-/workspace}/user_data/research-artifacts
       RESEARCH_DATASET: ${RESEARCH_DATASET:-snapshots/fresh_outer_oos_2026q3}
       RESEARCH_TIMERANGE: ${RESEARCH_TIMERANGE:-20260124-20260914}
       RESEARCH_RUN_KEY: ${RESEARCH_RUN_KEY:-local-research}
@@ -89,8 +92,8 @@ services:
       - /home/ftuser/.cache:rw,uid=1000,gid=1000,mode=0700
     volumes:
       - ./:${RESEARCH_ROOT:-/workspace}:ro
-      - ./user_data/research.sqlite:${RESEARCH_ROOT:-/workspace}/user_data/research.sqlite
-      - ./user_data/research-artifacts:${RESEARCH_ROOT:-/workspace}/user_data/research-artifacts
+      - ${RESEARCH_STATE_DIR_HOST:-${RESEARCH_STATE_DIR:-./user_data/research-state}}:/state/research:rw
+      - ${RESEARCH_ARTIFACT_ROOT_HOST:-${RESEARCH_ARTIFACT_ROOT:-./user_data/research-artifacts}}:${RESEARCH_ROOT:-/workspace}/user_data/research-artifacts:rw
       - ${RESEARCH_SNAPSHOT_ROOT:-./user_data/data/snapshots}:${RESEARCH_ROOT:-/workspace}/user_data/data/snapshots:ro
       - ${CODEX_HOME:-${HOME}/.codex}:/home/ftuser/.codex:ro
       - ${PI_AGENT_DIR:-${HOME}/.pi/agent}:/pi/agent-source:ro
@@ -98,7 +101,7 @@ services:
     entrypoint: ["/usr/local/bin/research-entrypoint"]
     command:
       - --db
-      - ${RESEARCH_ROOT:-/workspace}/user_data/research.sqlite
+      - /state/research/research.sqlite
       - --dataset
       - ${RESEARCH_DATASET:-snapshots/fresh_outer_oos_2026q3}
       - --run-key

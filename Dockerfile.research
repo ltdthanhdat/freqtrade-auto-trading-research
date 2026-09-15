@@ -13,7 +13,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
-RUN mkdir -p /workspace/user_data/data/snapshots /workspace/user_data/research-artifacts
+RUN mkdir -p /workspace/user_data/data/snapshots /workspace/user_data/research-artifacts /state/research
 
 COPY scripts/research_container_entrypoint.sh /usr/local/bin/research-entrypoint
 RUN chmod 755 /usr/local/bin/research-entrypoint
@@ -38,4 +38,4 @@ ENV HOME=/home/ftuser \
 USER ftuser
 
 ENTRYPOINT ["/usr/local/bin/research-entrypoint"]
-CMD ["--db", "/workspace/user_data/research.sqlite"]
+CMD ["--db", "/state/research/research.sqlite"]

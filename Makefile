@@ -126,10 +126,10 @@ compose-live: ## Run Binance live service via Docker Compose
 	docker compose up -d freqtrade-live
 
 compose-research: ## Run one bounded research cycle via Docker Compose
-	RESEARCH_ROOT="$(CURDIR)" RESEARCH_SNAPSHOT_ROOT="$(CURDIR)/$(DATA_ROOT)/snapshots" RESEARCH_ARTIFACT_ROOT="$(CURDIR)/$(RESEARCH_ARTIFACT_ROOT)" RESEARCH_RUN_KEY="$(RESEARCH_RUN_KEY)" docker compose --profile research run --rm research
+	RESEARCH_ROOT="$(CURDIR)" RESEARCH_STATE_DIR_HOST="$(RESEARCH_STATE_DIR)" RESEARCH_SNAPSHOT_ROOT="$(CURDIR)/$(DATA_ROOT)/snapshots" RESEARCH_ARTIFACT_ROOT_HOST="$(CURDIR)/$(RESEARCH_ARTIFACT_ROOT)" RESEARCH_RUN_KEY="$(RESEARCH_RUN_KEY)" docker compose --profile research run --rm research
 
 compose-research-data: ## Prepare and seal one research snapshot via Docker Compose
-	RESEARCH_ROOT="$(CURDIR)" RESEARCH_SNAPSHOT_WORK_ROOT="$(CURDIR)/$(DATA_ROOT)" RESEARCH_ARTIFACT_ROOT="$(CURDIR)/$(RESEARCH_ARTIFACT_ROOT)" RESEARCH_RUN_KEY="$(RESEARCH_RUN_KEY)" docker compose --profile research run --rm research-data-prep
+	RESEARCH_ROOT="$(CURDIR)" RESEARCH_SNAPSHOT_WORK_ROOT="$(CURDIR)/$(DATA_ROOT)" RESEARCH_ARTIFACT_ROOT_HOST="$(CURDIR)/$(RESEARCH_ARTIFACT_ROOT)" RESEARCH_RUN_KEY="$(RESEARCH_RUN_KEY)" docker compose --profile research run --rm research-data-prep
 
 list-strategies: ## List available strategies
 	$(FREQ) list-strategies --strategy-path $(SPATH)
