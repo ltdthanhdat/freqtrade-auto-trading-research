@@ -57,6 +57,8 @@ test("canonical prompt contains the bounded research protocol", () => {
   assert.doesNotMatch(prompt, /evidence.*items.*supported_claim/i);
   assert.match(prompt, /shell.*SQL|SQL.*shell/i);
   assert.match(prompt, /parameter sweeps/i);
+  assert.match(prompt, /Each exit design object must include a non-empty `name`/);
+  assert.match(prompt, /exit_precedence[\s\S]*only the exact uppercase values/);
 });
 
 test("research prompt requires the complete sealed protocol", () => {

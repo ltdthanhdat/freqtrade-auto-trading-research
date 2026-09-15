@@ -53,12 +53,19 @@ fields including: `signal_definition`, `confirmation`,
 `development_protocol`, and `outer_acceptance_policy`; falsifiers; and an
 `evidence_map` covering `entry`, `stop`, and `profit_exit`.
 
-Each exit design is a complete exit specification and must specify
-`protective_stop`, `profit_exit`, `time_exit`,
+Each exit design object must include a non-empty `name`. It is a complete exit
+specification and must specify `protective_stop`, `profit_exit`, `time_exit`,
 `trailing_exit`, `regime_exit`, `exit_precedence`, `gap_behavior`,
-`stop_update_policy`, and `emergency_behavior`. Use explicit `type: NONE`
-when a component is absent, and never use ranges. Do not cite entry evidence
-as proof of stop or profit claims.
+`stop_update_policy`, and `emergency_behavior`. Each component `type` must be
+one of the exact uppercase values `ATR`, `FIXED_PERCENT`, `FVG_ABSOLUTE`,
+`REGIME`, `R_MULTIPLE`, `SIGNAL`, `TIME`, `TRAILING`, or `NONE`; every
+non-`NONE` component also needs a non-empty `formula`. The `exit_precedence`
+list may contain only the exact uppercase values `PROTECTIVE_STOP`,
+`PROFIT_TARGET`, `TIME_EXIT`, `TRAILING_EXIT`, `REGIME_EXIT`, `SIGNAL_EXIT`,
+`EMERGENCY_EXIT`, or `LIQUIDATION`. `gap_behavior`, `stop_update_policy`, and
+`emergency_behavior` must be non-empty text strings, not nested objects. Use
+explicit `type: NONE` when a component is absent, and never use ranges. Do not
+cite entry evidence as proof of stop or profit claims.
 
 Use `supporting_source_ids` and `contradicting_source_ids` only from this
 cycle, with no overlap. For an identity-bound cycle, both
