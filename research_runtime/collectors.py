@@ -37,6 +37,7 @@ class SourceRecord:
 
 
 ALLOWED_GITHUB_LICENSES = frozenset({"MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC"})
+PROVIDER_TIMEOUT_SECONDS = 15
 
 
 def _normalize_doi(value: object) -> str | None:
@@ -105,7 +106,7 @@ def _record(
 def _request_bytes(url: str, opener=urlopen, headers: dict[str, str] | None = None) -> bytes:
     request = Request(url, headers={"User-Agent": "strategy-research/1.0", **(headers or {})})
     try:
-        with opener(request) as response:
+        with opener(request, timeout=PROVIDER_TIMEOUT_SECONDS) as response:
             status = getattr(response, "status", 200)
             if status == 429 or status >= 500:
                 raise ProviderRetryableError(f"provider HTTP {status}")

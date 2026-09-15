@@ -29,7 +29,20 @@ class FakeResponse(BytesIO):
 
 
 def fake_json(payload):
-    return lambda _request: FakeResponse(json.dumps(payload).encode())
+    return lambda _request, **_kwargs: FakeResponse(json.dumps(payload).encode())
+
+
+def test_provider_request_uses_bounded_timeout():
+    observed = []
+
+    def opener(_request, *, timeout):
+        observed.append(timeout)
+        return FakeResponse(b"{}")
+
+    from research_runtime.collectors import PROVIDER_TIMEOUT_SECONDS, _request_bytes
+
+    assert _request_bytes("https://example.test", opener=opener) == b"{}"
+    assert observed == [PROVIDER_TIMEOUT_SECONDS]
 
 
 def test_openalex_result_keeps_canonical_provenance():
@@ -56,7 +69,7 @@ def test_arxiv_xml_is_normalized_to_source_record():
       <entry><id>http://arxiv.org/abs/1234.5678</id><title>RSI divergence</title>
       <summary>Abstract evidence</summary><link href='http://arxiv.org/pdf/1234.5678'/></entry>
     </feed>"""
-    records = collect_arxiv("RSI divergence", limit=1, opener=lambda _request: FakeResponse(xml))
+    records = collect_arxiv("RSI divergence", limit=1, opener=lambda _request, **_kwargs: FakeResponse(xml))
     assert records[0].provider == "arxiv"
     assert records[0].canonical_url == "http://arxiv.org/abs/1234.5678"
     assert records[0].excerpt == "Abstract evidence"
@@ -130,7 +143,7 @@ def test_crossref_normalizes_doi_and_abstract_markup():
 
 def test_malformed_json_is_a_provider_error():
     with pytest.raises(ProviderError, match="malformed JSON"):
-        collect_openalex("RSI", limit=1, opener=lambda _request: FakeResponse(b"not-json"))
+        collect_openalex("RSI", limit=1, opener=lambda _request, **_kwargs: FakeResponse(b"not-json"))
 
 
 def test_stackexchange_is_marked_falsifier_only():
@@ -158,7 +171,7 @@ def test_tradingview_is_not_a_provider():
 
 
 def test_http_429_is_retryable():
-    def opener(request):
+    def opener(request, **_kwargs):
         raise HTTPError(request.full_url, 429, "rate limited", {}, BytesIO())
 
     with pytest.raises(ProviderRetryableError):
@@ -166,7 +179,7 @@ def test_http_429_is_retryable():
 
 
 def test_http_403_is_provider_failure():
-    def opener(request):
+    def opener(request, **_kwargs):
         raise HTTPError(request.full_url, 403, "forbidden", {}, BytesIO())
 
     with pytest.raises(ProviderError):
