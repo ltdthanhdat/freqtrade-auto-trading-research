@@ -22,7 +22,7 @@ def _report_payload(summary: dict[str, Any]) -> dict[str, Any]:
         "status": summary.get("status"),
         "cycle_id": summary.get("cycle_id"),
         "snapshot_sha256": summary.get("snapshot_sha256"),
-        "manifest_path": summary.get("manifest_path"),
+        "manifest_path": summary.get("manifest_path") or summary.get("snapshot_manifest_path"),
         "report_path": summary.get("report_path"),
         "summary_path": summary.get("summary_path"),
     }
