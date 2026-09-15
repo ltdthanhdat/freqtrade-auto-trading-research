@@ -108,7 +108,7 @@ def _validation_prompt_context(
                 f"oos_partitions={json.dumps(partitions, separators=(',', ':'))}",
             ]
         )
-    except (OSError, ValueError, RuntimeError, KeyError, TypeError):
+    except (OSError, ValueError, RuntimeError, KeyError, TypeError, subprocess.CalledProcessError):
         # The runtime remains authoritative; an unavailable local identity only
         # makes the eventual validation fail closed.
         pass

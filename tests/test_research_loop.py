@@ -48,6 +48,34 @@ def test_prompt_renderer_rejects_unresolved_tokens():
         render_research_prompt("{{CYCLE_ID}} {{UNKNOWN}}", cycle_id="C-1", validation_context="x")
 
 
+def test_supervisor_prompt_tolerates_baked_image_without_git(monkeypatch, tmp_path):
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "config.futures.json").write_text("{}")
+    (tmp_path / "config" / "validation.baseline.json").write_text("{}")
+    strategy_dir = tmp_path / "src" / "strategies"
+    strategy_dir.mkdir(parents=True)
+    (strategy_dir / "SMC_FVG_Context30m_Freqtrade.py").write_text("class Strategy: pass\\n")
+    (tmp_path / "user_data" / "data" / "snapshots" / "accepted").mkdir(parents=True)
+
+    def fail_without_git(*_args, **_kwargs):
+        raise subprocess.CalledProcessError(128, ["git", "rev-parse", "HEAD"])
+
+    import scripts.validate_baseline as validate_baseline
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(validate_baseline, "collect_identity", fail_without_git)
+
+    prompt = research_loop._research_prompt(
+        cycle={"id": "C-1", "holdout_start": "", "holdout_end": ""},
+        dataset="accepted",
+        timerange="20260124-20260911",
+        template="cycle={{CYCLE_ID}}\\ncontext={{VALIDATION_CONTEXT}}\\n",
+    )
+
+    assert "cycle=C-1" in prompt
+    assert "dataset=snapshots/accepted" in prompt
+
+
 def test_supervisor_prompt_uses_canonical_template_and_cycle_identity():
     prompt = research_loop._research_prompt(
         cycle={"id": "C-1", "holdout_start": "", "holdout_end": ""},
