@@ -10,6 +10,7 @@ import hashlib
 import math
 from pathlib import Path
 
+from research_runtime import paths
 from research_runtime.core import HypothesisState, canonical_json
 from research_runtime.store import ResearchStore
 from scripts.validation_core import ValidationStateStore
@@ -87,6 +88,7 @@ def validate_manifest(
     research_db: Path | None = None,
     state_db: Path | None = None,
 ) -> list[str]:
+    state_db = state_db or paths.validation_state_db_path()
     try:
         manifest = json.loads(manifest_path.read_text())
         if not isinstance(manifest, dict):
@@ -227,7 +229,7 @@ def validate_manifest(
                                             (experiment["snapshot_sha256"], kind, start_at, end_at, latest["id"]),
                                         ).fetchone() is None:
                                             errors.append("validation OOS partition consumption is missing")
-        if state_db is not None and state_db.is_file():
+        if state_db is not None:
             state = ValidationStateStore(state_db).current("global")
             if state and state.get("state") != "ACTIVE":
                 errors.append(f"validation runtime state is {state.get('state')}")
@@ -244,7 +246,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--strategy", required=True)
     parser.add_argument("--strategy-path", type=Path, required=True)
     parser.add_argument("--research-db", type=Path)
-    parser.add_argument("--state-db", type=Path)
+    parser.add_argument("--state-db", type=Path, default=paths.validation_state_db_path())
     return parser.parse_args()
 
 

@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 
 from scripts.validate_baseline import collect_identity
+from scripts.validate_manifest import validate_manifest
 from research_runtime.core import HypothesisState
 from research_runtime.store import ResearchStore
 from scripts.validation_core import ValidationStateStore
@@ -164,6 +165,19 @@ def _make_gate(config, policy, strategy_path, manifest):
     )
 
 
+def test_validate_manifest_initializes_default_validation_state(tmp_path, monkeypatch):
+    config, policy, strategy_path, manifest = _setup(tmp_path, bundle=False)
+    state_db = tmp_path / "state" / "validation-state.sqlite"
+    monkeypatch.setenv("VALIDATION_STATE_DB", str(state_db))
+
+    errors = validate_manifest(
+        manifest, config, policy, "Strategy", strategy_path, research_db=manifest.parent / "research.sqlite"
+    )
+
+    assert errors
+    assert state_db.is_file()
+
+
 def test_validate_manifest_requires_linked_pass_bundle(tmp_path):
     config, policy, strategy_path, manifest = _setup(tmp_path, bundle=False)
     errors = __import__("scripts.validate_manifest", fromlist=["validate_manifest"]).validate_manifest(
@@ -244,6 +258,8 @@ def test_active_validation_paths_use_sqlite_artifacts_not_legacy_research():
     readme = Path("README.md").read_text()
     assert "APPROVED_IDENTITY ?= config/approved-baseline-identity.json" in makefile
     assert "RESEARCH_RUNS_DIR ?= user_data/research-artifacts/validation" in makefile
+    assert "VALIDATION_STATE_DB ?= $(RESEARCH_STATE_DIR)/validation-state.sqlite" in makefile
+    assert "validation-state-audit:" in makefile
     assert "--runs-dir $(RESEARCH_RUNS_DIR)" in makefile
     assert "research-cycle: research-data" in makefile
     assert "scripts.prepare_research_data" in makefile

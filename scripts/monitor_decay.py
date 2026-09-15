@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from research_runtime import paths
 from scripts.validation_core import ValidationPolicy, ValidationStateStore, bootstrap_equity_paths, time_blocks
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -79,7 +80,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--state-db",
         type=Path,
-        help="Optional validation-state SQLite path; alerts persist a PAUSED state until review-approved.",
+        default=paths.validation_state_db_path(),
+        help="Validation-state SQLite path; alerts persist a PAUSED state until review-approved.",
     )
     parser.add_argument("--run-id", default="decay-monitor")
     args = parser.parse_args()

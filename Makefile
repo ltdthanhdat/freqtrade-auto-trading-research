@@ -35,7 +35,7 @@ DB ?= user_data/tradesv3.demo.sqlite
 PAIR     ?= BTC/USDT:USDT
 SNAPSHOT_DATADIR := $(DATA_ROOT)/snapshots/$(DATASET)
 
-.PHONY: help install seed seed-range seed-snapshot research-data list-data list-snapshot backtest backtest-snapshot validate-snapshot validate-pass state-audit state-backup state-migrate monitor-decay plot plot-df dry-run demo live compose-demo compose-live compose-research compose-research-data list-strategies research-cycle research-loop research-dashboard clean clean-backtest-results
+.PHONY: help install seed seed-range seed-snapshot research-data list-data list-snapshot backtest backtest-snapshot validate-snapshot validate-pass state-audit state-backup state-migrate validation-state-audit validation-state-backup monitor-decay plot plot-df dry-run demo live compose-demo compose-live compose-research compose-research-data list-strategies research-cycle research-loop research-dashboard clean clean-backtest-results
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -89,6 +89,13 @@ state-migrate: ## Migrate SQLite state with SOURCE_DB, DESTINATION_DB, BACKUP_RO
 	@test -n "$(BACKUP_ROOT)" || { echo "BACKUP_ROOT is required" >&2; exit 1; }
 	@test -n "$(REPORT)" || { echo "REPORT is required" >&2; exit 1; }
 	$(PYTHON) -m scripts.migrate_sqlite_state --source "$(SOURCE_DB)" --destination "$(DESTINATION_DB)" --backup-root "$(BACKUP_ROOT)" --report "$(REPORT)"
+
+validation-state-audit: ## Audit the configured validation-state SQLite database
+	$(PYTHON) -m scripts.migrate_sqlite_state --source "$(VALIDATION_STATE_DB)" --verify-only
+
+validation-state-backup: ## Back up validation-state SQLite with BACKUP_ROOT=<dir>
+	@test -n "$(BACKUP_ROOT)" || { echo "BACKUP_ROOT is required" >&2; exit 1; }
+	$(PYTHON) -m scripts.migrate_sqlite_state --source "$(VALIDATION_STATE_DB)" --destination "$(BACKUP_ROOT)/validation-state.sqlite" --backup-root "$(BACKUP_ROOT)"
 
 research-cycle: research-data ## Start or resume one bounded Pi research cycle
 	RESEARCH_DATASET=$(RESEARCH_DATASET) RESEARCH_TIMERANGE=$(RESEARCH_TIMERANGE) pi --approve --model openai-codex/gpt-5.6-luna --thinking max --no-builtin-tools

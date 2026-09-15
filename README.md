@@ -7,6 +7,7 @@ Crypto trading bot built on Freqtrade.
 - strategy: `src/strategies/SMC_FVG_Context30m_Freqtrade.py`
 - config: `config/config.futures.json`
 - research state: `~/workspace/iac/sqlite/freqtrade-auto-trading-research/research.sqlite` (override with `RESEARCH_DB`)
+- validation control state: `~/workspace/iac/sqlite/freqtrade-auto-trading-research/validation-state.sqlite` (override with `VALIDATION_STATE_DB`)
 - local dashboard: `make research-dashboard`
 
 New research state is stored in SQLite. Raw reports and validation outputs live
@@ -164,6 +165,8 @@ Make targets:
 - `make backtest-snapshot DATASET=recent_selected TIMERANGE=20260218-20260518`
 - `make validate-snapshot DATASET=accepted_6pair_2026q3`
 - `make validate-pass VALIDATION_MANIFEST=user_data/research-artifacts/validation/<run-id>/manifest.json`
+- `make validation-state-audit`
+- `make validation-state-backup BACKUP_ROOT=~/workspace/iac/sqlite/backups/validation-state-<timestamp>`
 - `make monitor-decay BASELINE=user_data/backtest_results/baseline.zip DB=user_data/tradesv3.demo.sqlite`
 - `make plot`
 - `make plot-df PAIR=BTC/USDT:USDT`

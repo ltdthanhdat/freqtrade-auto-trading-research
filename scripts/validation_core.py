@@ -10,6 +10,8 @@ import sqlite3
 import numpy as np
 import pandas as pd
 
+from research_runtime import paths
+
 
 @dataclass(frozen=True)
 class ValidationPolicy:
@@ -320,8 +322,9 @@ def complete_plan_metrics(
 
 
 class ValidationStateStore:
-    def __init__(self, path: Path):
-        self.path = path
+    def __init__(self, path: Path | None = None):
+        self.path = path or paths.validation_state_db_path()
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         with sqlite3.connect(self.path) as connection:
             connection.execute(
                 """

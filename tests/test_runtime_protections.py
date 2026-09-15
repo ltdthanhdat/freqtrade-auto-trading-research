@@ -8,6 +8,17 @@ from scripts.validation_core import ValidationStateStore
 from src.strategies.SMC_FVG_Context30m_Freqtrade import SMC_FVG_Context30m_Freqtrade
 
 
+def test_default_validation_state_store_uses_configured_path(monkeypatch, tmp_path):
+    path = tmp_path / "nested" / "validation-state.sqlite"
+    monkeypatch.setenv("VALIDATION_STATE_DB", str(path))
+
+    store = ValidationStateStore()
+
+    assert store.path == path
+    assert path.is_file()
+    assert store.current("global") is None
+
+
 def test_paused_state_requires_review_to_reopen(tmp_path):
     store = ValidationStateStore(tmp_path / "validation_state.sqlite")
     store.transition("global", "PAUSED", "drawdown", {}, None, "r1")
