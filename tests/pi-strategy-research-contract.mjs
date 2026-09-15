@@ -52,6 +52,9 @@ test("canonical prompt contains the bounded research protocol", () => {
   assert.match(prompt, /no post-OOS tuning/i);
   assert.match(prompt, /entry_plan.*sizing_plan|sizing_plan.*entry_plan/i);
   assert.match(prompt, /role-specific claim-level evidence/i);
+  assert.match(prompt, /both[\s\S]*supporting_source_ids[\s\S]*contradicting_source_ids[\s\S]*non-empty/i);
+  assert.match(prompt, /evidence[\s\S]*roles[\s\S]*supported_claim[\s\S]*transfer_assumption[\s\S]*limitations/i);
+  assert.doesNotMatch(prompt, /evidence.*items.*supported_claim/i);
   assert.match(prompt, /shell.*SQL|SQL.*shell/i);
   assert.match(prompt, /parameter sweeps/i);
 });

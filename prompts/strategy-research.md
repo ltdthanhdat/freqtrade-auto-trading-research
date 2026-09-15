@@ -50,21 +50,25 @@ fields including: `signal_definition`, `confirmation`,
 `development_protocol`, and `outer_acceptance_policy`; falsifiers; and an
 `evidence_map` covering `entry`, `stop`, and `profit_exit`.
 
-Each exit design must specify `protective_stop`, `profit_exit`, `time_exit`,
+Each exit design is a complete exit specification and must specify
+`protective_stop`, `profit_exit`, `time_exit`,
 `trailing_exit`, `regime_exit`, `exit_precedence`, `gap_behavior`,
 `stop_update_policy`, and `emergency_behavior`. Use explicit `type: NONE`
 when a component is absent, and never use ranges. Do not cite entry evidence
 as proof of stop or profit claims.
 
 Use `supporting_source_ids` and `contradicting_source_ids` only from this
-cycle, with no overlap. `evidence_links` must cover every cited source exactly
-once. Each item is `{source_id, stance, note, evidence}`, and evidence has
-unique allowed roles plus `supported_claim`, `transfer_assumption`, and
-`limitations`. Supporting links must cover `ENTRY_SUPPORT`, `STOP_SUPPORT`,
-and `PROFIT_EXIT_SUPPORT`; use role-specific claim-level evidence. A
-contradicting link must use `CONTRADICTION` or
-`FALSIFIER`. If complete claim-level evidence is unavailable, do not create a
-candidate.
+cycle, with no overlap. For an identity-bound cycle, both
+`supporting_source_ids` and `contradicting_source_ids` must be non-empty; if
+necessary, collect and assess a source that challenges the hypothesis. The
+`evidence_links` list must cover every cited source exactly once. Each link is
+`{source_id, stance, note, evidence}`, where `evidence` is exactly an object
+with `roles` (a list), `supported_claim`, `transfer_assumption`, and
+`limitations`; do not wrap these fields in an `items` object. Supporting links
+must cover `ENTRY_SUPPORT`, `STOP_SUPPORT`, and `PROFIT_EXIT_SUPPORT`; use
+role-specific claim-level evidence. A contradicting link must use
+`CONTRADICTION` or `FALSIFIER`. If complete claim-level evidence is
+unavailable, do not create a candidate.
 
 ## Candidate and validation
 
