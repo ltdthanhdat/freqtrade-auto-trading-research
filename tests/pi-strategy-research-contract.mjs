@@ -88,6 +88,7 @@ test("research prompt requires the complete sealed protocol", () => {
 
 test("canonical prompt requires structured source assessments", () => {
   assert.match(prompt, /assessment.*relevance.*asset.*timeframe.*mechanism/);
+  assert.match(prompt, /relevance[\s\S]*direct[\s\S]*indirect[\s\S]*irrelevant/i);
   assert.match(prompt, /full_text_available/);
   assert.doesNotMatch(prompt, /full_text_available\s*:\s*true/);
   assert.match(prompt, /assessment.*relevance.*asset.*timeframe.*mechanism/);

@@ -28,7 +28,10 @@ continue with another provider. Keep collector facts, including
 
 The `record_source_assessment` payload is exactly
 `{cycle_id, source_id, assessment: {relevance, asset, timeframe, mechanism}}`.
-Assess source quality without changing collector facts. Use claim-level
+For `relevance`, use exactly one of `direct`, `directly_relevant`, `relevant`,
+`indirect`, `contradicting`, `falsifier`, or `irrelevant`; do not invent labels
+such as `adjacent` or `unknown`. Assess source quality without changing
+collector facts. Use claim-level
 provenance for every source used by a hypothesis.
 
 ## Hypotheses and plans
