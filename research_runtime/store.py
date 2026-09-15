@@ -715,34 +715,41 @@ class ResearchStore:
                 )
                 row = connection.execute("SELECT * FROM cycles WHERE id = ?", (row["id"],)).fetchone()
             if row is not None and row["status"] in {CycleStatus.INTERRUPTED, CycleStatus.INCOMPLETE}:
-                self._assert_cycle_identity(row, identity)
-                self._merge_cycle_identity(connection, row, identity)
-                row = connection.execute("SELECT * FROM cycles WHERE id = ?", (row["id"],)).fetchone()
-                if int(row["recovery_attempts"] or 0) >= 1:
-                    return {
-                        "cycle": dict(row),
-                        "acquired": False,
-                        "blocked_reason": "recovery_budget_exhausted",
-                    }
-                self._append_event(
-                    connection,
-                    entity_type="cycle",
-                    entity_id=row["id"],
-                    from_state=row["status"],
-                    to_state=CycleStatus.RUNNING,
-                    actor=lease_owner,
-                    reason="resume after interruption",
-                    cycle_id=row["id"],
-                    created_at=current,
-                )
-                connection.execute(
-                    "UPDATE cycles SET status = ?, stage = 'COLLECTING', lease_owner = ?, "
-                    "lease_until = ?, lease_heartbeat_at = ?, recovery_attempts = recovery_attempts + 1, "
-                    "completed_at = NULL, updated_at = ? WHERE id = ? AND status IN ('INTERRUPTED', 'INCOMPLETE')",
-                    (CycleStatus.RUNNING, lease_owner, lease_until, current, current, row["id"]),
-                )
-                updated = connection.execute("SELECT * FROM cycles WHERE id = ?", (row["id"],)).fetchone()
-                return {"cycle": dict(updated), "acquired": True}
+                try:
+                    self._assert_cycle_identity(row, identity)
+                except ValueError:
+                    # A completed recovery from another run/snapshot identity is
+                    # terminal for this run; a later independent run gets a new
+                    # cycle instead of mutating its identity.
+                    row = None
+                if row is not None:
+                    self._merge_cycle_identity(connection, row, identity)
+                    row = connection.execute("SELECT * FROM cycles WHERE id = ?", (row["id"],)).fetchone()
+                    if int(row["recovery_attempts"] or 0) >= 1:
+                        return {
+                            "cycle": dict(row),
+                            "acquired": False,
+                            "blocked_reason": "recovery_budget_exhausted",
+                        }
+                    self._append_event(
+                        connection,
+                        entity_type="cycle",
+                        entity_id=row["id"],
+                        from_state=row["status"],
+                        to_state=CycleStatus.RUNNING,
+                        actor=lease_owner,
+                        reason="resume after interruption",
+                        cycle_id=row["id"],
+                        created_at=current,
+                    )
+                    connection.execute(
+                        "UPDATE cycles SET status = ?, stage = 'COLLECTING', lease_owner = ?, "
+                        "lease_until = ?, lease_heartbeat_at = ?, recovery_attempts = recovery_attempts + 1, "
+                        "completed_at = NULL, updated_at = ? WHERE id = ? AND status IN ('INTERRUPTED', 'INCOMPLETE')",
+                        (CycleStatus.RUNNING, lease_owner, lease_until, current, current, row["id"]),
+                    )
+                    updated = connection.execute("SELECT * FROM cycles WHERE id = ?", (row["id"],)).fetchone()
+                    return {"cycle": dict(updated), "acquired": True}
 
             cycle_id = f"C-{current.replace(':', '').replace('-', '')}-{uuid.uuid4().hex[:8]}"
             connection.execute(

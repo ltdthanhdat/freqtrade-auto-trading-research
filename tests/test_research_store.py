@@ -660,6 +660,40 @@ def test_recovery_budget_allows_one_resume_only(tmp_path):
     assert blocked["blocked_reason"] == "recovery_budget_exhausted"
 
 
+def test_incomplete_cycle_from_another_run_gets_a_new_identity(tmp_path):
+    store = ResearchStore(tmp_path / "research.sqlite")
+    first = store.start_or_resume_cycle(
+        {
+            "now": "2026-09-14T07:00:00Z",
+            "dataset": "snapshots/daily/run-a",
+            "airflow_run_key": "run-a",
+            "lease_owner": "run-a",
+        }
+    )
+    first_id = first["cycle"]["id"]
+    store.reconcile_cycle(
+        first_id,
+        observed_status="FAILED",
+        reason="first run stopped",
+        lease_owner="run-a",
+        now="2026-09-14T08:00:00Z",
+    )
+
+    second = store.start_or_resume_cycle(
+        {
+            "now": "2026-09-15T07:00:00Z",
+            "dataset": "snapshots/daily/run-b",
+            "airflow_run_key": "run-b",
+            "lease_owner": "run-b",
+        }
+    )
+
+    assert second["acquired"] is True
+    assert second["cycle"]["id"] != first_id
+    assert second["cycle"]["airflow_run_key"] == "run-b"
+    assert store.get_cycle(first_id)["status"] == CycleStatus.INCOMPLETE
+
+
 def test_needs_review_cycle_blocks_automatic_new_cycle(tmp_path):
     store = ResearchStore(tmp_path / "research.sqlite")
     cycle_id = store.start_or_resume_cycle("2026-09-14T07:00:00Z")["cycle"]["id"]
