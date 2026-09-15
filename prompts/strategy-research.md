@@ -41,7 +41,11 @@ fields are top-level: `cycle_id`, `thesis`, `mechanism`, `market_scope`,
 `required_data`, `falsifier`, `scores`, `supporting_source_ids`,
 `contradicting_source_ids`, `trading_plan`, and `evidence_links`. Use
 `required_data` exactly `["OHLCV"]`; unsupported data stays in backlog. Do not
-put plan fields at the top level.
+put plan fields at the top level. The `scores` object must contain exactly these
+integer fields and bounds: `evidence_quality` (0-30), `reproducibility` (0-25),
+`ohlcv_transferability` (0-20), `novelty` (0-15), and `falsifiability` (0-10).
+Do not use legacy names such as `plausibility`, `testability`, or `risk`, and do
+not put a descriptive object or list in place of an integer score.
 
 Every identity-bound hypothesis needs a complete frozen trading plan with
 `schema_version=1`, `required_data=["OHLCV"]`, and `entry_plan` and `sizing_plan`

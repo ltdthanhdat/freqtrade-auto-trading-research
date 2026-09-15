@@ -42,6 +42,18 @@ test("research command carries the prepared snapshot into the cycle", () => {
   assert.match(source, /data preflight completed successfully/);
 });
 
+test("canonical prompt pins the runtime score schema", () => {
+  assert.match(prompt, /scores.*evidence_quality.*reproducibility.*ohlcv_transferability.*novelty.*falsifiability/is);
+  assert.match(prompt, /evidence_quality.*0.*30/is);
+  assert.match(prompt, /reproducibility.*0.*25/is);
+  assert.match(prompt, /ohlcv_transferability.*0.*20/is);
+  assert.match(prompt, /novelty.*0.*15/is);
+  assert.match(prompt, /falsifiability.*0.*10/is);
+  assert.doesNotMatch(prompt, /scores[\s\S]{0,200}plausibility/i);
+  assert.doesNotMatch(prompt, /scores[\s\S]{0,200}testability/i);
+  assert.doesNotMatch(prompt, /scores[\s\S]{0,200}risk/i);
+});
+
 test("canonical prompt contains the bounded research protocol", () => {
   assert.match(prompt, /openalex, arxiv, and crossref/);
   assert.match(prompt, /do not use semantic_scholar/);
