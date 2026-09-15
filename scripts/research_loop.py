@@ -12,6 +12,7 @@ import subprocess
 from threading import Thread
 from typing import Callable, Type
 
+from research_runtime import paths
 from research_runtime.prompt import load_research_prompt, render_research_prompt
 from research_runtime.store import ResearchStore
 from scripts.run_summary import write_run_summary
@@ -292,7 +293,7 @@ def run_research_loop(
     snapshot_sha256 = _snapshot_identity(snapshot_manifest)
     prompt_template, prompt_sha256 = load_research_prompt()
     store = store_factory(db_path)
-    log_path = log_path or DEFAULT_LOG_PATH
+    log_path = log_path or (paths.research_artifact_root() / "research-supervisor.log")
     env = {**os.environ, "RESEARCH_DATASET": dataset, "RESEARCH_TIMERANGE": timerange}
     if run_key:
         env["RESEARCH_RUN_KEY"] = run_key
@@ -456,7 +457,7 @@ def run_research_loop(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--db", dest="db_path", type=Path, default=Path("user_data/research.sqlite"))
+    parser.add_argument("--db", dest="db_path", type=Path, default=paths.research_db_path())
     parser.add_argument("--dataset", default=os.environ.get("RESEARCH_DATASET", "accepted_6pair_2026q3_full"))
     parser.add_argument("--timerange", default=os.environ.get("RESEARCH_TIMERANGE", "20260124-20260911"))
     parser.add_argument("--max-cycles", type=int, default=1)
@@ -466,7 +467,7 @@ def parse_args() -> argparse.Namespace:
         "--artifacts",
         dest="summary_root",
         type=Path,
-        default=Path(os.environ.get("RESEARCH_ARTIFACT_ROOT", "user_data/research-artifacts")),
+        default=paths.research_artifact_root(),
     )
     parser.add_argument(
         "--snapshot-manifest",

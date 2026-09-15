@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from research_runtime import paths
 from research_runtime.service import ResearchService
 from research_runtime.store import ResearchStore
 from scripts.run_summary import read_run_summary, write_run_summary
@@ -67,8 +68,8 @@ def _result_line(result: dict[str, Any], summary: Path | None = None) -> str:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Reconcile a persisted research cycle")
-    parser.add_argument("--db", type=Path, default=Path("user_data/research.sqlite"))
-    parser.add_argument("--artifacts", type=Path, default=Path("user_data/research-artifacts"))
+    parser.add_argument("--db", type=Path, default=paths.research_db_path())
+    parser.add_argument("--artifacts", type=Path, default=paths.research_artifact_root())
     parser.add_argument("--cycle-id")
     parser.add_argument("--latest", action="store_true")
     parser.add_argument("--observed-status", default="FAILED")

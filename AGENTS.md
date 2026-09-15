@@ -27,7 +27,7 @@ Freqtrade repo for `SMC_FVG_Context30m`.
 - `src/strategies/SMC_FVG_Context30m_Freqtrade.py`
 - `config/config.futures.json`
 - `scripts/seed_freqtrade_data.py`
-- `research_runtime/`, `scripts/`, `dashboard/`, `.pi/extensions/`, and `user_data/research-artifacts/` (SQLite state is `user_data/research.sqlite`)
+- `research_runtime/`, `scripts/`, `dashboard/`, `.pi/extensions/`, and `user_data/research-artifacts/` (SQLite state is `~/workspace/iac/sqlite/freqtrade-auto-trading-research/research.sqlite`)
 
 ## Verify
 
@@ -42,7 +42,7 @@ Freqtrade repo for `SMC_FVG_Context30m`.
 
 ## Source of truth
 
-Read `README.md`, then `user_data/research.sqlite` through `research_runtime` and
+Read `README.md`, then `~/workspace/iac/sqlite/freqtrade-auto-trading-research/research.sqlite` through `research_runtime` and
 the immutable manifests under `user_data/research-artifacts/`. Legacy `.research/`
 files are import-only and are not active cycle state.
 

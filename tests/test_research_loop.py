@@ -11,6 +11,17 @@ from scripts.run_summary import read_run_summary
 from scripts.research_loop import run_research_loop
 
 
+def test_research_loop_parser_uses_resolved_state_and_artifact_defaults(monkeypatch, tmp_path):
+    monkeypatch.setenv("RESEARCH_DB", str(tmp_path / "research.sqlite"))
+    monkeypatch.setenv("RESEARCH_ARTIFACT_ROOT", str(tmp_path / "artifacts"))
+    monkeypatch.setattr("sys.argv", ["research-loop"])
+
+    args = research_loop.parse_args()
+
+    assert args.db_path == tmp_path / "research.sqlite"
+    assert args.summary_root == tmp_path / "artifacts"
+
+
 def test_prompt_loader_returns_stable_sha256(tmp_path: Path):
     path = tmp_path / "strategy-research.md"
     path.write_text("cycle={{CYCLE_ID}}\ncontext={{VALIDATION_CONTEXT}}\n", encoding="utf-8")

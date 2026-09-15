@@ -166,6 +166,25 @@ def test_review_rejects_unknown_action_and_empty_reason(seeded_store, tmp_path):
         model.record_review("H-READY", "reject", " ")
 
 
+def test_dashboard_main_uses_resolved_database_and_artifact_paths(monkeypatch, tmp_path):
+    captured = {}
+    monkeypatch.setenv("RESEARCH_DB", str(tmp_path / "research.sqlite"))
+    monkeypatch.setenv("RESEARCH_ARTIFACT_ROOT", str(tmp_path / "artifacts"))
+    monkeypatch.setattr(
+        "research_runtime.dashboard.serve",
+        lambda db, artifacts, port: captured.update(db=db, artifacts=artifacts, port=port),
+    )
+
+    from research_runtime.dashboard import main
+
+    assert main(["--port", "7410"]) == 0
+    assert captured == {
+        "db": tmp_path / "research.sqlite",
+        "artifacts": tmp_path / "artifacts",
+        "port": 7410,
+    }
+
+
 def test_empty_database_has_honest_empty_views(tmp_path):
     store = ResearchStore(tmp_path / "research.sqlite")
     model = DashboardReadModel(store.path, tmp_path / "artifacts")

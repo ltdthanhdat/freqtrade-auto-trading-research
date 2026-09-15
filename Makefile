@@ -13,8 +13,9 @@ VALIDATION_START ?= 2025-10-19
 VALIDATION_END ?= 2026-05-17
 APPROVED_IDENTITY ?= config/approved-baseline-identity.json
 RESEARCH_RUNS_DIR ?= user_data/research-artifacts/validation
-RESEARCH_DB ?= user_data/research.sqlite
-VALIDATION_STATE_DB ?= user_data/validation-state.sqlite
+RESEARCH_STATE_DIR ?= $(HOME)/workspace/iac/sqlite/freqtrade-auto-trading-research
+RESEARCH_DB ?= $(RESEARCH_STATE_DIR)/research.sqlite
+VALIDATION_STATE_DB ?= $(RESEARCH_STATE_DIR)/validation-state.sqlite
 VALIDATION_MANIFEST ?=
 VALIDATION_POLICY ?= config/validation.baseline.json
 RESEARCH_DATASET ?= accepted_6pair_2026q3_full
@@ -34,7 +35,7 @@ DB ?= user_data/tradesv3.demo.sqlite
 PAIR     ?= BTC/USDT:USDT
 SNAPSHOT_DATADIR := $(DATA_ROOT)/snapshots/$(DATASET)
 
-.PHONY: help install seed seed-range seed-snapshot research-data list-data list-snapshot backtest backtest-snapshot validate-snapshot validate-pass monitor-decay plot plot-df dry-run demo live compose-demo compose-live compose-research compose-research-data list-strategies research-cycle research-loop research-dashboard clean clean-backtest-results
+.PHONY: help install seed seed-range seed-snapshot research-data list-data list-snapshot backtest backtest-snapshot validate-snapshot validate-pass state-audit state-backup state-migrate monitor-decay plot plot-df dry-run demo live compose-demo compose-live compose-research compose-research-data list-strategies research-cycle research-loop research-dashboard clean clean-backtest-results
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -75,6 +76,20 @@ validate-pass: ## Require VALIDATION_MANIFEST with verdict PASS
 	@test -n "$(VALIDATION_MANIFEST)" || { echo "VALIDATION_MANIFEST is required" >&2; exit 1; }
 	@$(PYTHON) -m scripts.validate_manifest --manifest "$(VALIDATION_MANIFEST)" --config "$(CONFIG)" --policy "$(VALIDATION_POLICY)" --strategy "$(STRATEGY)" --strategy-path "$(SPATH)" --research-db "$(RESEARCH_DB)" --state-db "$(VALIDATION_STATE_DB)"
 
+state-audit: ## Audit the configured research SQLite database
+	$(PYTHON) -m scripts.migrate_sqlite_state --source "$(RESEARCH_DB)" --verify-only
+
+state-backup: ## Back up research SQLite state with BACKUP_ROOT=<dir>
+	@test -n "$(BACKUP_ROOT)" || { echo "BACKUP_ROOT is required" >&2; exit 1; }
+	$(PYTHON) -m scripts.migrate_sqlite_state --source "$(RESEARCH_DB)" --destination "$(BACKUP_ROOT)/research.sqlite" --backup-root "$(BACKUP_ROOT)"
+
+state-migrate: ## Migrate SQLite state with SOURCE_DB, DESTINATION_DB, BACKUP_ROOT, and REPORT
+	@test -n "$(SOURCE_DB)" || { echo "SOURCE_DB is required" >&2; exit 1; }
+	@test -n "$(DESTINATION_DB)" || { echo "DESTINATION_DB is required" >&2; exit 1; }
+	@test -n "$(BACKUP_ROOT)" || { echo "BACKUP_ROOT is required" >&2; exit 1; }
+	@test -n "$(REPORT)" || { echo "REPORT is required" >&2; exit 1; }
+	$(PYTHON) -m scripts.migrate_sqlite_state --source "$(SOURCE_DB)" --destination "$(DESTINATION_DB)" --backup-root "$(BACKUP_ROOT)" --report "$(REPORT)"
+
 research-cycle: research-data ## Start or resume one bounded Pi research cycle
 	RESEARCH_DATASET=$(RESEARCH_DATASET) RESEARCH_TIMERANGE=$(RESEARCH_TIMERANGE) pi --approve --model openai-codex/gpt-5.6-luna --thinking max --no-builtin-tools
 
@@ -82,7 +97,7 @@ research-loop: research-data ## Run a bounded supervisor that resumes interrupte
 	RESEARCH_MODEL=$(RESEARCH_MODEL) $(PYTHON) -m scripts.research_loop --db "$(RESEARCH_DB)" --artifacts "$(RESEARCH_ARTIFACT_ROOT)" --run-key "$(RESEARCH_RUN_KEY)" --snapshot-manifest "$(SNAPSHOT_MANIFEST)" --dataset "$(RESEARCH_DATASET)" --timerange "$(RESEARCH_TIMERANGE)" --max-cycles "$(MAX_CYCLES)" --cycle-timeout "$(RESEARCH_TIMEOUT)"
 
 research-dashboard: ## Open the local research dashboard server
-	$(PYTHON) -m research_runtime.dashboard --db user_data/research.sqlite --artifacts user_data/research-artifacts --port 7400
+	$(PYTHON) -m research_runtime.dashboard --db "$(RESEARCH_DB)" --artifacts "$(RESEARCH_ARTIFACT_ROOT)" --port 7400
 
 monitor-decay: install ## Monitor demo/live decay with BASELINE=<zip> DB=<sqlite>
 	$(PYTHON) -m scripts.monitor_decay --baseline $(BASELINE) --db $(DB) --state-db "$(VALIDATION_STATE_DB)"

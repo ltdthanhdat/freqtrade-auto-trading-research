@@ -6,7 +6,7 @@ Crypto trading bot built on Freqtrade.
 
 - strategy: `src/strategies/SMC_FVG_Context30m_Freqtrade.py`
 - config: `config/config.futures.json`
-- research state: `user_data/research.sqlite`
+- research state: `~/workspace/iac/sqlite/freqtrade-auto-trading-research/research.sqlite` (override with `RESEARCH_DB`)
 - local dashboard: `make research-dashboard`
 
 New research state is stored in SQLite. Raw reports and validation outputs live
@@ -23,7 +23,7 @@ extension pins `openai-codex/gpt-5.6-luna` with maximum thinking and drives one
 bounded, resumable cycle through the typed Python runtime. `make research-loop`
 supervises a small maximum number of retries and stops at a terminal cycle
 state; it never starts a trading process. State is in
-`user_data/research.sqlite`, and candidates/reports are under
+`~/workspace/iac/sqlite/freqtrade-auto-trading-research/research.sqlite`, and candidates/reports are under
 `user_data/research-artifacts/<cycle-id>/`.
 
 ## Default strategy
@@ -128,8 +128,8 @@ docker compose --profile research run --rm research
 ```
 
 The research service is one-shot and isolated: its root filesystem is read-only,
-worker trade databases/logs are not mounted, and only the research SQLite DB and
-research artifacts are writable. The prepared snapshot and host Codex/Pi auth
+worker trade databases/logs are not mounted, and only the namespaced research SQLite
+state directory and research artifacts are writable. The prepared snapshot and host Codex/Pi auth
 (`~/.codex`, `~/.pi/agent`, and `~/.pi/web-search.json`) are read-only. The
 entrypoint copies the Pi agent mount into disposable `/tmp/pi-agent` storage and
 uses the image-local `pi-web-access` extension, so Pi never installs packages or
@@ -209,7 +209,8 @@ The command uses `config/config.futures.json`, the named snapshot datadir,
 `config/validation.baseline.json`, `SMC_FVG_Context30m_Freqtrade`,
 `src/strategies`, and `user_data/research-artifacts/validation/`. A `PASS`
 only allows `make dry-run` when its hypothesis is
-`APPROVED_FOR_DRY_RUN` in `user_data/research.sqlite`, the candidate hash still
+`APPROVED_FOR_DRY_RUN` in
+`~/workspace/iac/sqlite/freqtrade-auto-trading-research/research.sqlite`, the candidate hash still
 matches, and the validation window has not already produced a PASS.
 `WARN`, `FAIL`, stale identities and repeated-window PASS results remain
 research-only; record a new hypothesis or holdout before rerunning.
@@ -243,5 +244,5 @@ Monitor closed demo or live trades against a retained baseline export:
 ```bash
 make monitor-decay BASELINE=user_data/backtest_results/baseline.zip \\
   DB=user_data/tradesv3.demo.sqlite \\
-  VALIDATION_STATE_DB=user_data/validation-state.sqlite
+  VALIDATION_STATE_DB=~/workspace/iac/sqlite/freqtrade-auto-trading-research/validation-state.sqlite
 ```

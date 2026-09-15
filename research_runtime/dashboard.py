@@ -11,6 +11,7 @@ from pathlib import Path
 from urllib.parse import quote, unquote
 from typing import Any, Callable
 
+from . import paths
 from .core import HypothesisState
 from .store import ResearchStore
 
@@ -559,8 +560,8 @@ class _DashboardHandler(BaseHTTPRequestHandler):
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Loopback research dashboard")
-    parser.add_argument("--db", type=Path, default=Path("user_data/research.sqlite"))
-    parser.add_argument("--artifacts", type=Path, default=Path("user_data/research-artifacts"))
+    parser.add_argument("--db", type=Path, default=paths.research_db_path())
+    parser.add_argument("--artifacts", type=Path, default=paths.research_artifact_root())
     parser.add_argument("--port", type=int, default=7400)
     args = parser.parse_args(argv)
     serve(args.db, args.artifacts, args.port)

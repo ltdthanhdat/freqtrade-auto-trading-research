@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from . import paths
 from .service import ResearchService
 from .store import ResearchStore
 
@@ -34,8 +35,8 @@ def _response(service: ResearchService, request: Any) -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="JSON-lines research runtime")
-    parser.add_argument("--db", type=Path, default=Path("user_data/research.sqlite"))
-    parser.add_argument("--artifacts", type=Path, default=Path("user_data/research-artifacts"))
+    parser.add_argument("--db", type=Path, default=paths.research_db_path())
+    parser.add_argument("--artifacts", type=Path, default=paths.research_artifact_root())
     args = parser.parse_args(argv)
     service = ResearchService(ResearchStore(args.db), args.artifacts)
     for line in sys.stdin:

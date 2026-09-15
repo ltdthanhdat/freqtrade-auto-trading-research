@@ -5,12 +5,13 @@ import json
 from pathlib import Path
 from typing import Any
 
+from research_runtime import paths
 from scripts.run_summary import read_run_summary
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Publish a terminal research run summary")
-    parser.add_argument("--artifacts", type=Path, default=Path("user_data/research-artifacts"))
+    parser.add_argument("--artifacts", type=Path, default=paths.research_artifact_root())
     parser.add_argument("--run-key", required=True)
     return parser
 
